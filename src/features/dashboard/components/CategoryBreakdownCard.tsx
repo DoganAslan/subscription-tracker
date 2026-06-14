@@ -3,7 +3,8 @@ import { View, Text, Dimensions, Platform, StyleSheet } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { Ionicons } from '@expo/vector-icons';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
-import { useBudgetStore } from '@/store/useBudgetStore';
+import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   breakdown: { category: string; amount: number; percentage: number }[];
@@ -11,11 +12,15 @@ interface Props {
 }
 
 const VIBRANT_COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#F43F5E', '#06B6D4', '#EC4899', '#EAB308'];
+const screenWidth = Dimensions.get('window').width;
 
-export function CategoryBreakdownCard({ breakdown, monthlyTotal }: Props) {
+export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({ breakdown, monthlyTotal }: Props) {
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
-  const budgetCaps = useBudgetStore(state => state.budgetCaps);
+  const { colors } = useTheme();
+  const { t } = useTranslation();
   
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
+
   // Total spend
   const totalSpend = monthlyTotal > 0 ? monthlyTotal : breakdown.reduce((sum, item) => sum + item.amount, 0);
 
@@ -33,120 +38,161 @@ export function CategoryBreakdownCard({ breakdown, monthlyTotal }: Props) {
   const hasData = breakdown.length > 0;
   
   // Clean pie chart size
-  const chartSize = 140;
+  const chartSize = 120;
 
   return (
-    <View style={styles.cardContainer}>
-      <Text style={styles.cardTitle}>Spending by Category</Text>
+    <View style={dynamicStyles.cardContainer}>
+      <View style={dynamicStyles.headerRow}>
+        <Text style={dynamicStyles.cardTitle}>{t('home.categoryBreakdown')}</Text>
+      </View>
       
       {hasData === false ? (
-        <Text style={styles.emptyText}>No data available.</Text>
+        <Text style={dynamicStyles.emptyText}>{t('common.error') /* or appropriate empty text */}</Text>
       ) : (
-        <View style={styles.contentRow}>
+        <View style={dynamicStyles.contentColumn}>
           
-          {/* LEFT SIDE: DONUT CHART */}
-          <View style={[styles.chartWrapper, { width: chartSize, height: chartSize }]}>
-            {Platform.OS === 'web' && typeof window === 'undefined' ? (
-              <View style={styles.ssrFallback}>
-                <Text style={{ color: '#FFFFFF' }}>Loading chart...</Text>
-              </View>
-            ) : (
-              <PieChart
-                data={chartData}
-                width={chartSize}
-                height={chartSize}
-                hasLegend={false}
-                chartConfig={{
-                  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                }}
-                accessor="amount"
-                backgroundColor="transparent"
-                paddingLeft={Platform.OS === 'ios' ? '35' : '35'} // Magic offset to center the pie internally
-                absolute={true}
-              />
-            )}
-            
-            {/* Donut Hole perfectly centered */}
-            <View style={styles.donutHole}>
-              <Text style={styles.donutHoleText}>Total</Text>
-            </View>
-          </View>
-
-          {/* RIGHT SIDE: CUSTOM LEGEND & BARS */}
-          <View style={styles.legendWrapper}>
-            {breakdown.map((item, index) => {
-              const pct = totalSpend > 0 ? Math.round((item.amount / totalSpend) * 100) : 0;
-              
-              const cap = budgetCaps[item.category];
-              const isOverBudget = cap !== undefined && cap > 0 && item.amount > cap;
-              const color = isOverBudget ? '#EF4444' : VIBRANT_COLORS[index % VIBRANT_COLORS.length];
-              
-              return (
-                <View key={item.category} style={styles.listItem}>
-                  <View style={styles.listRow}>
-                    <View style={styles.categoryInfo}>
-                      <View style={[styles.colorDot, { backgroundColor: color }]} />
-                      <Text style={styles.categoryName} numberOfLines={1}>
-                        {item.category} - {pct}%
-                      </Text>
-                      {isOverBudget && (
-                        <Ionicons name="warning-outline" size={14} color="#EF4444" style={{ marginLeft: 6 }} />
-                      )}
-                    </View>
+          {/* TOP SECTION: Pie Chart (Left) + Category List (Right) */}
+          <View style={dynamicStyles.topSection}>
+            <View style={dynamicStyles.pieContainer}>
+              <View style={[dynamicStyles.chartWrapper, { width: chartSize, height: chartSize }]}>
+                {Platform.OS === 'web' && typeof window === 'undefined' ? (
+                  <View style={dynamicStyles.ssrFallback}>
+                    <Text style={{ color: colors.text }}>Loading...</Text>
                   </View>
-                  
-                  <View style={styles.amountRow}>
-                    <Text style={styles.amountText}>
-                      {item.amount.toFixed(2)} <Text style={styles.currencyCode}>{baseCurrency}</Text>
-                      {isOverBudget && <Text style={{ color: '#EF4444', fontSize: 11, marginLeft: 6 }}> (Over Limit)</Text>}
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.progressTrack}>
-                    <View 
-                      style={[
-                        styles.progressBar,
-                        { 
-                          backgroundColor: color, 
-                          width: `${Math.max(pct, 2)}%` 
-                        }
-                      ]} 
+                ) : (
+                  <View pointerEvents={Platform.OS === 'web' ? 'none' : 'auto'}>
+                    <PieChart
+                      data={chartData}
+                      width={chartSize}
+                      height={chartSize}
+                      hasLegend={false}
+                      chartConfig={{
+                        color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                      }}
+                      accessor="amount"
+                      backgroundColor="transparent"
+                      paddingLeft={Platform.OS === 'ios' ? '30' : '30'} 
+                      absolute={true}
                     />
                   </View>
+                )}
+                
+                {/* Donut Hole perfectly centered */}
+                <View style={dynamicStyles.donutHole}>
+                  <Text style={dynamicStyles.donutHoleText}>Total</Text>
                 </View>
-              );
-            })}
+              </View>
+            </View>
+
+            {/* Right: Compact Category List */}
+            <View style={dynamicStyles.categoryList}>
+              {breakdown.map((item, index) => {
+                const pct = totalSpend > 0 ? Math.round((item.amount / totalSpend) * 100) : 0;
+                const color = VIBRANT_COLORS[index % VIBRANT_COLORS.length];
+                
+                return (
+                  <View key={item.category} style={dynamicStyles.categoryRow}>
+                    <View style={dynamicStyles.catLeft}>
+                      <View style={[dynamicStyles.catDot, { backgroundColor: color }]} />
+                      <Text style={dynamicStyles.catName} numberOfLines={1}>
+                        {item.category}
+                      </Text>
+                    </View>
+                    <Text style={dynamicStyles.catPercent}>%{pct}</Text>
+                    <Text style={dynamicStyles.catAmount}>
+                      {item.amount.toFixed(0)} {baseCurrency}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
           </View>
-          
         </View>
       )}
     </View>
   );
-}
+});
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   cardContainer: {
-    backgroundColor: '#1F2937',
+    backgroundColor: colors.surface,
     borderRadius: 16,
-    padding: 20,
+    padding: 24,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: '#262A35',
+    borderColor: colors.border,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 16,
+    color: colors.text,
   },
   emptyText: {
-    color: '#9CA3AF',
+    color: colors.textSecondary,
     fontStyle: 'italic',
   },
-  contentRow: {
+  contentColumn: {
+    flexDirection: 'column',
+    width: '100%',
+  },
+  topSection: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  pieContainer: {
+    width: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryList: {
+    flex: 1,
+    marginLeft: 24,
+    justifyContent: 'center',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  catLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  catDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  catName: {
+    color: colors.text,
+    fontWeight: '500',
+    fontSize: 14,
+    flexShrink: 1,
+  },
+  catPercent: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+    width: 36,
+    textAlign: 'right',
+    marginRight: 8,
+  },
+  catAmount: {
+    color: colors.text,
+    fontWeight: '700',
+    fontSize: 14,
+    width: 60,
+    textAlign: 'right',
   },
   ssrFallback: {
     position: 'absolute',
@@ -164,72 +210,17 @@ const styles = StyleSheet.create({
   },
   donutHole: {
     position: 'absolute',
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#1F2937', 
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.surface, 
     justifyContent: 'center',
     alignItems: 'center',
   },
   donutHoleText: {
-    color: '#9CA3AF',
-    fontSize: 13,
+    color: colors.textSecondary,
+    fontSize: 11,
     fontWeight: 'bold',
     textTransform: 'uppercase',
-  },
-  legendWrapper: {
-    flex: 1,
-    marginLeft: 20,
-    justifyContent: 'center',
-  },
-  listItem: {
-    marginBottom: 12,
-  },
-  listRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  categoryInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  colorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
-  },
-  categoryName: {
-    color: '#E5E7EB',
-    fontWeight: '500',
-    fontSize: 13,
-    flexShrink: 1,
-  },
-  amountRow: {
-    marginBottom: 6,
-    paddingLeft: 18, // align with text, bypassing dot
-  },
-  amountText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 13,
-  },
-  currencyCode: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    fontWeight: 'normal',
-  },
-  progressTrack: {
-    height: 4,
-    width: '100%',
-    backgroundColor: '#374151',
-    borderRadius: 2,
-    overflow: 'hidden',
-    marginLeft: 18,
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: 2,
   }
 });

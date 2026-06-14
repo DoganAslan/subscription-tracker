@@ -4,9 +4,11 @@ import {
   TextInput, KeyboardAvoidingView, Platform, Modal, FlatList, useColorScheme
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { subscriptionTemplates, SubscriptionTemplate } from '@/features/onboarding/data/templates';
 import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
 import { useAddSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
+import { useTheme } from '@/context/ThemeContext';
 
 const CURRENCIES = [
   { code: 'TRY', label: 'TRY - Turkey' },
@@ -45,19 +47,18 @@ export default function TemplatesScreen() {
   const { completeOnboarding } = useOnboardingStore();
   const { mutateAsync: addSubscription } = useAddSubscription();
 
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { colors } = useTheme();
 
   // --- dynamic colors based on user request ---
-  const bgMain = isDark ? '#111827' : '#F9FAFB'; // screen bg
-  const bgCard = isDark ? '#1F2937' : '#FFFFFF'; // card bg
-  const bgHeader = isDark ? '#1F2937' : '#FFFFFF';
-  const textPrimary = isDark ? '#FFFFFF' : '#1F2937';
-  const textLabel = isDark ? '#E5E7EB' : '#374151';
-  const textSecondary = isDark ? '#9CA3AF' : '#4B5563';
-  const borderColor = isDark ? '#374151' : '#D1D5DB';
-  const inputBg = isDark ? '#374151' : '#F3F4F6';
-  const primaryBrand = '#2563EB';
+  const bgMain = colors.background; // screen bg
+  const bgCard = colors.surface; // card bg
+  const bgHeader = colors.background;
+  const textPrimary = colors.text;
+  const textLabel = colors.textSecondary;
+  const textSecondary = colors.textSecondary;
+  const borderColor = colors.border;
+  const inputBg = colors.surface;
+  const primaryBrand = colors.primary;
 
   const getSelectedTemplates = (): SubscriptionTemplate[] => {
     const selected: SubscriptionTemplate[] = [];
@@ -92,10 +93,14 @@ export default function TemplatesScreen() {
     }));
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (selectedIds.size === 0) {
-      completeOnboarding();
-      router.replace('/(tabs)');
+      try {
+        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+        router.replace('/(tabs)');
+      } catch (error) {
+        console.error("Error saving onboarding state:", error);
+      }
       return;
     }
     setStep('pricing');
@@ -126,13 +131,21 @@ export default function TemplatesScreen() {
           notes: 'Imported from template'
         });
       }
-      completeOnboarding();
-      router.replace('/(tabs)');
+      try {
+        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+        router.replace('/(tabs)');
+      } catch (error) {
+        console.error("Error saving onboarding state:", error);
+      }
     } catch (error) {
       console.error('Failed to import templates', error);
       setIsImporting(false);
-      completeOnboarding();
-      router.replace('/(tabs)');
+      try {
+        await AsyncStorage.setItem('hasSeenOnboarding', 'true');
+        router.replace('/(tabs)');
+      } catch (storageError) {
+        console.error("Error saving onboarding state:", storageError);
+      }
     }
   };
 
@@ -317,7 +330,7 @@ export default function TemplatesScreen() {
               onPress={handleFinish}
               disabled={isImporting || !canSave}
               style={{
-                backgroundColor: canSave ? primaryBrand : (isDark ? '#374151' : '#9CA3AF'),
+                backgroundColor: canSave ? primaryBrand : '#1F2937',
                 padding: 16,
                 borderRadius: 12,
                 alignItems: 'center',
@@ -326,9 +339,9 @@ export default function TemplatesScreen() {
               }}
             >
               {isImporting ? (
-                <ActivityIndicator color="#ffffff" />
+                <ActivityIndicator color={colors.background} />
               ) : (
-                <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold' }}>
+                <Text style={{ color: colors.background, fontSize: 18, fontWeight: 'bold' }}>
                   Save and Continue
                 </Text>
               )}
@@ -357,8 +370,8 @@ export default function TemplatesScreen() {
       {/* Scrollable Content Area */}
       <ScrollView 
         style={{ flex: 1 }} 
-        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
-        showsVerticalScrollIndicator={true}
+        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+        showsVerticalScrollIndicator={false}
       >
         {Object.entries(subscriptionTemplates).map(([category, items]) => (
           <View key={category} style={{ marginBottom: 28 }}>
@@ -380,10 +393,10 @@ export default function TemplatesScreen() {
                       borderRadius: 12,
                       borderWidth: 1,
                       borderColor: isSelected ? primaryBrand : borderColor,
-                      backgroundColor: isSelected ? (isDark ? '#1E3A8A' : '#EFF6FF') : bgCard,
+                      backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.1)' : bgCard,
                     }}
                   >
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: isSelected ? (isDark ? '#93C5FD' : '#1D4ED8') : textPrimary, lineHeight: 22 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: isSelected ? primaryBrand : textPrimary, lineHeight: 22 }}>
                       {item.name}
                     </Text>
                   </TouchableOpacity>
@@ -408,7 +421,7 @@ export default function TemplatesScreen() {
             flexDirection: 'row'
           }}
         >
-          <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: 'bold' }}>
+          <Text style={{ color: colors.background, fontSize: 18, fontWeight: 'bold' }}>
             {selectedIds.size > 0 
               ? `Configure ${selectedIds.size} Subscription${selectedIds.size > 1 ? 's' : ''}` 
               : "Skip for now"}

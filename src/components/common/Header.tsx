@@ -4,6 +4,7 @@ import { auth } from '@/services/firebase/config';
 import { updateProfile } from 'firebase/auth';
 import * as ImagePicker from 'expo-image-picker';
 import { useProfileStore } from '@/store/useProfileStore';
+import { useTheme } from '@/context/ThemeContext';
 
 interface HeaderProps {
   title: string;
@@ -16,6 +17,8 @@ export function Header({ title }: HeaderProps) {
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   
   const { profileImage, setProfileImage } = useProfileStore();
+  const { colors } = useTheme();
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
   const openProfileModal = () => {
     const nameParts = (auth.currentUser?.displayName || '').split(' ');
@@ -64,24 +67,23 @@ export function Header({ title }: HeaderProps) {
   };
 
   return (
-    <View style={styles.headerContainer}>
-      <View style={styles.leftSection}>
-        <Text style={styles.title}>{title}</Text>
+    <View style={dynamicStyles.headerContainer}>
+      <View style={dynamicStyles.leftSection}>
+        <Text style={dynamicStyles.title}>{title}</Text>
       </View>
       
-      <TouchableOpacity style={styles.profileTrigger} onPress={openProfileModal} activeOpacity={0.8}>
+      <TouchableOpacity style={dynamicStyles.profileTrigger} onPress={openProfileModal} activeOpacity={0.8}>
         {(profileImage || auth.currentUser?.photoURL) ? (
-          <Image source={{ uri: profileImage || auth.currentUser?.photoURL || '' }} style={styles.avatar} />
+          <Image source={{ uri: profileImage || auth.currentUser?.photoURL || '' }} style={dynamicStyles.avatar} />
         ) : (
-          <View style={styles.avatarFallback}>
-            <Text style={styles.avatarText}>
+          <View style={dynamicStyles.avatarFallback}>
+            <Text style={dynamicStyles.avatarText}>
               {(auth.currentUser?.displayName || 'U').charAt(0).toUpperCase()}
             </Text>
           </View>
         )}
       </TouchableOpacity>
 
-      {/* Profile Edit Modal */}
       <Modal
         visible={isProfileModalVisible}
         animationType="slide"
@@ -90,60 +92,60 @@ export function Header({ title }: HeaderProps) {
       >
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-          style={styles.modalOverlay}
+          style={dynamicStyles.modalOverlay}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeaderLayout}>
-              <Text style={styles.modalTitle}>Edit Profile</Text>
+          <View style={dynamicStyles.modalContent}>
+            <View style={dynamicStyles.modalHeaderLayout}>
+              <Text style={dynamicStyles.modalTitle}>Edit Profile</Text>
               <TouchableOpacity onPress={() => setIsProfileModalVisible(false)}>
-                <Text style={styles.modalClose}>Cancel</Text>
+                <Text style={dynamicStyles.modalClose}>Cancel</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.avatarUploadContainer}>
+            <View style={dynamicStyles.avatarUploadContainer}>
               <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
                 {(profileImage || auth.currentUser?.photoURL) ? (
-                  <Image source={{ uri: profileImage || auth.currentUser?.photoURL || '' }} style={styles.modalAvatar} />
+                  <Image source={{ uri: profileImage || auth.currentUser?.photoURL || '' }} style={dynamicStyles.modalAvatar} />
                 ) : (
-                  <View style={styles.modalAvatarFallback}>
-                    <Text style={styles.modalAvatarText}>
+                  <View style={dynamicStyles.modalAvatarFallback}>
+                    <Text style={dynamicStyles.modalAvatarText}>
                       {firstName ? firstName.charAt(0).toUpperCase() : 'U'}
                     </Text>
                   </View>
                 )}
-                <View style={styles.avatarEditBadge}>
-                  <Text style={styles.avatarEditBadgeText}>+</Text>
+                <View style={dynamicStyles.avatarEditBadge}>
+                  <Text style={dynamicStyles.avatarEditBadgeText}>+</Text>
                 </View>
               </TouchableOpacity>
             </View>
             
-            <Text style={styles.inputLabel}>FIRST NAME</Text>
+            <Text style={dynamicStyles.inputLabel}>FIRST NAME</Text>
             <TextInput
-              style={styles.inputField}
+              style={dynamicStyles.inputField}
               value={firstName}
               onChangeText={setFirstName}
-              placeholderTextColor="#8c909f"
+              placeholderTextColor={colors.textSecondary}
               placeholder="John"
             />
 
-            <Text style={styles.inputLabel}>LAST NAME</Text>
+            <Text style={dynamicStyles.inputLabel}>LAST NAME</Text>
             <TextInput
-              style={[styles.inputField, { marginBottom: 24 }]}
+              style={[dynamicStyles.inputField, { marginBottom: 24 }]}
               value={lastName}
               onChangeText={setLastName}
-              placeholderTextColor="#8c909f"
+              placeholderTextColor={colors.textSecondary}
               placeholder="Doe"
             />
 
             <TouchableOpacity 
-              style={styles.saveBtn}
+              style={dynamicStyles.saveBtn}
               onPress={handleUpdateProfile}
               disabled={isUpdatingProfile}
             >
               {isUpdatingProfile ? (
-                 <ActivityIndicator color="#002e6a" />
+                 <ActivityIndicator color={colors.background} />
               ) : (
-                 <Text style={styles.saveBtnText}>Save Changes</Text>
+                 <Text style={dynamicStyles.saveBtnText}>Save Changes</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -153,7 +155,7 @@ export function Header({ title }: HeaderProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -168,7 +170,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#FFFFFF',
+    color: colors.text,
     fontFamily: 'Hanken Grotesk',
   },
   profileTrigger: {
@@ -185,12 +187,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#404a59',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarText: {
-    color: '#dfe2f1',
+    color: colors.text,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
   },
   modalContent: {
-    backgroundColor: '#1c1f2a',
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24, 
     borderTopRightRadius: 24, 
     padding: 24, 
@@ -215,12 +217,12 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20, 
     fontWeight: '700', 
-    color: '#dfe2f1',
+    color: colors.text,
   },
   modalClose: {
     fontSize: 16, 
     fontWeight: '600',
-    color: '#adc6ff',
+    color: colors.primary,
   },
   avatarUploadContainer: {
     alignItems: 'center',
@@ -235,12 +237,12 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#404a59',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalAvatarText: {
-    color: '#dfe2f1',
+    color: colors.text,
     fontSize: 32,
     fontWeight: 'bold',
   },
@@ -248,17 +250,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#adc6ff',
+    backgroundColor: colors.primary,
     width: 24,
     height: 24,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#1c1f2a',
+    borderColor: colors.surface,
   },
   avatarEditBadgeText: {
-    color: '#002e6a',
+    color: colors.background,
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -266,25 +268,25 @@ const styles = StyleSheet.create({
     marginBottom: 8, 
     fontSize: 12, 
     fontWeight: 'bold',
-    color: '#c2c6d6',
+    color: colors.textSecondary,
   },
   inputField: {
     borderRadius: 12, 
     padding: 14, 
     marginBottom: 16, 
     borderWidth: 1, 
-    backgroundColor: '#0f131d',
-    borderColor: '#424754',
-    color: '#dfe2f1',
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    color: colors.text,
   },
   saveBtn: {
     padding: 16, 
     borderRadius: 12, 
     alignItems: 'center',
-    backgroundColor: '#adc6ff',
+    backgroundColor: colors.primary,
   },
   saveBtnText: {
-    color: '#002e6a', 
+    color: colors.background, 
     fontWeight: 'bold', 
     fontSize: 16,
   }

@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useState } from 'react';
 import { TextInput, View, Text, TextInputProps, StyleSheet } from 'react-native';
 
 interface InputProps extends TextInputProps {
@@ -7,34 +7,40 @@ interface InputProps extends TextInputProps {
   containerStyle?: object;
 }
 
-const DESIGN_TOKENS = {
-  colors: {
-    surfaceContainer: '#1c1f2a',
-    onSurface: '#FFFFFF',
-    onSurfaceVariant: '#9CA3AF',
-    outline: '#374151',
-    error: '#ffb4ab',
-    primary: '#adc6ff',
-  }
-};
+import { useTheme } from '@/context/ThemeContext';
 
-export const Input = forwardRef<TextInput, InputProps>(({ label, error, containerStyle, ...props }, ref) => {
+export const Input = forwardRef<TextInput, InputProps>(({ label, error, containerStyle, onFocus, onBlur, ...props }, ref) => {
+  const { colors } = useTheme();
+  const [isFocused, setIsFocused] = useState(false);
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
+
   return (
-    <View style={[styles.container, containerStyle]}>
-      <Text style={styles.label}>
+    <View style={[dynamicStyles.container, containerStyle]}>
+      <Text style={dynamicStyles.label}>
         {label.toUpperCase()}
       </Text>
       <TextInput
         ref={ref}
+        onFocus={(e) => {
+          setIsFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setIsFocused(false);
+          onBlur?.(e);
+        }}
+        returnKeyType="done"
+        inputAccessoryViewID="DONE_BAR"
         style={[
-          styles.input,
-          error ? styles.inputError : null
+          dynamicStyles.input,
+          isFocused && dynamicStyles.inputFocused,
+          error ? dynamicStyles.inputError : null
         ]}
-        placeholderTextColor={DESIGN_TOKENS.colors.onSurfaceVariant}
+        placeholderTextColor={colors.textSecondary}
         {...props}
       />
       {!!error && (
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={dynamicStyles.errorText}>{error}</Text>
       )}
     </View>
   );
@@ -42,7 +48,7 @@ export const Input = forwardRef<TextInput, InputProps>(({ label, error, containe
 
 Input.displayName = 'Input';
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     marginBottom: 20,
     width: '100%',
@@ -50,28 +56,32 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: '600',
-    color: DESIGN_TOKENS.colors.onSurfaceVariant,
+    color: colors.textSecondary,
     marginBottom: 8,
     letterSpacing: 0.6,
     fontFamily: 'Geist',
   },
   input: {
     width: '100%',
-    backgroundColor: DESIGN_TOKENS.colors.surfaceContainer,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: DESIGN_TOKENS.colors.onSurface,
+    color: colors.text,
     borderWidth: 1,
-    borderColor: DESIGN_TOKENS.colors.outline,
+    borderColor: colors.border,
     fontSize: 16,
     fontFamily: 'Inter',
   },
+  inputFocused: {
+    borderColor: '#3B82F6', // Soft blue highlight
+    borderWidth: 1.5,
+  },
   inputError: {
-    borderColor: DESIGN_TOKENS.colors.error,
+    borderColor: colors.danger,
   },
   errorText: {
-    color: DESIGN_TOKENS.colors.error,
+    color: colors.danger,
     fontSize: 12,
     marginTop: 6,
     fontWeight: '500',

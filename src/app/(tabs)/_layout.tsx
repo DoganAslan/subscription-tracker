@@ -2,29 +2,33 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../../theme/colors';
-import * as Haptics from 'expo-haptics';
+import { useTheme } from '@/context/ThemeContext';
+import { triggerHaptic } from '@/utils/haptics';
+import { useTranslation } from 'react-i18next';
 
 export default function TabsLayout() {
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
-        tabBarActiveTintColor: '#3B82F6',
-        tabBarInactiveTintColor: '#6B7280',
+        tabBarStyle: [styles.tabBar, { backgroundColor: colors.surface }],
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
       }}
       screenListeners={{
         tabPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+          triggerHaptic('selection');
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarLabel: 'Home',
+          title: t('tabs.home'),
+          tabBarLabel: t('tabs.home'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "home" : "home-outline"} color={color} size={size} />
           ),
@@ -35,10 +39,22 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="subscriptions"
         options={{
-          title: 'Subscriptions',
-          tabBarLabel: 'Subs',
+          title: t('tabs.subscriptions'),
+          tabBarLabel: t('tabs.subscriptions'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "list" : "list-outline"} color={color} size={size} />
+          ),
+        }}
+      />
+      
+      {/* Route name must be exactly "calendar" to match the directory name */}
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          title: t('tabs.calendar'),
+          tabBarLabel: t('tabs.calendar'),
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "calendar" : "calendar-outline"} color={color} size={size} />
           ),
         }}
       />
@@ -47,8 +63,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
-          tabBarLabel: 'Settings',
+          title: t('tabs.settings'),
+          tabBarLabel: t('tabs.settings'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "settings" : "settings-outline"} color={color} size={size} />
           ),
@@ -60,7 +76,6 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: '#111827',
     borderTopWidth: 0,
     height: 60,
     position: 'absolute',

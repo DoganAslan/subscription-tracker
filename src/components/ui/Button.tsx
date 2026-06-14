@@ -7,17 +7,7 @@ import {
   StyleSheet
 } from 'react-native';
 
-const DESIGN_TOKENS = {
-  colors: {
-    primary: '#3B82F6',
-    onPrimary: '#FFFFFF',
-    surfaceContainerHigh: '#262a35',
-    onSurface: '#dfe2f1',
-    error: '#ffb4ab',
-    onError: '#690005',
-    outline: '#8c909f',
-  }
-};
+import { useTheme } from '@/context/ThemeContext';
 
 interface ButtonProps extends TouchableOpacityProps {
   title: string;
@@ -33,27 +23,29 @@ export function Button({
   style,
   ...props
 }: ButtonProps) {
+  const { colors } = useTheme();
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
   const getContainerStyle = () => {
     switch (variant) {
       case 'secondary':
-        return styles.secondaryContainer;
+        return dynamicStyles.secondaryContainer;
       case 'destructive':
-        return styles.destructiveContainer;
+        return dynamicStyles.destructiveContainer;
       case 'primary':
       default:
-        return styles.primaryContainer;
+        return dynamicStyles.primaryContainer;
     }
   };
 
   const getTextStyle = () => {
     switch (variant) {
       case 'secondary':
-        return styles.secondaryText;
+        return dynamicStyles.secondaryText;
       case 'destructive':
-        return styles.destructiveText;
+        return dynamicStyles.destructiveText;
       case 'primary':
       default:
-        return styles.primaryText;
+        return dynamicStyles.primaryText;
     }
   };
 
@@ -61,18 +53,18 @@ export function Button({
     <TouchableOpacity
       disabled={isLoading || disabled}
       style={[
-        styles.container,
+        dynamicStyles.container,
         getContainerStyle(),
-        (isLoading || disabled) && styles.disabled,
+        (isLoading || disabled) && dynamicStyles.disabled,
         style
       ]}
       activeOpacity={0.8}
       {...props}
     >
       {isLoading ? (
-        <ActivityIndicator color={variant === 'primary' ? DESIGN_TOKENS.colors.onPrimary : DESIGN_TOKENS.colors.onSurface} />
+        <ActivityIndicator color={variant === 'primary' ? colors.background : colors.text} />
       ) : (
-        <Text style={[styles.text, getTextStyle()]}>
+        <Text style={[dynamicStyles.text, getTextStyle()]}>
           {title}
         </Text>
       )}
@@ -80,7 +72,7 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     paddingVertical: 16,
     borderRadius: 12,
@@ -97,23 +89,23 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter',
   },
   primaryContainer: {
-    backgroundColor: DESIGN_TOKENS.colors.primary,
+    backgroundColor: colors.primary,
   },
   primaryText: {
-    color: DESIGN_TOKENS.colors.onPrimary,
+    color: '#FFFFFF', // keep white on primary blue
   },
   secondaryContainer: {
-    backgroundColor: DESIGN_TOKENS.colors.surfaceContainerHigh,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: DESIGN_TOKENS.colors.outline,
+    borderColor: colors.border,
   },
   secondaryText: {
-    color: DESIGN_TOKENS.colors.onSurface,
+    color: colors.text,
   },
   destructiveContainer: {
-    backgroundColor: DESIGN_TOKENS.colors.surfaceContainerHigh,
+    backgroundColor: colors.surface,
   },
   destructiveText: {
-    color: DESIGN_TOKENS.colors.error,
+    color: colors.danger,
   }
 });

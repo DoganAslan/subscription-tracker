@@ -1,4 +1,4 @@
-import { collection, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
 
 export const resetSubscriptions = async (userId: string) => {
@@ -9,8 +9,9 @@ export const resetSubscriptions = async (userId: string) => {
   console.log('Resetting database for user:', userId);
   
   try {
-    const subRef = collection(db, 'users', userId, 'subscriptions');
-    const snapshot = await getDocs(subRef);
+    const subRef = collection(db, 'subscriptions');
+    const q = query(subRef, where('userId', '==', userId));
+    const snapshot = await getDocs(q);
     
     const deletePromises = snapshot.docs.map(document => deleteDoc(document.ref));
     await Promise.all(deletePromises);

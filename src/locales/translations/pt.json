@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "loading": "Carregando...",
+    "error": "Erro",
+    "success": "Sucesso"
+  },
+  "onboarding": {
+    "takeControl": "Assuma o controle",
+    "takeControlDesc": "Gerencie todas as suas assinaturas em um só lugar.",
+    "smartInsights": "Insights inteligentes",
+    "smartInsightsDesc": "Visualize seus gastos e acompanhe as próximas contas.",
+    "alwaysUpdated": "Sempre atualizado",
+    "alwaysUpdatedDesc": "Fique de olho nas suas despesas diretamente nos widgets da tela inicial.",
+    "skip": "Pular",
+    "next": "Próximo",
+    "getStarted": "Primeiros passos"
+  },
+  "settings": {
+    "accountSettings": "Configurações da conta",
+    "profileInfo": "Informações do perfil",
+    "email": "E-mail",
+    "accountId": "ID da conta",
+    "language": "Idioma",
+    "deleteAccount": "Excluir conta",
+    "deleteWarning": "Esta ação é irreversível. Todos os seus dados serão excluídos permanentemente. Por favor, digite sua senha para confirmar.",
+    "permanentlyDelete": "Excluir permanentemente",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "security": "Segurança e biometria",
+    "changeEmail": "Alterar e-mail",
+    "changePassword": "Alterar senha",
+    "about": "Sobre o SubMate",
+    "privacyPolicy": "Política de Privacidade",
+    "termsOfService": "Termos de Serviço",
+    "logout": "Sair com segurança",
+    "theme": "Tema",
+    "exportData": "Exportar dados",
+    "currencyPref": "Preferências de moeda",
+    "homeBaseCurrency": "Moeda base inicial"
+  },
+  "tabs": {
+    "home": "Página inicial",
+    "subscriptions": "Assinaturas",
+    "calendar": "Calendário",
+    "settings": "Configurações"
+  },
+  "home": {
+    "failedToLoad": "Falha ao carregar os dados do painel.",
+    "yourListIsEmpty": "Sua lista está vazia",
+    "addFirstSub": "Adicione sua primeira assinatura para começar a monitorar suas despesas.",
+    "addSubscription": "Adicionar assinatura",
+    "upcomingPayments": "Próximos pagamentos",
+    "viewAll": "VER TUDO",
+    "totalMonthlySpend": "GASTO MENSAL TOTAL",
+    "estimatedYearlySpend": "Gasto anual estimado",
+    "categoryBreakdown": "Detalhamento por categoria",
+    "spendingInsights": "Informações sobre gastos",
+    "highestExpense": "Despesa mais alta"
+  },
+  "subs": {
+    "subscriptions": "Assinaturas",
+    "searchPlaceholder": "Pesquisar assinaturas...",
+    "addSubscription": "Adicionar assinatura",
+    "activeCount": "{{count}} ativo",
+    "noResults": "Nenhuma assinatura encontrada.",
+    "name": "Nome",
+    "price": "Preço",
+    "billingCycle": "Ciclo de faturamento",
+    "category": "Categoria",
+    "firstPaymentDate": "Data do primeiro pagamento",
+    "notes": "Notas",
+    "add": "Adicionar",
+    "update": "Atualização",
+    "monthly": "Mensalmente",
+    "yearly": "Anualmente",
+    "weekly": "Semanalmente",
+    "paused": "Pausado",
+    "trial": "TESTE",
+    "renews": "Renova {{date}}",
+    "activeFor": "ATIVO PARA",
+    "months": "meses",
+    "totalSpend": "GASTO TOTAL"
+  },
+  "calendar": {
+    "calendar": "Calendário",
+    "noPayments": "Nenhum pagamento agendado para este dia."
+  }
+}

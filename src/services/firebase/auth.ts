@@ -3,10 +3,16 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   onAuthStateChanged,
-  User as FirebaseUser
+  User as FirebaseUser,
+  updateEmail,
+  updatePassword,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  sendPasswordResetEmail
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './config';
+import { SubscriptionService } from './firestore';
 
 export const AuthService = {
   // Email & Password Sign Up
@@ -37,13 +43,61 @@ export const AuthService = {
     await signOut(auth);
   },
 
-  // Delete Auth Account
+  // Delete Auth Account & All Associated Data
   deleteAccount: async () => {
     const user = auth.currentUser;
     if (user) {
-      const { deleteUser } = await import('firebase/auth');
-      await deleteUser(user);
+      try {
+        // 1. Delete all subscriptions
+        await SubscriptionService.deleteAllSubscriptions(user.uid);
+        
+        // 2. Delete user document
+        await SubscriptionService.deleteUserDocument(user.uid);
+
+        // 3. Delete auth account
+        const { deleteUser } = await import('firebase/auth');
+        await deleteUser(user);
+      } catch (error: any) {
+        console.error("Delete Error:", error);
+        throw error;
+      }
     }
+  },
+
+  // Update Email
+  updateEmailAddress: async (newEmail: string) => {
+    const user = auth.currentUser;
+    if (user) {
+      await updateEmail(user, newEmail);
+    } else {
+      throw new Error('No user is currently signed in.');
+    }
+  },
+
+  // Update Password
+  updateUserPassword: async (newPassword: string) => {
+    const user = auth.currentUser;
+    if (user) {
+      await updatePassword(user, newPassword);
+    } else {
+      throw new Error('No user is currently signed in.');
+    }
+  },
+
+  // Reauthenticate User
+  reauthenticate: async (currentPassword: string) => {
+    const user = auth.currentUser;
+    if (user && user.email) {
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+    } else {
+      throw new Error('No user is currently signed in or user has no email.');
+    }
+  },
+
+  // Send Password Reset Email
+  sendPasswordResetEmail: async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
   },
 
   // Auth State Observer

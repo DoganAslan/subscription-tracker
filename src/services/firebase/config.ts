@@ -1,35 +1,38 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { Auth, getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence, Auth } from 'firebase/auth';
+import { Platform } from 'react-native';
 import { getFirestore, initializeFirestore, persistentLocalCache, Firestore } from 'firebase/firestore';
-import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
 const firebaseConfig = {
-  apiKey: Constants.expoConfig?.extra?.firebaseApiKey,
-  authDomain: Constants.expoConfig?.extra?.firebaseAuthDomain,
-  projectId: Constants.expoConfig?.extra?.firebaseProjectId,
-  storageBucket: Constants.expoConfig?.extra?.firebaseStorageBucket,
-  messagingSenderId: Constants.expoConfig?.extra?.firebaseMessagingSenderId,
-  appId: Constants.expoConfig?.extra?.firebaseAppId,
+  authDomain: "submate-4fc0a.firebaseapp.com",
+  projectId: "submate-4fc0a",
+  storageBucket: "submate-4fc0a.appspot.com",
+  messagingSenderId: "360341077180",
+  appId: "1:360341077180:web:8e30b691090be4b29f7998",
+  measurementId: "G-H8E7L8V6W9",
+
+  // Injecting the exact validated production tokens
+  apiKey: Platform.OS === 'android' 
+    ? 'AIzaSyCvzeEMPTniMkea5cbVfPDRqFMVWqCgO8Q' // Verified Android Key
+    : 'AIzaSyBqOv-mRCWtyRKDkr39wHqFZLvHyE8e7sk', // Verified Browser/Web Key
 };
-console.log('FIREBASE CONFIG');
-console.log(firebaseConfig);
 
-// Initialize Firebase
-let app;
+// Initialize Firebase App
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+
+// Initialize Auth conditionally to support SSR and Web
 let auth: Auth;
-
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-  // Must initialize auth immediately with AsyncStorage BEFORE any getAuth() calls
+if (Platform.OS === 'ios' || Platform.OS === 'android') {
   auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(ReactNativeAsyncStorage)
+    persistence: getReactNativePersistence(AsyncStorage)
   });
 } else {
-  app = getApp();
-  auth = getAuth(app);
+  auth = initializeAuth(app);
 }
 
+// Initialize Firestore
 let db: Firestore;
 try {
   db = initializeFirestore(app, {
@@ -37,6 +40,16 @@ try {
   });
 } catch (_) {
   db = getFirestore(app);
+}
+
+// Initialize Crashlytics on Native platforms
+if (Platform.OS !== 'web') {
+  try {
+    const crashlytics = require('@react-native-firebase/crashlytics').default;
+    crashlytics().setCrashlyticsCollectionEnabled(!__DEV__);
+  } catch (e) {
+    console.log('Crashlytics initialization skipped on this platform');
+  }
 }
 
 export { app, auth, db };

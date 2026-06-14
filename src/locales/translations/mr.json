@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "सेव्ह करा",
+    "cancel": "रद्द करा",
+    "delete": "हटवा",
+    "edit": "संपादित करा",
+    "loading": "लोड करत आहे...",
+    "error": "त्रुटी",
+    "success": "यश"
+  },
+  "onboarding": {
+    "takeControl": "नियंत्रण घ्या",
+    "takeControlDesc": "तुमच्या सर्व सदस्यता एकाच ठिकाणी व्यवस्थापित करा.",
+    "smartInsights": "स्मार्ट इनसाइट्स",
+    "smartInsightsDesc": "तुमच्या खर्चाची कल्पना करा आणि आगामी बिलांचा मागोवा घ्या.",
+    "alwaysUpdated": "नेहमी अपडेट केलेले",
+    "alwaysUpdatedDesc": "तुमच्या होम स्क्रीन विजेट्सवरून तुमच्या खर्चावर लक्ष ठेवा.",
+    "skip": "वगळा",
+    "next": "पुढील",
+    "getStarted": "प्रारंभ करा"
+  },
+  "settings": {
+    "accountSettings": "खाते सेटिंग्ज",
+    "profileInfo": "प्रोफाइल माहिती",
+    "email": "ईमेल",
+    "accountId": "खाते आयडी",
+    "language": "भाषा",
+    "deleteAccount": "खाते हटवा",
+    "deleteWarning": "ही क्रिया अपरिवर्तनीय आहे. तुमचा सर्व डेटा कायमचा हटवला जाईल. कृपया पुष्टी करण्यासाठी तुमचा पासवर्ड एंटर करा.",
+    "permanentlyDelete": "कायमचे हटवा",
+    "cancel": "रद्द करा",
+    "save": "जतन करा",
+    "security": "सुरक्षा आणि बायोमेट्रिक्स",
+    "changeEmail": "ईमेल बदला",
+    "changePassword": "पासवर्ड बदला",
+    "about": "SubMate बद्दल",
+    "privacyPolicy": "गोपनीयता धोरण",
+    "termsOfService": "सेवा अटी",
+    "logout": "सुरक्षितपणे साइन आउट करा",
+    "theme": "थीम",
+    "exportData": "डेटा निर्यात करा",
+    "currencyPref": "चलन प्राधान्ये",
+    "homeBaseCurrency": "होम बेस चलन"
+  },
+  "tabs": {
+    "home": "घर",
+    "subscriptions": "सदस्यता",
+    "calendar": "कॅलेंडर",
+    "settings": "सेटिंग्ज"
+  },
+  "home": {
+    "failedToLoad": "डॅशबोर्ड डेटा लोड करण्यात अयशस्वी.",
+    "yourListIsEmpty": "तुमची यादी रिकामी आहे",
+    "addFirstSub": "तुमच्या खर्चाचा मागोवा घेणे सुरू करण्यासाठी तुमची पहिली सदस्यता जोडा.",
+    "addSubscription": "सदस्यता जोडा",
+    "upcomingPayments": "आगामी पेमेंट",
+    "viewAll": "सर्व पहा",
+    "totalMonthlySpend": "एकूण मासिक खर्च",
+    "estimatedYearlySpend": "अंदाजे वार्षिक खर्च",
+    "categoryBreakdown": "श्रेणी ब्रेकडाउन",
+    "spendingInsights": "खर्च अंतर्दृष्टी",
+    "highestExpense": "सर्वात जास्त खर्च"
+  },
+  "subs": {
+    "subscriptions": "सदस्यता",
+    "searchPlaceholder": "सदस्यता शोधा...",
+    "addSubscription": "सदस्यता जोडा",
+    "activeCount": "{{count}} सक्रिय",
+    "noResults": "कोणतीही सदस्यता आढळली नाही.",
+    "name": "नाव",
+    "price": "किंमत",
+    "billingCycle": "बिलिंग सायकल",
+    "category": "श्रेणी",
+    "firstPaymentDate": "पहिली पेमेंट तारीख",
+    "notes": "टिपा",
+    "add": "जोडा",
+    "update": "अद्यतन",
+    "monthly": "मासिक",
+    "yearly": "वार्षिक",
+    "weekly": "साप्ताहिक",
+    "paused": "विराम दिला",
+    "trial": "चाचणी",
+    "renews": "नूतनीकरण {{date}}",
+    "activeFor": "यासाठी सक्रिय",
+    "months": "महिने",
+    "totalSpend": "एकूण खर्च"
+  },
+  "calendar": {
+    "calendar": "कॅलेंडर",
+    "noPayments": "या दिवसासाठी कोणतेही पेमेंट शेड्यूल केलेले नाही."
+  }
+}

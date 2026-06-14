@@ -1,8 +1,11 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, AppState } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useSecurityStore } from '@/store/useSecurityStore';
+import { useSessionStore } from '@/store/useSessionStore';
+import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/ThemeContext';
 
 interface Props {
   children: React.ReactNode;
@@ -10,58 +13,76 @@ interface Props {
 
 export function AppLockGuard({ children }: Props) {
   const { isBiometricsEnabled } = useSecurityStore();
-  const [isUnlocked, setIsUnlocked] = useState(!isBiometricsEnabled);
-  const appState = useRef(AppState.currentState);
+  const { isSessionUnlocked, setSessionUnlocked } = useSessionStore();
+  const isPromptingAuth = useRef(false);
+  const { colors } = useTheme();
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
+
+  const isUnlocked = !isBiometricsEnabled || isSessionUnlocked;
 
   useEffect(() => {
-    // If biometrics are turned off, ensure app is unlocked.
-    if (!isBiometricsEnabled) {
-      setIsUnlocked(true);
-      return;
-    }
-
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
-        // App comes to foreground -> lock it
-        if (isBiometricsEnabled) {
-          handleUnlock();
-        }
-      } else if (appState.current === 'active' && nextAppState.match(/inactive|background/)) {
-        // App goes to background -> lock it
-        if (isBiometricsEnabled) {
-          setIsUnlocked(false);
-        }
-      }
-      appState.current = nextAppState;
-    });
-
     // Initial check if locked on mount
-    if (isBiometricsEnabled && !isUnlocked) {
+    if (!isUnlocked && !isPromptingAuth.current) {
       handleUnlock();
     }
-
-    return () => {
-      subscription.remove();
-    };
-  }, [isBiometricsEnabled]);
+  }, [isUnlocked]);
 
   const handleUnlock = async () => {
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Unlock Vault',
-      fallbackLabel: 'Use Passcode',
-    });
-    if (result.success) {
-      setIsUnlocked(true);
+    console.log("🔓 [AUTH] Unlock button pressed");
+    triggerHaptic('light');
+    if (isPromptingAuth.current || isUnlocked) return;
+    
+    try {
+      isPromptingAuth.current = true;
+      
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      console.log("🔓 [AUTH] Has Hardware:", hasHardware);
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      console.log("🔓 [AUTH] Is Enrolled:", isEnrolled);
+
+      if (!hasHardware || !isEnrolled) {
+        // Fallback if simulator or no biometrics: force unlock for dev
+        console.warn("No biometrics found, bypassing for development.");
+        setSessionUnlocked(true);
+        return;
+      }
+
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Unlock SubMate Vault',
+        fallbackLabel: 'Use Passcode',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      if (result.success) {
+        setSessionUnlocked(true);
+      }
+    } catch (error) {
+      console.error("Biometric error:", error);
+      Alert.alert("Biometric Error", String(error));
+    } finally {
+      // Delay resetting the flag so the AppState change from the overlay closing is ignored
+      setTimeout(() => {
+        isPromptingAuth.current = false;
+      }, 500);
     }
   };
 
   if (!isUnlocked) {
     return (
-      <View style={styles.container}>
-        <Ionicons name="lock-closed" size={64} color="#3B82F6" style={styles.icon} />
-        <Text style={styles.title}>Vault Locked</Text>
-        <TouchableOpacity style={styles.button} onPress={handleUnlock} activeOpacity={0.8}>
-          <Text style={styles.buttonText}>Tap to Unlock</Text>
+      <View style={dynamicStyles.container} pointerEvents="auto">
+        <Ionicons name="lock-closed" size={64} color={colors.primary} style={dynamicStyles.icon} />
+        <Text style={dynamicStyles.title}>SubMate Locked</Text>
+        <TouchableOpacity 
+          style={dynamicStyles.button} 
+          onPress={handleUnlock} 
+          onLongPress={() => {
+            console.warn("🚨 [AUTH] Emergency Dev Bypass Triggered");
+            setSessionUnlocked(true);
+          }}
+          activeOpacity={0.7}
+        >
+          <Text style={dynamicStyles.buttonText}>Tap to Unlock</Text>
         </TouchableOpacity>
       </View>
     );
@@ -70,13 +91,15 @@ export function AppLockGuard({ children }: Props) {
   return <>{children}</>;
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
+    ...StyleSheet.absoluteFillObject,
     flex: 1,
     backgroundColor: '#0B0F19',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
+    zIndex: 999,
   },
   icon: {
     marginBottom: 24,
@@ -84,19 +107,21 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text,
     marginBottom: 40,
   },
   button: {
     backgroundColor: 'rgba(59, 130, 246, 0.1)',
     borderWidth: 1,
-    borderColor: '#3B82F6',
+    borderColor: colors.primary,
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 12,
+    zIndex: 9999,
+    elevation: 9999,
   },
   buttonText: {
-    color: '#3B82F6',
+    color: colors.primary,
     fontSize: 18,
     fontWeight: '600',
   }

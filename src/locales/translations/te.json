@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "సేవ్",
+    "cancel": "రద్దు చేయి",
+    "delete": "తొలగించు",
+    "edit": "సవరించు",
+    "loading": "లోడ్ అవుతోంది...",
+    "error": "లోపం",
+    "success": "విజయం"
+  },
+  "onboarding": {
+    "takeControl": "నియంత్రించండి",
+    "takeControlDesc": "మీ అన్ని సబ్‌స్క్రిప్షన్‌లను ఒకే చోట నిర్వహించండి.",
+    "smartInsights": "స్మార్ట్ అంతర్దృష్టులు",
+    "smartInsightsDesc": "మీ ఖర్చును దృశ్యమానం చేయండి మరియు రాబోయే బిల్లులను ట్రాక్ చేయండి.",
+    "alwaysUpdated": "ఎల్లప్పుడూ నవీకరించబడింది",
+    "alwaysUpdatedDesc": "మీ హోమ్ స్క్రీన్ విడ్జెట్‌ల నుండే మీ ఖర్చులపై నిఘా ఉంచండి.",
+    "skip": "దాటవేయండి",
+    "next": "తదుపరి",
+    "getStarted": "ప్రారంభించండి"
+  },
+  "settings": {
+    "accountSettings": "ఖాతా సెట్టింగ్‌లు",
+    "profileInfo": "ప్రొఫైల్ సమాచారం",
+    "email": "ఇమెయిల్",
+    "accountId": "ఖాతా ID",
+    "language": "భాష",
+    "deleteAccount": "ఖాతాను తొలగించు",
+    "deleteWarning": "ఈ చర్య కోలుకోలేనిది. మీ డేటా మొత్తం శాశ్వతంగా తొలగించబడుతుంది. దయచేసి నిర్ధారించడానికి మీ పాస్‌వర్డ్‌ని నమోదు చేయండి.",
+    "permanentlyDelete": "శాశ్వతంగా తొలగించు",
+    "cancel": "రద్దు చేయి",
+    "save": "సేవ్ చేయండి",
+    "security": "భద్రత & బయోమెట్రిక్స్",
+    "changeEmail": "ఇమెయిల్‌ని మార్చండి",
+    "changePassword": "పాస్‌వర్డ్‌ని మార్చండి",
+    "about": "సబ్‌మేట్ గురించి",
+    "privacyPolicy": "గోప్యతా విధానం",
+    "termsOfService": "సేవా నిబంధనలు",
+    "logout": "భద్రంగా సైన్ అవుట్ చేయండి",
+    "theme": "థీమ్",
+    "exportData": "డేటాను ఎగుమతి చేయండి",
+    "currencyPref": "కరెన్సీ ప్రాధాన్యతలు",
+    "homeBaseCurrency": "హోమ్ బేస్ కరెన్సీ"
+  },
+  "tabs": {
+    "home": "హోమ్",
+    "subscriptions": "సభ్యత్వాలు",
+    "calendar": "క్యాలెండర్",
+    "settings": "సెట్టింగ్‌లు"
+  },
+  "home": {
+    "failedToLoad": "డ్యాష్‌బోర్డ్ డేటాను లోడ్ చేయడంలో విఫలమైంది.",
+    "yourListIsEmpty": "మీ జాబితా ఖాళీగా ఉంది",
+    "addFirstSub": "మీ ఖర్చులను ట్రాక్ చేయడం ప్రారంభించడానికి మీ మొదటి సభ్యత్వాన్ని జోడించండి.",
+    "addSubscription": "చందాను జోడించు",
+    "upcomingPayments": "రాబోయే చెల్లింపులు",
+    "viewAll": "అన్నింటినీ వీక్షించండి",
+    "totalMonthlySpend": "మొత్తం నెలవారీ ఖర్చు",
+    "estimatedYearlySpend": "అంచనా వేయబడిన వార్షిక వ్యయం",
+    "categoryBreakdown": "వర్గం విచ్ఛిన్నం",
+    "spendingInsights": "వ్యయం అంతర్దృష్టులు",
+    "highestExpense": "అత్యధిక వ్యయం"
+  },
+  "subs": {
+    "subscriptions": "సభ్యత్వాలు",
+    "searchPlaceholder": "సబ్‌స్క్రిప్షన్‌లను శోధించండి...",
+    "addSubscription": "చందాను జోడించు",
+    "activeCount": "{{count}} సక్రియం",
+    "noResults": "సబ్‌స్క్రిప్షన్‌లు ఏవీ కనుగొనబడలేదు.",
+    "name": "పేరు",
+    "price": "ధర",
+    "billingCycle": "బిల్లింగ్ సైకిల్",
+    "category": "వర్గం",
+    "firstPaymentDate": "మొదటి చెల్లింపు తేదీ",
+    "notes": "గమనికలు",
+    "add": "జోడించు",
+    "update": "అప్‌డేట్",
+    "monthly": "నెలవారీ",
+    "yearly": "సంవత్సరము",
+    "weekly": "వారం",
+    "paused": "పాజ్ చేయబడింది",
+    "trial": "ట్రయల్",
+    "renews": "పునరుద్ధరణ {{date}}",
+    "activeFor": "దీనికి సక్రియం",
+    "months": "నెలలు",
+    "totalSpend": "మొత్తం ఖర్చు"
+  },
+  "calendar": {
+    "calendar": "క్యాలెండర్",
+    "noPayments": "ఈ రోజు చెల్లింపులు షెడ్యూల్ చేయబడలేదు."
+  }
+}

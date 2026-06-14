@@ -1,43 +1,215 @@
 import React from 'react';
-import { View, Text, ScrollView, Image } from 'react-native';
-import Constants from 'expo-constants';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { triggerHaptic } from '@/utils/haptics';
 
 export default function AboutScreen() {
-  const version = Constants.expoConfig?.version || '1.0.0';
-  const buildNumber = Constants.expoConfig?.ios?.buildNumber || Constants.expoConfig?.android?.versionCode || '1';
+  const router = useRouter();
+  const { colors, isDark } = useTheme();
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const dynamicStyles = React.useMemo(() => getStyles(colors, isDark, insets), [colors, isDark, insets]);
+
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/settings');
+    }
+  };
+
+  const handlePressItem = () => {
+    triggerHaptic('light');
+    // Implement navigation or external links here
+  };
 
   return (
-    <ScrollView className="flex-1 bg-white dark:bg-slate-900 px-4 pt-8">
-      <View className="items-center mb-10">
-        <View className="w-24 h-24 bg-blue-100 dark:bg-blue-900/30 rounded-3xl items-center justify-center mb-4">
-          <Text className="text-4xl">💎</Text>
-        </View>
-        <Text className="text-2xl font-bold text-slate-900 dark:text-white">Subtrack</Text>
-        <Text className="text-slate-500 dark:text-slate-400 mt-1">Version {version} ({buildNumber})</Text>
+    <View style={dynamicStyles.container}>
+      {/* Header Bar */}
+      <View style={dynamicStyles.headerBar}>
+        <TouchableOpacity onPress={handleGoBack} style={dynamicStyles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="chevron-back" size={28} color={isDark ? '#FFFFFF' : colors.text} />
+        </TouchableOpacity>
+        <Text style={dynamicStyles.headerBarTitle}>{t('settings.about')}</Text>
+        <View style={{ width: 28 }} />
       </View>
 
-      <View className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-5 mb-6">
-        <Text className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Support</Text>
-        <View className="flex-row justify-between items-center mb-4 border-b border-slate-200 dark:border-slate-700 pb-4">
-          <Text className="text-slate-700 dark:text-slate-300">Email</Text>
-          <Text className="text-blue-600 dark:text-blue-400">support@subtrack.app</Text>
+      <ScrollView 
+        style={dynamicStyles.scrollContainer} 
+        contentContainerStyle={dynamicStyles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* App Title Section */}
+        <View style={dynamicStyles.titleSection}>
+          <View style={dynamicStyles.logoContainer}>
+            <Image 
+              source={require('../../../../assets/images/logo.png')} 
+              style={dynamicStyles.logoImage} 
+              resizeMode="cover"
+            />
+          </View>
+          <Text style={dynamicStyles.appName}>SubMate</Text>
+          <Text style={dynamicStyles.appVersion}>Version 1.0.0</Text>
         </View>
-        <View className="flex-row justify-between items-center">
-          <Text className="text-slate-700 dark:text-slate-300">Website</Text>
-          <Text className="text-blue-600 dark:text-blue-400">subtrack.app</Text>
-        </View>
-      </View>
 
-      <View className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-5 mb-10">
-        <Text className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Acknowledgements</Text>
-        <Text className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-          Built with React Native, Expo, and Firebase. Uses NativeWind for styling and React Query for state management.
-        </Text>
-      </View>
-      
-      <Text className="text-center text-slate-400 text-xs mb-8">
-        © 2026 Subtrack Inc. All rights reserved.
-      </Text>
-    </ScrollView>
+        {/* Action Cards */}
+        <View style={dynamicStyles.cardGroup}>
+          <TouchableOpacity style={dynamicStyles.cardRow} onPress={handlePressItem} activeOpacity={0.7}>
+            <View style={dynamicStyles.rowLeft}>
+              <Ionicons name="star-outline" size={22} color={isDark ? '#FFFFFF' : colors.text} />
+              <Text style={dynamicStyles.rowText}>Rate SubMate</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={isDark ? '#9CA3AF' : colors.textSecondary} />
+          </TouchableOpacity>
+          
+          <View style={dynamicStyles.separator} />
+          
+          <TouchableOpacity style={dynamicStyles.cardRow} onPress={() => router.push('/(tabs)/settings/privacy')} activeOpacity={0.7}>
+            <View style={dynamicStyles.rowLeft}>
+              <Ionicons name="shield-checkmark-outline" size={22} color={isDark ? '#FFFFFF' : colors.text} />
+              <Text style={dynamicStyles.rowText}>Privacy Policy</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={isDark ? '#9CA3AF' : colors.textSecondary} />
+          </TouchableOpacity>
+          
+          <View style={dynamicStyles.separator} />
+          
+          <TouchableOpacity style={dynamicStyles.cardRow} onPress={() => router.push('/(tabs)/settings/terms')} activeOpacity={0.7}>
+            <View style={dynamicStyles.rowLeft}>
+              <Ionicons name="document-text-outline" size={22} color={isDark ? '#FFFFFF' : colors.text} />
+              <Text style={dynamicStyles.rowText}>Terms of Service</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={isDark ? '#9CA3AF' : colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Signature Footer */}
+        <View style={dynamicStyles.footer}>
+          <Text style={dynamicStyles.signatureText}>Created by Doğan Aslan</Text>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
+
+const getStyles = (colors: any, isDark: boolean, insets: any) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: isDark ? '#0B0F19' : colors.background,
+  },
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 50 : 20),
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: isDark ? '#1F2937' : colors.border,
+    backgroundColor: isDark ? '#0B0F19' : colors.surface,
+    zIndex: 10,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerBarTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: isDark ? '#FFFFFF' : colors.text,
+    fontFamily: 'Hanken Grotesk',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: insets.bottom + 40,
+    flexGrow: 1,
+  },
+  titleSection: {
+    alignItems: 'center',
+    marginBottom: 48,
+  },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 40,
+    marginBottom: 20,
+  },
+  logoImage: {
+    width: 90,
+    height: 90,
+    borderRadius: 22,
+    backgroundColor: '#1F2937', // Elegant placeholder backing
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: isDark ? '#FFFFFF' : colors.text,
+    fontFamily: 'Hanken Grotesk',
+    letterSpacing: -0.5,
+    marginBottom: 8,
+  },
+  appVersion: {
+    fontSize: 15,
+    color: isDark ? '#9CA3AF' : colors.textSecondary,
+    fontWeight: '500',
+    letterSpacing: 1,
+  },
+  cardGroup: {
+    backgroundColor: isDark ? '#1F2937' : colors.surface,
+    borderRadius: 16,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: isDark ? '#FFFFFF' : colors.text,
+    marginLeft: 14,
+    fontFamily: 'Hanken Grotesk',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: isDark ? '#374151' : colors.border,
+    marginLeft: 52, // Aligns exactly with the start of the text
+  },
+  footer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 60,
+  },
+  signatureText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: isDark ? '#9CA3AF' : colors.textSecondary,
+    fontFamily: 'Hanken Grotesk',
+    letterSpacing: 0.5,
+  }
+});

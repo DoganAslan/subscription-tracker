@@ -1,22 +1,26 @@
 {
   "expo": {
-    "name": "subscription-tracker",
-    "slug": "subscription-tracker",
-    "version": "1.0.0",
+    "name": "SubMate",
+    "slug": "submate",
+    "version": "1.5.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "scheme": "subscriptiontracker",
+    "icon": "./assets/images/logo.png",
+    "scheme": "submate",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/icon.png"
+      "bundleIdentifier": "com.doganaslan.submate",
+      "buildNumber": "5",
+      "icon": "./assets/images/logo.png"
     },
     "android": {
+      "package": "com.doganaslan.submate",
+      "versionCode": 5,
       "adaptiveIcon": {
         "backgroundColor": "#0B0F19",
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundImage": "./assets/images/adaptive-icon.png"
+        "foregroundImage": "./assets/images/logo.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
@@ -27,17 +31,54 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#0B0F19",
           "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
+            "image": "./assets/images/logo.png",
+            "imageWidth": 160
           }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/logo.png",
+          "color": "#3B82F6"
+        }
+      ],
+      "expo-sharing",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "SummaryWidget",
+              "label": "SubMate Summary",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "description": "Shows your monthly spend and next payment",
+              "previewImage": "./assets/images/logo.png"
+            }
+          ]
+        }
+      ],
+      [
+        "@react-native-firebase/app",
+        {
+          "googleServicesFile": "process.env.GOOGLE_SERVICES_JSON",
+          "iosGoogleServicesFile": "process.env.GOOGLE_SERVICES_PLIST"
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5e9ad797-f421-40c3-af7c-55cc66564254"
+      }
+    },
+    "owner": "doganaslan"
   }
 }

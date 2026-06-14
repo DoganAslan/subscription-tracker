@@ -7,24 +7,23 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+export const COLORS = {
+  background: '#0B0F19',
+  surface: '#1F2937',
+  primary: '#3B82F6',
+  text: '#FFFFFF',
+  textSecondary: '#9CA3AF',
+  backgroundElement: '#1F2937',
+  backgroundSelected: '#374151',
+};
+
+// Stub for expo template components
 export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
-  },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
+  light: COLORS,
+  dark: COLORS,
 } as const;
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColor = keyof typeof COLORS;
 
 export const Fonts = Platform.select({
   ios: {

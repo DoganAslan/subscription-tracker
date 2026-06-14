@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "success": "Başarılı"
+  },
+  "onboarding": {
+    "takeControl": "Kontrolü Ele Al",
+    "takeControlDesc": "Tüm aboneliklerinizi tek bir yerden yönetin.",
+    "smartInsights": "Akıllı Analizler",
+    "smartInsightsDesc": "Harcamalarınızı görselleştirin ve yaklaşan faturaları takip edin.",
+    "alwaysUpdated": "Her Zaman Güncel",
+    "alwaysUpdatedDesc": "Ana Ekran araç takımlarınızdan harcamalarınızı gözlemleyin.",
+    "skip": "Atla",
+    "next": "İleri",
+    "getStarted": "Başla"
+  },
+  "settings": {
+    "accountSettings": "Hesap Ayarları",
+    "profileInfo": "Profil Bilgileri",
+    "email": "E-posta",
+    "accountId": "Hesap Kimliği",
+    "language": "Dil",
+    "deleteAccount": "Hesabı Sil",
+    "deleteWarning": "Bu işlem geri alınamaz. Tüm verileriniz kalıcı olarak silinecektir. Lütfen onaylamak için şifrenizi girin.",
+    "permanentlyDelete": "Kalıcı Olarak Sil",
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "security": "Güvenlik ve Biyometri",
+    "changeEmail": "E-postayı Değiştir",
+    "changePassword": "Şifreyi Değiştir",
+    "about": "SubMate Hakkında",
+    "privacyPolicy": "Gizlilik Politikası",
+    "termsOfService": "Hizmet Şartları",
+    "logout": "Güvenli Çıkış Yap",
+    "theme": "Tema",
+    "exportData": "Verileri Dışa Aktar",
+    "currencyPref": "Para Birimi Tercihleri",
+    "homeBaseCurrency": "Ana Para Birimi"
+  },
+  "tabs": {
+    "home": "Ana Sayfa",
+    "subscriptions": "Abonelikler",
+    "calendar": "Takvim",
+    "settings": "Ayarlar"
+  },
+  "home": {
+    "failedToLoad": "Kontrol paneli verileri yüklenemedi.",
+    "yourListIsEmpty": "Listeniz Boş",
+    "addFirstSub": "Harcamalarınızı takip etmeye başlamak için ilk aboneliğinizi ekleyin.",
+    "addSubscription": "Abonelik Ekle",
+    "upcomingPayments": "Yaklaşan Ödemeler",
+    "viewAll": "TÜMÜNÜ GÖR",
+    "totalMonthlySpend": "TOPLAM AYLIK HARCAMA",
+    "estimatedYearlySpend": "Tahmini Yıllık Harcama",
+    "categoryBreakdown": "Kategori Dağılımı",
+    "spendingInsights": "Harcama İstatistikleri",
+    "highestExpense": "En Yüksek Harcama"
+  },
+  "subs": {
+    "subscriptions": "Abonelikler",
+    "searchPlaceholder": "Aboneliklerde ara...",
+    "addSubscription": "Abonelik Ekle",
+    "activeCount": "{{count}} Aktif",
+    "noResults": "Abonelik bulunamadı.",
+    "name": "İsim",
+    "price": "Fiyat",
+    "billingCycle": "Faturalandırma Döngüsü",
+    "category": "Kategori",
+    "firstPaymentDate": "İlk Ödeme Tarihi",
+    "notes": "Notlar",
+    "add": "Ekle",
+    "update": "Güncelle",
+    "monthly": "Aylık",
+    "yearly": "Yıllık",
+    "weekly": "Haftalık",
+    "paused": "Duraklatıldı",
+    "trial": "DENEME",
+    "renews": "Yenilenme: {{date}}",
+    "activeFor": "AKTİF SÜRE",
+    "months": "ay",
+    "totalSpend": "TOPLAM HARCAMA"
+  },
+  "calendar": {
+    "calendar": "Takvim",
+    "noPayments": "Bu gün için planlanmış ödeme yok."
+  }
+}

@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Text, TouchableOpacity, Modal, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Switch, TextInput } from 'react-native';
+import { View, ScrollView, Text, TouchableOpacity, Modal, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Switch, TextInput, Image } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { Input } from '@/components/ui/Input';
+import { KeyboardAccessory, KEYBOARD_ACCESSORY_ID } from '@/components/ui/KeyboardAccessory';
 import { Button } from '@/components/ui/Button';
 import { subscriptionSchema, SubscriptionFormData } from '../schemas/subscription.schema';
 import { Subscription } from '@/services/firebase/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 export const CATEGORIES = [
   { name: 'Entertainment', hint: 'Netflix, Disney+, Cable' },
@@ -47,20 +50,40 @@ export const CURRENCIES = [
   { code: 'ZAR', label: 'ZAR - South Africa' }
 ];
 
-const DESIGN_TOKENS = {
-  colors: {
-    background: '#0B0F19',
-    surface: '#1F2937',
-    surfaceContainer: '#1F2937',
-    surfaceContainerHigh: '#262A35',
-    onSurface: '#FFFFFF',
-    onSurfaceVariant: '#9CA3AF',
-    primary: '#3B82F6',
-    onPrimary: '#FFFFFF',
-    error: '#ef4444',
-    outline: '#313540',
-  }
-};
+export const POPULAR_BRANDS = [
+  { name: 'Netflix', category: 'Entertainment' },
+  { name: 'Amazon Prime', category: 'Shopping & E-commerce' },
+  { name: 'Spotify', category: 'Music & Audio' },
+  { name: 'YouTube Premium', category: 'Entertainment' },
+  { name: 'ChatGPT', category: 'Productivity' },
+  { name: 'Claude', category: 'Productivity' },
+  { name: 'Gemini Advanced', category: 'Productivity' },
+  { name: 'Apple Music', category: 'Music & Audio' },
+  { name: 'Disney+', category: 'Entertainment' },
+  { name: 'iCloud', category: 'Utilities & Cloud' },
+  { name: 'Google One', category: 'Utilities & Cloud' },
+  { name: 'Xbox Game Pass', category: 'Gaming' },
+  { name: 'PS Plus', category: 'Gaming' },
+  { name: 'Adobe CC', category: 'Productivity' },
+  { name: 'Canva', category: 'Productivity' },
+  { name: 'GitHub Copilot', category: 'Productivity' },
+  { name: 'Notion', category: 'Productivity' },
+  { name: 'Exxen', category: 'Entertainment' },
+  { name: 'BluTV', category: 'Entertainment' },
+  { name: 'Gain', category: 'Entertainment' },
+  { name: 'Mubi', category: 'Entertainment' },
+];
+
+export const BILLING_CYCLES = [
+  { label: 'Weekly', value: 'weekly' },
+  { label: 'Monthly', value: 'monthly' },
+  { label: '3 Months', value: 'quarterly' },
+  { label: '6 Months', value: 'biannually' },
+  { label: 'Yearly', value: 'yearly' },
+  { label: '2 Years', value: 'biennially' },
+] as const;
+
+// Removed DESIGN_TOKENS
 
 interface Props {
   initialData?: Subscription;
@@ -68,13 +91,19 @@ interface Props {
   isLoading: boolean;
   submitLabel: string;
   onDelete?: () => void;
+  hideHero?: boolean;
+  externalAmount?: number;
 }
 
-export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel, onDelete }: Props) {
+export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel, onDelete, hideHero, externalAmount }: Props) {
   const [isCategoryModalVisible, setIsCategoryModalVisible] = useState(false);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const [showRenewalPicker, setShowRenewalPicker] = useState(false);
   const [showTrialPicker, setShowTrialPicker] = useState(false);
+  
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
   const isEdit = !!initialData;
 
@@ -95,56 +124,107 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
     }
   });
 
+  // Sync external amount to form
+  React.useEffect(() => {
+    if (externalAmount !== undefined) {
+      control._formValues.amount = externalAmount;
+    }
+  }, [externalAmount]);
+
   const isPaused = watch('status') === 'paused';
   const isFreeTrial = watch('isFreeTrial');
 
   return (
     <>
       <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
+        contentContainerStyle={dynamicStyles.scrollContent} 
         showsVerticalScrollIndicator={false}
       >
-        {/* HERO AMOUNT ELEMENT */}
-        <View style={styles.heroContainer}>
-          {isFreeTrial && (
-            <Text style={{ color: DESIGN_TOKENS.colors.primary, fontSize: 14, fontWeight: 'bold', marginBottom: 8, letterSpacing: 1 }}>
-              POST-TRIAL PRICE
-            </Text>
-          )}
-          <Controller
-            control={control}
-            name="amount"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput
-                style={styles.heroInput}
-                keyboardType="decimal-pad"
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value ? value.toString() : ''}
-                placeholder="$0.00"
-                placeholderTextColor="#9CA3AF"
-                numberOfLines={1}
-                textAlign="center"
-              />
+        {/* HERO AMOUNT ELEMENT (REDESIGNED) */}
+        {!hideHero && (
+          <View style={dynamicStyles.heroContainerRedesigned}>
+            {isFreeTrial && (
+              <Text style={dynamicStyles.postTrialLabel}>POST-TRIAL PRICE</Text>
             )}
-          />
-          {!!errors.amount?.message && (
-             <Text style={styles.heroError}>{errors.amount.message}</Text>
-          )}
-        </View>
+            <View style={dynamicStyles.heroInputWrapper}>
+              <Controller
+                control={control}
+                name="amount"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    style={dynamicStyles.heroInputRedesigned}
+                    keyboardType="numeric"
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value ? value.toString() : ''}
+                    placeholder="0.00"
+                    placeholderTextColor={colors.textSecondary}
+                    numberOfLines={1}
+                    returnKeyType="done"
+                    inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+                  />
+                )}
+              />
+              <Controller
+                control={control}
+                name="currency"
+                render={({ field: { value } }) => (
+                  <TouchableOpacity 
+                    activeOpacity={0.8} 
+                    onPress={() => setIsCurrencyModalVisible(true)}
+                    style={dynamicStyles.currencySelector}
+                  >
+                    <Text style={dynamicStyles.currencyText}>{value || 'USD'}</Text>
+                    <Text style={dynamicStyles.currencyChevron}>▼</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+            {!!errors.amount?.message && (
+               <Text style={dynamicStyles.heroError}>{errors.amount.message}</Text>
+            )}
+          </View>
+        )}
 
         <Controller
           control={control}
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
-            <Input 
-              label="Subscription Name" 
-              placeholder="e.g., Netflix" 
-              onBlur={onBlur} 
-              onChangeText={onChange} 
-              value={value} 
-              error={errors.name?.message} 
-            />
+            <View>
+              <Input 
+                label={t('subs.name')} 
+                placeholder="e.g., Netflix" 
+                onBlur={onBlur} 
+                onChangeText={onChange} 
+                value={value} 
+                error={errors.name?.message} 
+              />
+              
+              {/* PREDEFINED SERVICES ROW */}
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                style={dynamicStyles.brandsScroll}
+                contentContainerStyle={{ paddingBottom: 8 }}
+              >
+                <View style={dynamicStyles.brandsContainer}>
+                  {POPULAR_BRANDS.map((brand) => (
+                    <TouchableOpacity
+                      key={brand.name}
+                      style={dynamicStyles.brandTextChip}
+                      onPress={() => {
+                        onChange(brand.name);
+                        if (!watch('category')) {
+                          control._formValues.category = brand.category;
+                        }
+                      }}
+                    >
+                      <Text style={dynamicStyles.brandTextChipText}>{brand.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
           )}
         />
         
@@ -158,7 +238,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             >
               <View pointerEvents="none">
                 <Input 
-                  label="Category" 
+                  label={t('subs.category')} 
                   placeholder="Select a category" 
                   value={value} 
                   error={errors.category?.message} 
@@ -169,76 +249,83 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           )}
         />
         
-        <Controller
-          control={control}
-          name="currency"
-          render={({ field: { value } }) => (
-            <TouchableOpacity 
-              activeOpacity={0.8} 
-              onPress={() => setIsCurrencyModalVisible(true)}
-            >
-              <View pointerEvents="none">
-                <Input 
-                  label="Currency" 
-                  placeholder="Select currency" 
-                  value={value} 
-                  error={errors.currency?.message} 
-                  editable={false}
-                />
-              </View>
-            </TouchableOpacity>
-          )}
-        />
-
-        <View style={styles.row}>
+        <View style={dynamicStyles.reminderSection}>
+          <Text style={dynamicStyles.reminderLabel}>{t('subs.billingCycle').toUpperCase()}</Text>
           <Controller
             control={control}
             name="billingCycle"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input 
-                containerStyle={styles.flexHalf}
-                label="Billing Cycle" 
-                placeholder="monthly" 
-                autoCapitalize="none"
-                onBlur={onBlur} 
-                onChangeText={onChange} 
-                value={value} 
-                error={errors.billingCycle?.message} 
-              />
+            render={({ field: { onChange, value } }) => (
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingBottom: 8 }}
+              >
+                {BILLING_CYCLES.map((cycle) => {
+                  const isSel = value === cycle.value;
+                  return (
+                    <TouchableOpacity
+                      key={cycle.value}
+                      onPress={() => onChange(cycle.value)}
+                      style={[dynamicStyles.cycleChip, isSel && dynamicStyles.cycleChipSelected]}
+                    >
+                      <Text style={[dynamicStyles.cycleChipText, isSel && dynamicStyles.cycleChipTextSelected]}>
+                        {cycle.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             )}
           />
+        </View>
           
           <Controller
             control={control}
             name="renewalDate"
             render={({ field: { onChange, value } }) => (
-              <View style={styles.flexHalf}>
-                <TouchableOpacity activeOpacity={0.8} onPress={() => setShowRenewalPicker(true)}>
-                  <View pointerEvents="none">
-                    <Input 
-                      label="Renewal Date" 
-                      placeholder="Select Date" 
-                      value={value ? value.toISOString().split('T')[0] : ''} 
-                      error={errors.renewalDate?.message} 
-                      editable={false}
-                    />
-                  </View>
-                </TouchableOpacity>
+              <View style={dynamicStyles.flexHalf}>
+                {Platform.OS === 'web' ? (
+                  <Input 
+                    label="Renewal Date" 
+                    value={value ? value.toISOString().split('T')[0] : ''} 
+                    error={errors.renewalDate?.message} 
+                    editable={true}
+                    {...({ type: 'date' } as any)}
+                    onChangeText={(text) => {
+                      const parsed = new Date(text);
+                      if (!isNaN(parsed.getTime())) {
+                        onChange(parsed);
+                      }
+                    }}
+                  />
+                ) : (
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => setShowRenewalPicker(true)}>
+                    <View pointerEvents="none">
+                      <Input 
+                        label="Renewal Date" 
+                        placeholder="Select Date" 
+                        value={value ? value.toISOString().split('T')[0] : ''} 
+                        error={errors.renewalDate?.message} 
+                        editable={false}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                )}
 
                 {Platform.OS === 'ios' && showRenewalPicker && (
                   <Modal transparent={true} animationType="slide" onRequestClose={() => setShowRenewalPicker(false)}>
                     <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                      <View style={{ backgroundColor: '#1F2937', padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+                      <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowRenewalPicker(false)}>
-                            <Text style={{ color: '#3B82F6', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Done</Text>
                           </TouchableOpacity>
                         </View>
                         <DateTimePicker
                           value={value || new Date()}
                           mode="date"
                           display="spinner"
-                          textColor="#FFFFFF"
+                          textColor={colors.text}
                           onChange={(event, selectedDate) => {
                             if (selectedDate) onChange(selectedDate);
                           }}
@@ -262,15 +349,13 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
               </View>
             )}
           />
-        </View>
-        
-        <View style={styles.reminderSection}>
-          <Text style={styles.reminderLabel}>REMINDER OFFSET</Text>
+        <View style={dynamicStyles.reminderSection}>
+          <Text style={dynamicStyles.reminderLabel}>REMINDER OFFSET</Text>
           <Controller
             control={control}
             name="reminderOffset"
             render={({ field: { onChange, value } }) => (
-              <View style={styles.chipRow}>
+              <View style={dynamicStyles.chipRow}>
                 {[
                   { label: 'None', value: 'none' },
                   { label: '1 Day', value: '1_day' },
@@ -282,9 +367,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                     <TouchableOpacity
                       key={opt.value}
                       onPress={() => onChange(opt.value)}
-                      style={[styles.chip, isSel && styles.chipSelected]}
+                      style={[dynamicStyles.chip, isSel && dynamicStyles.chipSelected]}
                     >
-                      <Text style={[styles.chipText, isSel && styles.chipTextSelected]}>
+                      <Text style={[dynamicStyles.chipText, isSel && dynamicStyles.chipTextSelected]}>
                         {opt.label}
                       </Text>
                     </TouchableOpacity>
@@ -300,7 +385,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           name="notes"
           render={({ field: { onChange, onBlur, value } }) => (
             <Input 
-              label="Notes (Optional)" 
+              label={t('subs.notes')} 
               placeholder="e.g., Shared with family" 
               onBlur={onBlur} 
               onChangeText={onChange} 
@@ -312,21 +397,21 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           )}
         />
         
-        <View style={styles.switchContainer}>
+        <View style={dynamicStyles.switchContainer}>
           <View>
-            <Text style={styles.switchTitle}>This is a Free Trial</Text>
-            <Text style={styles.switchDesc}>Track expiration and avoid charges</Text>
+            <Text style={dynamicStyles.switchTitle}>This is a Free Trial</Text>
+            <Text style={dynamicStyles.switchDesc}>Track expiration and avoid charges</Text>
           </View>
           <Controller
             control={control}
             name="isFreeTrial"
             render={({ field: { onChange, value } }) => (
               <Switch
-                trackColor={{ false: DESIGN_TOKENS.colors.surfaceContainerHigh, true: DESIGN_TOKENS.colors.primary }}
-                thumbColor={value ? DESIGN_TOKENS.colors.onPrimary : DESIGN_TOKENS.colors.onSurfaceVariant}
-                ios_backgroundColor={DESIGN_TOKENS.colors.surfaceContainerHigh}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={value ? '#FFFFFF' : colors.textSecondary}
+                ios_backgroundColor={colors.border}
                 onValueChange={(val) => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  triggerHaptic('medium');
                   onChange(val);
                 }}
                 value={value}
@@ -341,32 +426,48 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             name="trialEndDate"
             render={({ field: { onChange, value } }) => (
               <View>
-                <TouchableOpacity activeOpacity={0.8} onPress={() => setShowTrialPicker(true)}>
-                  <View pointerEvents="none">
-                    <Input 
-                      label="Trial End Date" 
-                      placeholder="Select Date" 
-                      value={value ? value.toISOString().split('T')[0] : ''} 
-                      error={errors.trialEndDate?.message} 
-                      editable={false}
-                    />
-                  </View>
-                </TouchableOpacity>
+                {Platform.OS === 'web' ? (
+                  <Input 
+                    label="Trial End Date" 
+                    value={value ? value.toISOString().split('T')[0] : ''} 
+                    error={errors.trialEndDate?.message} 
+                    editable={true}
+                    {...({ type: 'date' } as any)}
+                    onChangeText={(text) => {
+                      const parsed = new Date(text);
+                      if (!isNaN(parsed.getTime())) {
+                        onChange(parsed);
+                      }
+                    }}
+                  />
+                ) : (
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => setShowTrialPicker(true)}>
+                    <View pointerEvents="none">
+                      <Input 
+                        label="Trial End Date" 
+                        placeholder="Select Date" 
+                        value={value ? value.toISOString().split('T')[0] : ''} 
+                        error={errors.trialEndDate?.message} 
+                        editable={false}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                )}
 
                 {Platform.OS === 'ios' && showTrialPicker && (
                   <Modal transparent={true} animationType="slide" onRequestClose={() => setShowTrialPicker(false)}>
                     <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                      <View style={{ backgroundColor: '#1F2937', padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+                      <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowTrialPicker(false)}>
-                            <Text style={{ color: '#3B82F6', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Done</Text>
                           </TouchableOpacity>
                         </View>
                         <DateTimePicker
                           value={value || new Date()}
                           mode="date"
                           display="spinner"
-                          textColor="#FFFFFF"
+                          textColor={colors.text}
                           onChange={(event, selectedDate) => {
                             if (selectedDate) onChange(selectedDate);
                           }}
@@ -394,21 +495,21 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
 
         
         {isEdit && (
-          <View style={styles.switchContainer}>
+          <View style={dynamicStyles.switchContainer}>
             <View>
-              <Text style={styles.switchTitle}>Pause Subscription</Text>
-              <Text style={styles.switchDesc}>Temporarily stop tracking this cost</Text>
+              <Text style={dynamicStyles.switchTitle}>Pause Subscription</Text>
+              <Text style={dynamicStyles.switchDesc}>Temporarily stop tracking this cost</Text>
             </View>
             <Controller
               control={control}
               name="status"
               render={({ field: { onChange, value } }) => (
                 <Switch
-                  trackColor={{ false: DESIGN_TOKENS.colors.surfaceContainerHigh, true: DESIGN_TOKENS.colors.primary }}
-                  thumbColor={value === 'paused' ? DESIGN_TOKENS.colors.onPrimary : DESIGN_TOKENS.colors.onSurfaceVariant}
-                  ios_backgroundColor={DESIGN_TOKENS.colors.surfaceContainerHigh}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor={value === 'paused' ? '#FFFFFF' : colors.textSecondary}
+                  ios_backgroundColor={colors.border}
                   onValueChange={(val) => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                    triggerHaptic('medium');
                     onChange(val ? 'paused' : 'active');
                   }}
                   value={value === 'paused'}
@@ -418,17 +519,23 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           </View>
         )}
         
-        <View style={styles.buttonGroup}>
+        <View style={dynamicStyles.buttonGroup}>
           <Button 
             title={submitLabel} 
-            onPress={handleSubmit(onSubmit)} 
+            onPress={handleSubmit((data) => {
+              triggerHaptic('heavy');
+              onSubmit(data);
+            })} 
             isLoading={isLoading} 
           />
           {isEdit && onDelete && (
             <Button 
               title="Delete Subscription" 
               variant="destructive"
-              onPress={onDelete}
+              onPress={() => {
+                triggerHaptic('heavy');
+                onDelete();
+              }}
               style={{ marginTop: 12 }}
             />
           )}
@@ -442,15 +549,12 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         transparent={true}
         onRequestClose={() => setIsCategoryModalVisible(false)}
       >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-          style={styles.modalOverlay}
-        >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Category</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={dynamicStyles.modalContent}>
+            <View style={dynamicStyles.modalHeader}>
+              <Text style={dynamicStyles.modalTitle}>Select Category</Text>
               <TouchableOpacity onPress={() => setIsCategoryModalVisible(false)}>
-                <Text style={styles.modalClose}>Close</Text>
+                <Text style={dynamicStyles.modalClose}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -470,22 +574,22 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                         setIsCategoryModalVisible(false);
                       }}
                       style={[
-                        styles.modalRow,
-                        value === item.name && styles.modalRowSelected
+                        dynamicStyles.modalRow,
+                        value === item.name && dynamicStyles.modalRowSelected
                       ]}
                     >
                       <View style={{ flex: 1, paddingRight: 16 }}>
-                        <Text style={[styles.modalRowText, value === item.name && styles.modalRowTextSelected]}>
+                        <Text style={[dynamicStyles.modalRowText, value === item.name && dynamicStyles.modalRowTextSelected]}>
                           {item.name}
                         </Text>
                         {!!item.hint && (
-                          <Text style={styles.modalRowHint}>
+                          <Text style={dynamicStyles.modalRowHint}>
                             {item.hint}
                           </Text>
                         )}
                       </View>
                       {value === item.name && (
-                        <Text style={styles.checkIcon}>✓</Text>
+                        <Text style={dynamicStyles.checkIcon}>✓</Text>
                       )}
                     </TouchableOpacity>
                   )}
@@ -493,7 +597,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
               )}
             />
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
 
       {/* Currency Selection Modal */}
@@ -503,15 +607,12 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         transparent={true}
         onRequestClose={() => setIsCurrencyModalVisible(false)}
       >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-          style={styles.modalOverlay}
-        >
-          <View style={[styles.modalContent, { height: '60%' }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Currency</Text>
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={[dynamicStyles.modalContent, { height: '60%' }]}>
+            <View style={dynamicStyles.modalHeader}>
+              <Text style={dynamicStyles.modalTitle}>Select Currency</Text>
               <TouchableOpacity onPress={() => setIsCurrencyModalVisible(false)}>
-                <Text style={styles.modalClose}>Close</Text>
+                <Text style={dynamicStyles.modalClose}>Close</Text>
               </TouchableOpacity>
             </View>
 
@@ -531,15 +632,15 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                         setIsCurrencyModalVisible(false);
                       }}
                       style={[
-                        styles.modalRow,
-                        value === item.code && styles.modalRowSelected
+                        dynamicStyles.modalRow,
+                        value === item.code && dynamicStyles.modalRowSelected
                       ]}
                     >
-                      <Text style={[styles.modalRowText, value === item.code && styles.modalRowTextSelected]}>
+                      <Text style={[dynamicStyles.modalRowText, value === item.code && dynamicStyles.modalRowTextSelected]}>
                         {item.label}
                       </Text>
                       {value === item.code && (
-                        <Text style={styles.checkIcon}>✓</Text>
+                        <Text style={dynamicStyles.checkIcon}>✓</Text>
                       )}
                     </TouchableOpacity>
                   )}
@@ -547,33 +648,93 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
               )}
             />
           </View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
+
+      <KeyboardAccessory />
     </>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingVertical: 24,
     paddingBottom: 80,
   },
-  heroContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  heroContainerRedesigned: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 32,
     marginTop: 16,
   },
-  heroInput: {
-    fontSize: 64,
-    fontWeight: '900',
-    color: '#FFFFFF',
+  postTrialLabel: {
+    color: colors.primary, 
+    fontSize: 12, 
+    fontWeight: 'bold', 
+    marginBottom: 8, 
+    letterSpacing: 1
+  },
+  heroInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  heroInputRedesigned: {
+    fontSize: 48,
+    fontWeight: 'bold',
+    color: colors.primary,
     fontFamily: 'Hanken Grotesk',
-    minWidth: 200,
+    textAlign: 'center',
+    marginRight: 12,
+    minWidth: 120,
+  },
+  currencySelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  currencyText: {
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 16,
+    marginRight: 4,
+  },
+  currencyChevron: {
+    color: colors.textSecondary,
+    fontSize: 12,
+  },
+  brandsScroll: {
+    marginVertical: 16,
+  },
+  brandsContainer: {
+    flexDirection: 'column',
+    flexWrap: 'wrap',
+    height: 110,
+    alignContent: 'flex-start',
+    gap: 10,
+    paddingRight: 16,
+  },
+  brandTextChip: {
+    backgroundColor: colors.surface,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  brandTextChipText: {
+    color: colors.text,
+    fontWeight: '500',
+    fontSize: 14,
   },
   heroError: {
-    color: DESIGN_TOKENS.colors.error,
+    color: colors.danger,
     fontSize: 14,
     marginTop: 8,
   },
@@ -587,12 +748,13 @@ const styles = StyleSheet.create({
   },
   reminderSection: {
     marginBottom: 24,
+    marginTop: 16,
   },
   reminderLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: DESIGN_TOKENS.colors.onSurfaceVariant,
-    marginBottom: 8,
+    color: colors.textSecondary,
+    marginBottom: 12,
     letterSpacing: 0.6,
   },
   chipRow: {
@@ -603,43 +765,64 @@ const styles = StyleSheet.create({
   chip: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: DESIGN_TOKENS.colors.surfaceContainerHigh,
+    backgroundColor: colors.border,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: DESIGN_TOKENS.colors.outline,
+    borderColor: colors.border,
   },
   chipSelected: {
-    backgroundColor: DESIGN_TOKENS.colors.primary,
-    borderColor: DESIGN_TOKENS.colors.primary,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   chipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: DESIGN_TOKENS.colors.onSurface,
+    color: colors.text,
   },
   chipTextSelected: {
-    color: DESIGN_TOKENS.colors.onPrimary,
+    color: '#FFFFFF',
+  },
+  cycleChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  cycleChipSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  cycleChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textSecondary,
+  },
+  cycleChipTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: DESIGN_TOKENS.colors.surfaceContainerHigh,
+    backgroundColor: colors.border,
     borderRadius: 12,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: DESIGN_TOKENS.colors.outline,
+    borderColor: colors.border,
   },
   switchTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: DESIGN_TOKENS.colors.onSurface,
+    color: colors.text,
     marginBottom: 4,
   },
   switchDesc: {
     fontSize: 14,
-    color: DESIGN_TOKENS.colors.onSurfaceVariant,
+    color: colors.textSecondary,
   },
   buttonGroup: {
     marginTop: 8,
@@ -650,7 +833,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.75)',
   },
   modalContent: {
-    backgroundColor: DESIGN_TOKENS.colors.surfaceContainer,
+    backgroundColor: colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     height: '70%',
@@ -666,45 +849,45 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: DESIGN_TOKENS.colors.onSurface,
+    color: colors.text,
     fontFamily: 'Hanken Grotesk',
   },
   modalClose: {
-    color: DESIGN_TOKENS.colors.primary,
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },
   modalRow: {
     paddingVertical: 16,
     paddingHorizontal: 16,
-    backgroundColor: DESIGN_TOKENS.colors.surfaceContainerHigh,
+    backgroundColor: colors.border,
     borderRadius: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: DESIGN_TOKENS.colors.outline,
+    borderColor: colors.border,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   modalRowSelected: {
-    borderColor: DESIGN_TOKENS.colors.primary,
+    borderColor: colors.primary,
   },
   modalRowText: {
     fontSize: 16,
-    color: DESIGN_TOKENS.colors.onSurface,
+    color: colors.text,
     fontWeight: '600',
     marginBottom: 4,
   },
   modalRowTextSelected: {
-    color: DESIGN_TOKENS.colors.primary,
+    color: colors.primary,
   },
   modalRowHint: {
     fontSize: 13,
-    color: DESIGN_TOKENS.colors.onSurfaceVariant,
+    color: colors.textSecondary,
     lineHeight: 18,
   },
   checkIcon: {
-    color: DESIGN_TOKENS.colors.primary,
+    color: colors.primary,
     fontSize: 18,
     fontWeight: 'bold',
   }

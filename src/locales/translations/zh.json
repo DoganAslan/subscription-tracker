@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "loading": "正在加载...",
+    "error": "错误",
+    "success": "成功"
+  },
+  "onboarding": {
+    "takeControl": "掌控一切",
+    "takeControlDesc": "在一个地方管理您的所有订阅。",
+    "smartInsights": "智能洞察",
+    "smartInsightsDesc": "可视化您的支出并跟踪即将到来的账单。",
+    "alwaysUpdated": "始终更新",
+    "alwaysUpdatedDesc": "直接从主屏幕小部件关注您的支出。",
+    "skip": "跳过",
+    "next": "下一步",
+    "getStarted": "开始使用"
+  },
+  "settings": {
+    "accountSettings": "帐户设置",
+    "profileInfo": "个人资料信息",
+    "email": "电子邮件",
+    "accountId": "帐户 ID",
+    "language": "语言",
+    "deleteAccount": "删除帐户",
+    "deleteWarning": "此操作不可逆转。您的所有数据将被永久删除。请输入您的密码进行确认。",
+    "permanentlyDelete": "永久删除",
+    "cancel": "取消",
+    "save": "保存",
+    "security": "安全与生物识别",
+    "changeEmail": "更改电子邮件",
+    "changePassword": "更改密码",
+    "about": "关于 SubMate",
+    "privacyPolicy": "隐私政策",
+    "termsOfService": "服务条款",
+    "logout": "安全退出",
+    "theme": "主题",
+    "exportData": "导出数据",
+    "currencyPref": "货币偏好",
+    "homeBaseCurrency": "本地基础货币"
+  },
+  "tabs": {
+    "home": "首页",
+    "subscriptions": "订阅",
+    "calendar": "日历",
+    "settings": "设置"
+  },
+  "home": {
+    "failedToLoad": "无法加载仪表板数据。",
+    "yourListIsEmpty": "您的列表为空",
+    "addFirstSub": "添加您的第一个订阅以开始跟踪您的费用。",
+    "addSubscription": "添加订阅",
+    "upcomingPayments": "即将付款",
+    "viewAll": "查看全部",
+    "totalMonthlySpend": "每月总支出",
+    "estimatedYearlySpend": "预计每年支出",
+    "categoryBreakdown": "类别细分",
+    "spendingInsights": "支出洞察",
+    "highestExpense": "最高费用"
+  },
+  "subs": {
+    "subscriptions": "订阅",
+    "searchPlaceholder": "搜索订阅...",
+    "addSubscription": "添加订阅",
+    "activeCount": "{{count}} 个活跃",
+    "noResults": "未找到订阅。",
+    "name": "姓名",
+    "price": "价格",
+    "billingCycle": "计费周期",
+    "category": "类别",
+    "firstPaymentDate": "首次付款日期",
+    "notes": "注释",
+    "add": "添加",
+    "update": "更新",
+    "monthly": "每月",
+    "yearly": "每年",
+    "weekly": "每周",
+    "paused": "已暂停",
+    "trial": "试用",
+    "renews": "续订 {{date}}",
+    "activeFor": "活跃于",
+    "months": "月",
+    "totalSpend": "总支出"
+  },
+  "calendar": {
+    "calendar": "日历",
+    "noPayments": "今天没有安排付款。"
+  }
+}

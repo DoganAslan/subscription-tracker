@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "onboarding": {
+    "takeControl": "Take Control",
+    "takeControlDesc": "अपनी सभी सदस्यताएँ एक ही स्थान पर प्रबंधित करें।",
+    "smartInsights": "स्मार्ट अंतर्दृष्टि",
+    "smartInsightsDesc": "अपने खर्च की कल्पना करें और आगामी बिलों पर नज़र रखें।",
+    "alwaysUpdated": "Always Updated",
+    "alwaysUpdatedDesc": "अपने होम स्क्रीन विजेट से सीधे अपने खर्चों पर नज़र रखें।",
+    "skip": "छोड़ें",
+    "next": "Next",
+    "getStarted": "प्रारंभ करें"
+  },
+  "settings": {
+    "accountSettings": "खाता सेटिंग",
+    "profileInfo": "प्रोफ़ाइल जानकारी",
+    "email": "Email",
+    "accountId": "खाता आईडी",
+    "language": "भाषा",
+    "deleteAccount": "Delete Account",
+    "deleteWarning": "This action is irreversible. All your data will be permanently deleted. Please enter your password to confirm.",
+    "permanentlyDelete": "Permanently Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "security": "सुरक्षा और बायोमेट्रिक्स",
+    "changeEmail": "Change Email",
+    "changePassword": "Change Password",
+    "about": "SubMate के बारे में",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "logout": "सुरक्षित रूप से साइन आउट करें",
+    "theme": "Theme",
+    "exportData": "Export Data",
+    "currencyPref": "Currency Preferences",
+    "homeBaseCurrency": "Home Base Currency"
+  },
+  "tabs": {
+    "home": "Home",
+    "subscriptions": "Subscriptions",
+    "calendar": "Calendar",
+    "settings": "Settings"
+  },
+  "home": {
+    "failedToLoad": "Failed to load dashboard data.",
+    "yourListIsEmpty": "Your List is Empty",
+    "addFirstSub": "अपने खर्चों पर नज़र रखने के लिए अपनी पहली सदस्यता जोड़ें।",
+    "addSubscription": "Add Subscription",
+    "upcomingPayments": "Upcoming Payments",
+    "viewAll": "VIEW ALL",
+    "totalMonthlySpend": "TOTAL MONTHLY SPEND",
+    "estimatedYearlySpend": "Estimated Yearly Spend",
+    "categoryBreakdown": "Category Breakdown",
+    "spendingInsights": "Spending Insights",
+    "highestExpense": "सर्वाधिक व्यय"
+  },
+  "subs": {
+    "subscriptions": "Subscriptions",
+    "searchPlaceholder": "Search subscriptions...",
+    "addSubscription": "Add Subscription",
+    "activeCount": "{{count}} Active",
+    "noResults": "No subscriptions found.",
+    "name": "Name",
+    "price": "Price",
+    "billingCycle": "बिलिंग चक्र",
+    "category": "Category",
+    "firstPaymentDate": "First Payment Date",
+    "notes": "Notes",
+    "add": "Add",
+    "update": "Update",
+    "monthly": "Monthly",
+    "yearly": "वार्षिक",
+    "weekly": "साप्ताहिक",
+    "paused": "Paused",
+    "trial": "TRIAL",
+    "renews": "Renews {{date}}",
+    "activeFor": "के लिए सक्रिय",
+    "months": "महीने",
+    "totalSpend": "TOTAL SPEND"
+  },
+  "calendar": {
+    "calendar": "Calendar",
+    "noPayments": "इस दिन के लिए कोई भुगतान निर्धारित नहीं है।"
+  }
+}

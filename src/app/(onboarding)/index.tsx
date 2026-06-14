@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 
@@ -22,28 +22,33 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-slate-900">
-      <View className="flex-1 justify-center items-center px-6">
-        <View className="mb-12">
-          <View className="w-64 h-64 bg-slate-50 dark:bg-slate-800/50 rounded-full items-center justify-center border-4 border-blue-50 dark:border-blue-900/20">
-            <Text className="text-8xl">{step === 0 ? '✨' : step === 1 ? '📊' : '🔔'}</Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.content}>
+        <View style={styles.emojiContainer}>
+          <View style={styles.emojiCircle}>
+            <Text style={styles.emojiText}>
+              {step === 0 ? '✨' : step === 1 ? '📊' : '🔔'}
+            </Text>
           </View>
         </View>
         
-        <Text className="text-3xl font-extrabold text-slate-900 dark:text-white text-center mb-4">
+        <Text style={styles.title}>
           {SLIDES[step].title}
         </Text>
-        <Text className="text-lg text-slate-500 dark:text-slate-400 text-center px-4 leading-relaxed">
+        <Text style={styles.description}>
           {SLIDES[step].description}
         </Text>
       </View>
       
-      <View className="px-6 pb-12 pt-6">
-        <View className="flex-row justify-center items-center mb-10 gap-2">
+      <View style={styles.footer}>
+        <View style={styles.paginationContainer}>
           {SLIDES.map((_, i) => (
             <View 
               key={i} 
-              className={`h-2 rounded-full ${i === step ? 'w-8 bg-blue-600' : 'w-2 bg-slate-200 dark:bg-slate-700'}`} 
+              style={[
+                styles.dot,
+                i === step ? styles.dotActive : styles.dotInactive
+              ]} 
             />
           ))}
         </View>
@@ -52,12 +57,89 @@ export default function OnboardingScreen() {
           onPress={handleNext} 
         />
         <TouchableOpacity 
-          className="mt-6 items-center p-2" 
+          style={styles.skipButton}
           onPress={() => router.push('/(onboarding)/templates')}
         >
-          <Text className="text-slate-500 dark:text-slate-400 font-medium text-base">Skip Intro</Text>
+          <Text style={styles.skipText}>Skip Intro</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0B0F19',
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  emojiContainer: {
+    marginBottom: 48,
+  },
+  emojiCircle: {
+    width: 160,
+    height: 160,
+    backgroundColor: '#1F2937',
+    borderRadius: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 4,
+    borderColor: 'rgba(59, 130, 246, 0.2)', // Subtle blue border
+  },
+  emojiText: {
+    fontSize: 72,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  description: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingHorizontal: 16,
+    lineHeight: 24,
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingBottom: 48,
+    paddingTop: 24,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 40,
+    gap: 8,
+  },
+  dot: {
+    height: 8,
+    borderRadius: 4,
+  },
+  dotActive: {
+    width: 32,
+    backgroundColor: '#3B82F6',
+  },
+  dotInactive: {
+    width: 8,
+    backgroundColor: '#1F2937',
+  },
+  skipButton: {
+    marginTop: 24,
+    alignItems: 'center',
+    padding: 8,
+  },
+  skipText: {
+    color: '#9CA3AF',
+    fontWeight: '500',
+    fontSize: 16,
+  },
+});

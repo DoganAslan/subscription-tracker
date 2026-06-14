@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès"
+  },
+  "onboarding": {
+    "takeControl": "Prendre le contrôle",
+    "takeControlDesc": "Gérez tous vos abonnements en un seul endroit.",
+    "smartInsights": "Insights intelligents",
+    "smartInsightsDesc": "Visualisez vos dépenses et suivez les factures à venir.",
+    "alwaysUpdated": "Toujours mis à jour",
+    "alwaysUpdatedDesc": "Gardez un œil sur vos dépenses directement depuis les widgets de votre écran d'accueil.",
+    "skip": "Sauter",
+    "next": "Suivant",
+    "getStarted": "Commencer"
+  },
+  "settings": {
+    "accountSettings": "Paramètres du compte",
+    "profileInfo": "Informations de profil",
+    "email": "E-mail",
+    "accountId": "ID de compte",
+    "language": "Langue",
+    "deleteAccount": "Supprimer le compte",
+    "deleteWarning": "Cette action est irréversible. Toutes vos données seront définitivement supprimées. Veuillez saisir votre mot de passe pour confirmer.",
+    "permanentlyDelete": "Supprimer définitivement",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "security": "Sécurité et biométrie",
+    "changeEmail": "Modifier l'e-mail",
+    "changePassword": "Changer le mot de passe",
+    "about": "À propos de SubMate",
+    "privacyPolicy": "Politique de confidentialité",
+    "termsOfService": "Conditions d'utilisation",
+    "logout": "Déconnectez-vous en toute sécurité",
+    "theme": "Thème",
+    "exportData": "Exporter des données",
+    "currencyPref": "Préférences de devises",
+    "homeBaseCurrency": "Devise de base d'origine"
+  },
+  "tabs": {
+    "home": "Accueil",
+    "subscriptions": "Abonnements",
+    "calendar": "Calendrier",
+    "settings": "Paramètres"
+  },
+  "home": {
+    "failedToLoad": "Échec du chargement des données du tableau de bord.",
+    "yourListIsEmpty": "Votre liste est vide",
+    "addFirstSub": "Ajoutez votre premier abonnement pour commencer à suivre vos dépenses.",
+    "addSubscription": "Ajouter un abonnement",
+    "upcomingPayments": "Paiements à venir",
+    "viewAll": "VOIR TOUT",
+    "totalMonthlySpend": "DÉPENSES MENSUELLES TOTALES",
+    "estimatedYearlySpend": "Dépenses annuelles estimées",
+    "categoryBreakdown": "Répartition des catégories",
+    "spendingInsights": "Informations sur les dépenses",
+    "highestExpense": "Dépense la plus élevée"
+  },
+  "subs": {
+    "subscriptions": "Abonnements",
+    "searchPlaceholder": "Rechercher des abonnements...",
+    "addSubscription": "Ajouter un abonnement",
+    "activeCount": "{{count}} Actif",
+    "noResults": "Aucun abonnement trouvé.",
+    "name": "Nom",
+    "price": "Prix",
+    "billingCycle": "Cycle de facturation",
+    "category": "Catégorie",
+    "firstPaymentDate": "Date du premier paiement",
+    "notes": "Remarques",
+    "add": "Ajouter",
+    "update": "Mise à jour",
+    "monthly": "Mensuel",
+    "yearly": "Annuel",
+    "weekly": "Hebdomadaire",
+    "paused": "En pause",
+    "trial": "ESSAI",
+    "renews": "Renouvelle {{date}}",
+    "activeFor": "ACTIF POUR",
+    "months": "mois",
+    "totalSpend": "DÉPENSES TOTALES"
+  },
+  "calendar": {
+    "calendar": "Calendrier",
+    "noPayments": "Aucun paiement prévu pour ce jour."
+  }
+}

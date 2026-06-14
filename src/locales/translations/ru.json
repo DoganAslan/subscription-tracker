@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отменить",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успех"
+  },
+  "onboarding": {
+    "takeControl": "Возьмите контроль",
+    "takeControlDesc": "Управляйте всеми своими подписками в одном месте.",
+    "smartInsights": "Smart Insights",
+    "smartInsightsDesc": "Визуализируйте свои расходы и отслеживайте предстоящие счета.",
+    "alwaysUpdated": "Всегда обновляется",
+    "alwaysUpdatedDesc": "Следите за своими расходами прямо с помощью виджетов на главном экране.",
+    "skip": "Пропустить",
+    "next": "Далее",
+    "getStarted": "Начало работы"
+  },
+  "settings": {
+    "accountSettings": "Настройки аккаунта",
+    "profileInfo": "Информация профиля",
+    "email": "Электронная почта",
+    "accountId": "Идентификатор аккаунта",
+    "language": "Язык",
+    "deleteAccount": "Удалить аккаунт",
+    "deleteWarning": "Это действие необратимо. Все ваши данные будут безвозвратно удалены. Пожалуйста, введите свой пароль для подтверждения.",
+    "permanentlyDelete": "Удалить навсегда",
+    "cancel": "Отменить",
+    "save": "Сохранить",
+    "security": "Безопасность и биометрия",
+    "changeEmail": "Изменить адрес электронной почты",
+    "changePassword": "Изменить пароль",
+    "about": "О SubMate",
+    "privacyPolicy": "Политика конфиденциальности",
+    "termsOfService": "Условия использования",
+    "logout": "Безопасный выход",
+    "theme": "Тема",
+    "exportData": "Экспорт данных",
+    "currencyPref": "Настройки валюты",
+    "homeBaseCurrency": "Базовая валюта"
+  },
+  "tabs": {
+    "home": "Главная",
+    "subscriptions": "Подписки",
+    "calendar": "Календарь",
+    "settings": "Настройки"
+  },
+  "home": {
+    "failedToLoad": "Не удалось загрузить данные информационной панели.",
+    "yourListIsEmpty": "Ваш список пуст",
+    "addFirstSub": "Добавьте свою первую подписку, чтобы начать отслеживать свои расходы.",
+    "addSubscription": "Добавить подписку",
+    "upcomingPayments": "Предстоящие платежи",
+    "viewAll": "ПОСМОТРЕТЬ ВСЕ",
+    "totalMonthlySpend": "ОБЩИЕ ЕЖЕМЕСЯЧНЫЕ РАСХОДЫ",
+    "estimatedYearlySpend": "Ориентировочные годовые расходы",
+    "categoryBreakdown": "Разбивка по категориям",
+    "spendingInsights": "Статистика расходов",
+    "highestExpense": "Самый высокий расход"
+  },
+  "subs": {
+    "subscriptions": "Подписки",
+    "searchPlaceholder": "Поиск подписок...",
+    "addSubscription": "Добавить подписку",
+    "activeCount": "{{count}} активен",
+    "noResults": "Подписки не найдены.",
+    "name": "Имя",
+    "price": "Цена",
+    "billingCycle": "Платежный цикл",
+    "category": "Категория",
+    "firstPaymentDate": "Дата первого платежа",
+    "notes": "Примечания",
+    "add": "Добавить",
+    "update": "Обновить",
+    "monthly": "Ежемесячно",
+    "yearly": "Ежегодно",
+    "weekly": "Еженедельно",
+    "paused": "Приостановлено",
+    "trial": "ПРОБНАЯ ВЕРСИЯ",
+    "renews": "Продлевает {{date}}",
+    "activeFor": "АКТИВНО ДЛЯ",
+    "months": "месяцев",
+    "totalSpend": "ОБЩИЕ РАСХОДЫ"
+  },
+  "calendar": {
+    "calendar": "Календарь",
+    "noPayments": "На этот день платежей не запланировано."
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "loading": "読み込み中...",
+    "error": "エラー",
+    "success": "成功"
+  },
+  "onboarding": {
+    "takeControl": "主導権を握る",
+    "takeControlDesc": "すべてのサブスクリプションを 1 か所で管理します。",
+    "smartInsights": "スマートな分析情報",
+    "smartInsightsDesc": "支出を視覚化し、今後の請求を追跡します。",
+    "alwaysUpdated": "常に更新",
+    "alwaysUpdatedDesc": "ホーム画面のウィジェットから支出を直接確認できます。",
+    "skip": "スキップ",
+    "next": "次へ",
+    "getStarted": "始めましょう"
+  },
+  "settings": {
+    "accountSettings": "アカウント設定",
+    "profileInfo": "プロフィール情報",
+    "email": "メール",
+    "accountId": "アカウント ID",
+    "language": "言語",
+    "deleteAccount": "アカウントを削除",
+    "deleteWarning": "この操作は元に戻すことができません。すべてのデータは完全に削除されます。確認のためにパスワードを入力してください。",
+    "permanentlyDelete": "完全に削除",
+    "cancel": "キャンセル",
+    "save": "保存",
+    "security": "セキュリティと生体認証",
+    "changeEmail": "メールアドレスを変更",
+    "changePassword": "パスワードを変更",
+    "about": "SubMate について",
+    "privacyPolicy": "プライバシー ポリシー",
+    "termsOfService": "利用規約",
+    "logout": "安全にサインアウト",
+    "theme": "テーマ",
+    "exportData": "データのエクスポート",
+    "currencyPref": "通貨の設定",
+    "homeBaseCurrency": "ホームベース通貨"
+  },
+  "tabs": {
+    "home": "ホーム",
+    "subscriptions": "定期購入",
+    "calendar": "カレンダー",
+    "settings": "設定"
+  },
+  "home": {
+    "failedToLoad": "ダッシュボード データのロードに失敗しました。",
+    "yourListIsEmpty": "あなたのリストは空です",
+    "addFirstSub": "最初のサブスクリプションを追加して、支出の追跡を開始してください。",
+    "addSubscription": "サブスクリプションを追加",
+    "upcomingPayments": "今後の支払い",
+    "viewAll": "すべて表示",
+    "totalMonthlySpend": "月間合計支出",
+    "estimatedYearlySpend": "推定年間支出",
+    "categoryBreakdown": "カテゴリの内訳",
+    "spendingInsights": "支出に関する分析情報",
+    "highestExpense": "最高出費"
+  },
+  "subs": {
+    "subscriptions": "定期購入",
+    "searchPlaceholder": "定期購読を検索...",
+    "addSubscription": "サブスクリプションを追加",
+    "activeCount": "{{count}} 個がアクティブ",
+    "noResults": "定期購読が見つかりません。",
+    "name": "名前",
+    "price": "価格",
+    "billingCycle": "請求サイクル",
+    "category": "カテゴリ",
+    "firstPaymentDate": "最初の支払い日",
+    "notes": "メモ",
+    "add": "追加",
+    "update": "アップデート",
+    "monthly": "毎月",
+    "yearly": "毎年",
+    "weekly": "毎週",
+    "paused": "一時停止中",
+    "trial": "トライアル",
+    "renews": "更新{{date}}",
+    "activeFor": "有効期限",
+    "months": "月",
+    "totalSpend": "合計支出"
+  },
+  "calendar": {
+    "calendar": "カレンダー",
+    "noPayments": "この日は支払いが予定されていません。"
+  }
+}

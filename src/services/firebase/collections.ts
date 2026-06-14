@@ -12,10 +12,10 @@ export const usersCollection = createCollection<User>('users');
 export const getUserDoc = (userId: string) => doc(db, `users/${userId}`) as DocumentReference<User>;
 
 // Subscriptions subcollection
-export const getSubscriptionsCollection = (userId: string) => {
-  return collection(db, `users/${userId}/subscriptions`) as CollectionReference<Subscription>;
+export const getSubscriptionsCollection = () => {
+  return collection(db, 'subscriptions') as CollectionReference<Subscription>;
 };
 
-export const getSubscriptionDoc = (userId: string, subscriptionId: string) => {
-  return doc(db, `users/${userId}/subscriptions/${subscriptionId}`) as DocumentReference<Subscription>;
+export const getSubscriptionDoc = (subscriptionId: string) => {
+  return doc(db, `subscriptions/${subscriptionId}`) as DocumentReference<Subscription>;
 };

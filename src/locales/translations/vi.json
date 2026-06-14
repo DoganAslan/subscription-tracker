@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Chỉnh sửa",
+    "loading": "Đang tải...",
+    "error": "Lỗi",
+    "success": "Thành công"
+  },
+  "onboarding": {
+    "takeControl": "Nắm quyền kiểm soát",
+    "takeControlDesc": "Quản lý tất cả đăng ký của bạn ở một nơi.",
+    "smartInsights": "Thông tin chi tiết thông minh",
+    "smartInsightsDesc": "Trực quan hóa chi tiêu của bạn và theo dõi các hóa đơn sắp tới.",
+    "alwaysUpdated": "Luôn cập nhật",
+    "alwaysUpdatedDesc": "Theo dõi chi phí của bạn ngay từ các tiện ích trên Màn hình chính.",
+    "skip": "Bỏ qua",
+    "next": "Tiếp theo",
+    "getStarted": "Bắt đầu"
+  },
+  "settings": {
+    "accountSettings": "Cài đặt tài khoản",
+    "profileInfo": "Thông tin hồ sơ",
+    "email": "Email",
+    "accountId": "ID tài khoản",
+    "language": "Ngôn ngữ",
+    "deleteAccount": "Xóa tài khoản",
+    "deleteWarning": "Hành động này không thể thay đổi được. Tất cả dữ liệu của bạn sẽ bị xóa vĩnh viễn. Vui lòng nhập mật khẩu của bạn để xác nhận.",
+    "permanentlyDelete": "Xóa vĩnh viễn",
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "security": "Bảo mật và sinh trắc học",
+    "changeEmail": "Thay đổi email",
+    "changePassword": "Đổi mật khẩu",
+    "about": "Giới thiệu về SubMate",
+    "privacyPolicy": "Chính sách quyền riêng tư",
+    "termsOfService": "Điều khoản dịch vụ",
+    "logout": "Đăng xuất an toàn",
+    "theme": "Chủ đề",
+    "exportData": "Xuất dữ liệu",
+    "currencyPref": "Tùy chọn tiền tệ",
+    "homeBaseCurrency": "Tiền tệ cơ sở tại nhà"
+  },
+  "tabs": {
+    "home": "Trang chủ",
+    "subscriptions": "Đăng ký",
+    "calendar": "Lịch",
+    "settings": "Cài đặt"
+  },
+  "home": {
+    "failedToLoad": "Không tải được dữ liệu trang tổng quan.",
+    "yourListIsEmpty": "Danh sách của bạn trống",
+    "addFirstSub": "Thêm đăng ký đầu tiên của bạn để bắt đầu theo dõi chi phí của bạn.",
+    "addSubscription": "Thêm đăng ký",
+    "upcomingPayments": "Các khoản thanh toán sắp tới",
+    "viewAll": "XEM TẤT CẢ",
+    "totalMonthlySpend": "TỔNG CHI TIÊU HÀNG THÁNG",
+    "estimatedYearlySpend": "Chi tiêu ước tính hàng năm",
+    "categoryBreakdown": "Phân tích danh mục",
+    "spendingInsights": "Thông tin chi tiết về chi tiêu",
+    "highestExpense": "Chi phí cao nhất"
+  },
+  "subs": {
+    "subscriptions": "Đăng ký",
+    "searchPlaceholder": "Tìm kiếm đăng ký...",
+    "addSubscription": "Thêm đăng ký",
+    "activeCount": "{{count}} Đang hoạt động",
+    "noResults": "Không tìm thấy đăng ký nào.",
+    "name": "Tên",
+    "price": "Giá",
+    "billingCycle": "Chu kỳ thanh toán",
+    "category": "Danh mục",
+    "firstPaymentDate": "Ngày thanh toán đầu tiên",
+    "notes": "Ghi chú",
+    "add": "Thêm",
+    "update": "Cập nhật",
+    "monthly": "Hàng tháng",
+    "yearly": "Hàng năm",
+    "weekly": "Hàng tuần",
+    "paused": "Đã tạm dừng",
+    "trial": "DÙNG THỬ",
+    "renews": "Gia hạn vào {{date}",
+    "activeFor": "HOẠT ĐỘNG CHO",
+    "months": "tháng",
+    "totalSpend": "TỔNG CHI TIÊU"
+  },
+  "calendar": {
+    "calendar": "Lịch",
+    "noPayments": "Không có khoản thanh toán nào được lên lịch cho ngày này."
+  }
+}

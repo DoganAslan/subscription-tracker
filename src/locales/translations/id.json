@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "edit": "Edit",
+    "loading": "Memuat...",
+    "error": "Kesalahan",
+    "success": "Sukses"
+  },
+  "onboarding": {
+    "takeControl": "Ambil Kendali",
+    "takeControlDesc": "Kelola semua langganan Anda di satu tempat.",
+    "smartInsights": "Wawasan Cerdas",
+    "smartInsightsDesc": "Visualisasikan pengeluaran Anda dan lacak tagihan mendatang.",
+    "alwaysUpdated": "Selalu Diperbarui",
+    "alwaysUpdatedDesc": "Pantau pengeluaran Anda langsung dari widget Layar Utama.",
+    "skip": "Lewati",
+    "next": "Berikutnya",
+    "getStarted": "Memulai"
+  },
+  "settings": {
+    "accountSettings": "Pengaturan Akun",
+    "profileInfo": "Informasi Profil",
+    "email": "Email",
+    "accountId": "ID Akun",
+    "language": "Bahasa",
+    "deleteAccount": "Hapus Akun",
+    "deleteWarning": "Tindakan ini tidak dapat diubah. Semua data Anda akan dihapus secara permanen. Silakan masukkan kata sandi Anda untuk mengonfirmasi.",
+    "permanentlyDelete": "Hapus Secara Permanen",
+    "cancel": "Batal",
+    "save": "Simpan",
+    "security": "Keamanan & Biometrik",
+    "changeEmail": "Ganti Email",
+    "changePassword": "Ubah Kata Sandi",
+    "about": "Tentang SubMate",
+    "privacyPolicy": "Kebijakan Privasi",
+    "termsOfService": "Persyaratan Layanan",
+    "logout": "Keluar dengan Aman",
+    "theme": "Tema",
+    "exportData": "Ekspor Data",
+    "currencyPref": "Preferensi Mata Uang",
+    "homeBaseCurrency": "Mata Uang Asal"
+  },
+  "tabs": {
+    "home": "Rumah",
+    "subscriptions": "Langganan",
+    "calendar": "Kalender",
+    "settings": "Pengaturan"
+  },
+  "home": {
+    "failedToLoad": "Gagal memuat data dasbor.",
+    "yourListIsEmpty": "Daftar Anda Kosong",
+    "addFirstSub": "Tambahkan langganan pertama Anda untuk mulai melacak pengeluaran Anda.",
+    "addSubscription": "Tambahkan Langganan",
+    "upcomingPayments": "Pembayaran Mendatang",
+    "viewAll": "LIHAT SEMUA",
+    "totalMonthlySpend": "TOTAL PENGELUARAN BULANAN",
+    "estimatedYearlySpend": "Perkiraan Pembelanjaan Tahunan",
+    "categoryBreakdown": "Perincian Kategori",
+    "spendingInsights": "Insight Pengeluaran",
+    "highestExpense": "Beban Tertinggi"
+  },
+  "subs": {
+    "subscriptions": "Langganan",
+    "searchPlaceholder": "Telusuri langganan...",
+    "addSubscription": "Tambahkan Langganan",
+    "activeCount": "{{count}} Aktif",
+    "noResults": "Tidak ditemukan langganan.",
+    "name": "Nama",
+    "price": "Harga",
+    "billingCycle": "Siklus Penagihan",
+    "category": "Kategori",
+    "firstPaymentDate": "Tanggal Pembayaran Pertama",
+    "notes": "Catatan",
+    "add": "Tambahkan",
+    "update": "Pembaruan",
+    "monthly": "Bulanan",
+    "yearly": "Tahunan",
+    "weekly": "Mingguan",
+    "paused": "Dijeda",
+    "trial": "UJI COBA",
+    "renews": "Diperpanjang pada tanggal {{date}}",
+    "activeFor": "AKTIF UNTUK",
+    "months": "bulan",
+    "totalSpend": "TOTAL PENGELUARAN"
+  },
+  "calendar": {
+    "calendar": "Kalender",
+    "noPayments": "Tidak ada pembayaran yang dijadwalkan untuk hari ini."
+  }
+}

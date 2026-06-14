@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { triggerHaptic } from '@/utils/haptics';
 import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
@@ -6,20 +7,11 @@ import { DeleteConfirmationModal } from '@/features/subscriptions/components/Del
 import { useSubscriptions, useUpdateSubscription, useDeleteSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
 import { AppLoader } from '@/components/common/AppLoader';
 import { SubscriptionFormData } from '@/features/subscriptions/schemas/subscription.schema';
+import { scheduleRenewalReminder, cancelSubscriptionNotifications } from '@/utils/NotificationService';
+import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
-const DESIGN_TOKENS = {
-  colors: {
-    background: '#0f131d',
-    surface: '#1c1f2a',
-    surfaceHigh: '#262a35',
-    onSurface: '#dfe2f1',
-    onSurfaceVariant: '#c2c6d6',
-    primary: '#adc6ff',
-    onPrimary: '#002e6a',
-    error: '#ffb4ab',
-    outline: '#424754',
-  }
-};
+// Removed DESIGN_TOKENS
 
 export default function EditSubscriptionScreen() {
   const params = useLocalSearchParams();
@@ -28,10 +20,22 @@ export default function EditSubscriptionScreen() {
   const router = useRouter();
   
   const { data: subscriptions, isLoading: isLoadingSubs, isFetching } = useSubscriptions();
-  const { mutateAsync: updateSubscription, isPending: isUpdating } = useUpdateSubscription();
-  const { mutateAsync: deleteSubscription, isPending: isDeleting } = useDeleteSubscription();
+  const { mutate: updateSubscription, isPending: isUpdating } = useUpdateSubscription();
+  const { mutate: deleteSubscription, isPending: isDeleting } = useDeleteSubscription();
   
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
+
+  const handleGoBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/subscriptions');
+    }
+  };
 
   if (isLoadingSubs || (isFetching && !subscriptions)) {
     return <AppLoader />;
@@ -40,36 +44,38 @@ export default function EditSubscriptionScreen() {
   const subscription = subscriptions?.find(s => String(s.id) === String(id));
 
   if (!subscription) {
-    if (isFetching) return <AppLoader />;
+    if (isFetching || isDeleting) return <AppLoader />;
     return (
-      <View style={styles.notFoundContainer}>
-        <Text style={styles.notFoundText}>Subscription not found</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.goBackButton}>
-          <Text style={styles.goBackText}>Go Back</Text>
+      <View style={dynamicStyles.notFoundContainer}>
+        <Text style={dynamicStyles.notFoundText}>Subscription not found</Text>
+        <TouchableOpacity onPress={handleGoBack} style={dynamicStyles.goBackButton}>
+          <Text style={dynamicStyles.goBackText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
-  const handleUpdate = async (data: SubscriptionFormData) => {
-    await updateSubscription({ id, data });
-    router.back();
+  const handleUpdate = (data: SubscriptionFormData) => {
+    triggerHaptic('success');
+    updateSubscription({ id, data });
+    handleGoBack();
   };
 
-  const handleDelete = async () => {
-    await deleteSubscription(id);
+  const handleDelete = () => {
+    triggerHaptic('error');
     setIsDeleteModalVisible(false);
-    router.back();
+    deleteSubscription(id);
+    router.replace('/(tabs)/subscriptions');
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardView}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-             <Text style={styles.backButtonText}>← Back</Text>
+    <SafeAreaView style={dynamicStyles.safeArea}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={dynamicStyles.keyboardView}>
+        <View style={dynamicStyles.header}>
+          <TouchableOpacity onPress={handleGoBack} style={dynamicStyles.backButton}>
+             <Text style={dynamicStyles.backButtonText}>← {t('common.cancel')}</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Subscription</Text>
+          <Text style={dynamicStyles.headerTitle}>{t('subs.update')}</Text>
           <View style={{ width: 60 }} />{/* Spacer */}
         </View>
         
@@ -77,7 +83,7 @@ export default function EditSubscriptionScreen() {
           initialData={subscription}
           onSubmit={handleUpdate} 
           isLoading={isUpdating} 
-          submitLabel="Save Changes"
+          submitLabel={t('common.save')}
           onDelete={() => setIsDeleteModalVisible(true)}
         />
         
@@ -92,8 +98,8 @@ export default function EditSubscriptionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: DESIGN_TOKENS.colors.background },
+const getStyles = (colors: any) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   keyboardView: { flex: 1 },
   header: {
     flexDirection: 'row',
@@ -102,12 +108,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 20,
     borderBottomWidth: 1,
-    borderBottomColor: DESIGN_TOKENS.colors.surfaceHigh,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: DESIGN_TOKENS.colors.onSurface,
+    color: colors.text,
     fontFamily: 'Hanken Grotesk',
   },
   backButton: {
@@ -115,7 +121,7 @@ const styles = StyleSheet.create({
     marginLeft: -8,
   },
   backButtonText: {
-    color: DESIGN_TOKENS.colors.primary,
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -123,17 +129,17 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: DESIGN_TOKENS.colors.background,
+    backgroundColor: colors.background,
   },
   notFoundText: {
-    color: DESIGN_TOKENS.colors.onSurfaceVariant,
+    color: colors.textSecondary,
     fontSize: 16,
   },
   goBackButton: {
     marginTop: 16,
   },
   goBackText: {
-    color: DESIGN_TOKENS.colors.primary,
+    color: colors.primary,
     fontWeight: '600',
   }
 });

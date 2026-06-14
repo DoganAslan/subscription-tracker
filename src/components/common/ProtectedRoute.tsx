@@ -1,37 +1,45 @@
-import React, { useEffect } from 'react';
-import { useRouter, useSegments } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
 import { AppLoader } from './AppLoader';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuthStore();
-  const { hasCompletedOnboarding, _hasHydrated } = useOnboardingStore();
+  const { user, isLoading: authLoading } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+  const navigationState = useRootNavigationState();
+  const { hasCompletedOnboarding, _hasHydrated } = useOnboardingStore();
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    if (isLoading || !_hasHydrated) return;
+    if (authLoading || !_hasHydrated || !navigationState?.key) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    const inOnboardingGroup = segments[0] === '(onboarding)';
+    const inOnboardingGroup = segments[0] === 'onboarding';
 
-    if (!user && !inAuthGroup) {
-      router.replace('/(auth)');
+    if (!hasCompletedOnboarding) {
+      if (!inOnboardingGroup) {
+        router.replace('/onboarding');
+      }
     } else if (user) {
-      if (!hasCompletedOnboarding && !inOnboardingGroup) {
-        router.replace('/(onboarding)');
-      } else if (hasCompletedOnboarding && (inAuthGroup || inOnboardingGroup)) {
+      if (inAuthGroup || inOnboardingGroup) {
         router.replace('/(tabs)');
       }
+    } else {
+      if (!inAuthGroup && !inOnboardingGroup) {
+        router.replace('/(auth)');
+      }
     }
-  }, [user, isLoading, _hasHydrated, hasCompletedOnboarding, segments, router]);
+    setIsReady(true);
+  }, [user, authLoading, _hasHydrated, hasCompletedOnboarding, segments, navigationState?.key]);
 
-  if (isLoading || !_hasHydrated) {
+  if (authLoading || !_hasHydrated || !isReady) {
     return <AppLoader />;
   }
 

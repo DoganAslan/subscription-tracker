@@ -2,24 +2,50 @@ import React from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
 import { LoginForm } from '@/features/auth/components/LoginForm';
+import { useTheme } from '@/context/ThemeContext';
+import Animated, { useSharedValue, withRepeat, withTiming, Easing, useAnimatedStyle } from 'react-native-reanimated';
 
 export default function LoginScreen() {
+  const { colors } = useTheme();
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
+
+  const rotation = useSharedValue(0);
+
+  React.useEffect(() => {
+    rotation.value = withRepeat(
+      withTiming(360, { duration: 2000, easing: Easing.linear }),
+      -1,
+      false
+    );
+  }, []);
+
+  const animatedLogoStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotateZ: `${rotation.value}deg` }],
+    };
+  });
+
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={dynamicStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to manage your subscriptions</Text>
+      <ScrollView contentContainerStyle={dynamicStyles.scrollContent}>
+        <View style={dynamicStyles.headerContainer}>
+          <Animated.Image 
+            source={require('../../../assets/images/logo.png')} 
+            style={[dynamicStyles.logo, animatedLogoStyle]}
+            resizeMode="cover"
+          />
+          <Text style={dynamicStyles.title}>Welcome back</Text>
+          <Text style={dynamicStyles.subtitle}>Sign in to manage your subscriptions</Text>
         </View>
 
         <LoginForm />
 
-        <View style={styles.footerContainer}>
-          <Text style={styles.footerText}>Don't have an account? </Text>
-          <Link href="/(auth)/register" style={styles.footerLink}>
+        <View style={dynamicStyles.footerContainer}>
+          <Text style={dynamicStyles.footerText}>Don't have an account? </Text>
+          <Link href="/(auth)/register" style={dynamicStyles.footerLink}>
             Sign up
           </Link>
         </View>
@@ -28,10 +54,10 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0F19',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -41,16 +67,27 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginBottom: 40,
+    alignItems: 'center',
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    overflow: 'hidden',
+    marginBottom: 24,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   title: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#F9FAFB',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#9CA3AF',
+    color: colors.textSecondary,
   },
   footerContainer: {
     flexDirection: 'row',
@@ -58,11 +95,11 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   footerText: {
-    color: '#9CA3AF',
+    color: colors.textSecondary,
     fontSize: 16,
   },
   footerLink: {
-    color: '#3B82F6',
+    color: colors.primary,
     fontWeight: '600',
     fontSize: 16,
   },

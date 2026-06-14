@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "670611888099",
+    "project_id": "submate-4fc0a",
+    "storage_bucket": "submate-4fc0a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:670611888099:android:279e8f67734fa967ccb2d6",
+        "android_client_info": {
+          "package_name": "com.doganaslan.submate"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCvzeEMPTniMkea5cbVfPDRqFMVWqCgO8Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

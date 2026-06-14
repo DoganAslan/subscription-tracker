@@ -8,21 +8,21 @@ export interface User {
   updatedAt: Timestamp;
 }
 
-export type BillingCycle = 'weekly' | 'monthly' | 'yearly';
+export type BillingCycle = 'weekly' | 'monthly' | 'quarterly' | 'biannually' | 'yearly' | 'biennially';
 
 export interface Subscription {
-  id?: string;
+  id?: string | null;
   name: string;
   category: string;
   amount: number;
   currency: string;
   billingCycle: BillingCycle;
   renewalDate: Timestamp;
-  status?: 'active' | 'paused';
-  reminderOffset?: 'none' | '1_day' | '3_days' | '1_week';
-  isFreeTrial?: boolean;
-  trialEndDate?: Timestamp;
-  notes: string;
+  status?: 'active' | 'paused' | null;
+  reminderOffset?: 'none' | '1_day' | '3_days' | '1_week' | null;
+  isFreeTrial?: boolean | null;
+  trialEndDate?: Timestamp | null;
+  notes: string | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

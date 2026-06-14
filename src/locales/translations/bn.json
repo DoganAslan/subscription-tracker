@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "সংরক্ষণ করুন",
+    "cancel": "বাতিল করুন",
+    "delete": "মুছুন",
+    "edit": "সম্পাদনা করুন",
+    "loading": "লোড হচ্ছে...",
+    "error": "ত্রুটি",
+    "success": "সফল"
+  },
+  "onboarding": {
+    "takeControl": "নিয়ন্ত্রণ নিন",
+    "takeControlDesc": "আপনার সমস্ত সদস্যতা এক জায়গায় পরিচালনা করুন৷",
+    "smartInsights": "স্মার্ট ইনসাইট",
+    "smartInsightsDesc": "আপনার খরচ কল্পনা করুন এবং আসন্ন বিল ট্র্যাক করুন৷",
+    "alwaysUpdated": "সর্বদা আপডেট",
+    "alwaysUpdatedDesc": "আপনার হোম স্ক্রীন উইজেট থেকে সরাসরি আপনার খরচের দিকে নজর রাখুন৷",
+    "skip": "এড়িয়ে যান",
+    "next": "পরবর্তী",
+    "getStarted": "শুরু করুন"
+  },
+  "settings": {
+    "accountSettings": "অ্যাকাউন্ট সেটিংস",
+    "profileInfo": "প্রোফাইল তথ্য",
+    "email": "ইমেল",
+    "accountId": "অ্যাকাউন্ট আইডি",
+    "language": "ভাষা",
+    "deleteAccount": "অ্যাকাউন্ট মুছুন",
+    "deleteWarning": "এই ক্রিয়াটি অপরিবর্তনীয়৷ আপনার সমস্ত ডেটা স্থায়ীভাবে মুছে ফেলা হবে। নিশ্চিত করতে আপনার পাসওয়ার্ড লিখুন।",
+    "permanentlyDelete": "স্থায়ীভাবে মুছুন",
+    "cancel": "বাতিল করুন",
+    "save": "সংরক্ষণ করুন",
+    "security": "নিরাপত্তা এবং বায়োমেট্রিক্স",
+    "changeEmail": "ইমেল পরিবর্তন করুন",
+    "changePassword": "পাসওয়ার্ড পরিবর্তন করুন",
+    "about": "সাবমেট সম্পর্কে",
+    "privacyPolicy": "গোপনীয়তা নীতি",
+    "termsOfService": "পরিষেবার শর্তাবলী",
+    "logout": "নিরাপদভাবে সাইন আউট করুন",
+    "theme": "থিম",
+    "exportData": "ডেটা রপ্তানি করুন",
+    "currencyPref": "মুদ্রার পছন্দ",
+    "homeBaseCurrency": "হোম বেস কারেন্সি"
+  },
+  "tabs": {
+    "home": "হোম",
+    "subscriptions": "সাবস্ক্রিপশন",
+    "calendar": "ক্যালেন্ডার",
+    "settings": "সেটিংস"
+  },
+  "home": {
+    "failedToLoad": "ড্যাশবোর্ড ডেটা লোড করতে ব্যর্থ৷",
+    "yourListIsEmpty": "আপনার তালিকা খালি",
+    "addFirstSub": "আপনার খরচ ট্র্যাক করা শুরু করতে আপনার প্রথম সদস্যতা যোগ করুন।",
+    "addSubscription": "সাবস্ক্রিপশন যোগ করুন",
+    "upcomingPayments": "আসন্ন অর্থপ্রদান",
+    "viewAll": "সব দেখুন",
+    "totalMonthlySpend": "মোট মাসিক খরচ",
+    "estimatedYearlySpend": "আনুমানিক বার্ষিক খরচ",
+    "categoryBreakdown": "বিভাগ ভাঙ্গন",
+    "spendingInsights": "ব্যয় সংক্রান্ত অন্তর্দৃষ্টি",
+    "highestExpense": "সর্বোচ্চ ব্যয়"
+  },
+  "subs": {
+    "subscriptions": "সাবস্ক্রিপশন",
+    "searchPlaceholder": "সাবস্ক্রিপশন খুঁজুন...",
+    "addSubscription": "সাবস্ক্রিপশন যোগ করুন",
+    "activeCount": "{{count}} সক্রিয়",
+    "noResults": "কোন সদস্যতা পাওয়া যায়নি৷",
+    "name": "নাম",
+    "price": "মূল্য",
+    "billingCycle": "বিলিং চক্র",
+    "category": "বিভাগ",
+    "firstPaymentDate": "প্রথম অর্থপ্রদানের তারিখ",
+    "notes": "নোট",
+    "add": "যোগ করুন",
+    "update": "আপডেট",
+    "monthly": "মাসিক",
+    "yearly": "বার্ষিক",
+    "weekly": "সাপ্তাহিক",
+    "paused": "পজ করা হয়েছে",
+    "trial": "ট্রায়াল",
+    "renews": "রিনিউ {{date}}",
+    "activeFor": "এর জন্য সক্রিয়",
+    "months": "মাস",
+    "totalSpend": "মোট খরচ"
+  },
+  "calendar": {
+    "calendar": "ক্যালেন্ডার",
+    "noPayments": "এই দিনের জন্য কোনো পেমেন্ট নির্ধারিত নেই৷"
+  }
+}

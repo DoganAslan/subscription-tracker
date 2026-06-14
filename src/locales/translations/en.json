@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "onboarding": {
+    "takeControl": "Take Control",
+    "takeControlDesc": "Manage all your subscriptions in one place.",
+    "smartInsights": "Smart Insights",
+    "smartInsightsDesc": "Visualize your spending and track upcoming bills.",
+    "alwaysUpdated": "Always Updated",
+    "alwaysUpdatedDesc": "Keep an eye on your expenses right from your Home Screen widgets.",
+    "skip": "Skip",
+    "next": "Next",
+    "getStarted": "Get Started"
+  },
+  "settings": {
+    "accountSettings": "Account Settings",
+    "profileInfo": "Profile Information",
+    "email": "Email",
+    "accountId": "Account ID",
+    "language": "Language",
+    "deleteAccount": "Delete Account",
+    "deleteWarning": "This action is irreversible. All your data will be permanently deleted. Please enter your password to confirm.",
+    "permanentlyDelete": "Permanently Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "security": "Security & Biometrics",
+    "changeEmail": "Change Email",
+    "changePassword": "Change Password",
+    "about": "About SubMate",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "logout": "Sign Out Securely",
+    "theme": "Theme",
+    "exportData": "Export Data",
+    "currencyPref": "Currency Preferences",
+    "homeBaseCurrency": "Home Base Currency"
+  },
+  "tabs": {
+    "home": "Home",
+    "subscriptions": "Subscriptions",
+    "calendar": "Calendar",
+    "settings": "Settings"
+  },
+  "home": {
+    "failedToLoad": "Failed to load dashboard data.",
+    "yourListIsEmpty": "Your List is Empty",
+    "addFirstSub": "Add your first subscription to start tracking your expenses.",
+    "addSubscription": "Add Subscription",
+    "upcomingPayments": "Upcoming Payments",
+    "viewAll": "VIEW ALL",
+    "totalMonthlySpend": "TOTAL MONTHLY SPEND",
+    "estimatedYearlySpend": "Estimated Yearly Spend",
+    "categoryBreakdown": "Category Breakdown",
+    "spendingInsights": "Spending Insights",
+    "highestExpense": "Highest Expense"
+  },
+  "subs": {
+    "subscriptions": "Subscriptions",
+    "searchPlaceholder": "Search subscriptions...",
+    "addSubscription": "Add Subscription",
+    "activeCount": "{{count}} Active",
+    "noResults": "No subscriptions found.",
+    "name": "Name",
+    "price": "Price",
+    "billingCycle": "Billing Cycle",
+    "category": "Category",
+    "firstPaymentDate": "First Payment Date",
+    "notes": "Notes",
+    "add": "Add",
+    "update": "Update",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "weekly": "Weekly",
+    "paused": "Paused",
+    "trial": "TRIAL",
+    "renews": "Renews {{date}}",
+    "activeFor": "ACTIVE FOR",
+    "months": "months",
+    "totalSpend": "TOTAL SPEND"
+  },
+  "calendar": {
+    "calendar": "Calendar",
+    "noPayments": "No payments scheduled for this day."
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "저장",
+    "cancel": "취소",
+    "delete": "삭제",
+    "edit": "수정",
+    "loading": "로드 중...",
+    "error": "오류",
+    "success": "성공"
+  },
+  "onboarding": {
+    "takeControl": "통제권 확보",
+    "takeControlDesc": "모든 구독을 한곳에서 관리하세요.",
+    "smartInsights": "스마트 통계",
+    "smartInsightsDesc": "지출을 시각화하고 향후 청구서를 추적하세요.",
+    "alwaysUpdated": "항상 업데이트",
+    "alwaysUpdatedDesc": "홈 화면 위젯에서 바로 지출을 확인하세요.",
+    "skip": "건너뛰기",
+    "next": "다음",
+    "getStarted": "시작하기"
+  },
+  "settings": {
+    "accountSettings": "계정 설정",
+    "profileInfo": "프로필 정보",
+    "email": "이메일",
+    "accountId": "계정 ID",
+    "language": "언어",
+    "deleteAccount": "계정 삭제",
+    "deleteWarning": "이 작업은 되돌릴 수 없습니다. 모든 데이터가 영구적으로 삭제됩니다. 확인을 위해 비밀번호를 입력해주세요.",
+    "permanentlyDelete": "영구 삭제",
+    "cancel": "취소",
+    "save": "저장",
+    "security": "보안 및 생체 인식",
+    "changeEmail": "이메일 변경",
+    "changePassword": "비밀번호 변경",
+    "about": "SubMate 정보",
+    "privacyPolicy": "개인정보 보호정책",
+    "termsOfService": "서비스 약관",
+    "logout": "안전하게 로그아웃",
+    "theme": "테마",
+    "exportData": "데이터 내보내기",
+    "currencyPref": "통화 환경설정",
+    "homeBaseCurrency": "홈 베이스 통화"
+  },
+  "tabs": {
+    "home": "집",
+    "subscriptions": "구독",
+    "calendar": "캘린더",
+    "settings": "설정"
+  },
+  "home": {
+    "failedToLoad": "대시보드 데이터를 로드하지 못했습니다.",
+    "yourListIsEmpty": "목록이 비어 있습니다",
+    "addFirstSub": "첫 번째 구독을 추가하여 비용 추적을 시작하세요.",
+    "addSubscription": "구독 추가",
+    "upcomingPayments": "예정된 결제",
+    "viewAll": "모두 보기",
+    "totalMonthlySpend": "월별 총 지출",
+    "estimatedYearlySpend": "연간 예상 지출",
+    "categoryBreakdown": "카테고리 분류",
+    "spendingInsights": "지출 통계",
+    "highestExpense": "최고 비용"
+  },
+  "subs": {
+    "subscriptions": "구독",
+    "searchPlaceholder": "구독 검색...",
+    "addSubscription": "구독 추가",
+    "activeCount": "{{count}}개 활성",
+    "noResults": "구독정보를 찾을 수 없습니다.",
+    "name": "이름",
+    "price": "가격",
+    "billingCycle": "결제 주기",
+    "category": "카테고리",
+    "firstPaymentDate": "첫 번째 결제일",
+    "notes": "메모",
+    "add": "추가",
+    "update": "업데이트",
+    "monthly": "월간",
+    "yearly": "연간",
+    "weekly": "주간",
+    "paused": "일시중지됨",
+    "trial": "체험판",
+    "renews": "{{date}} 갱신",
+    "activeFor": "활성 상태",
+    "months": "개월",
+    "totalSpend": "총 지출"
+  },
+  "calendar": {
+    "calendar": "캘린더",
+    "noPayments": "이 날에는 결제가 예정되어 있지 않습니다."
+  }
+}

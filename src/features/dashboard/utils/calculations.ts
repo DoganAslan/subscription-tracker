@@ -1,20 +1,26 @@
-import { Subscription } from '@/services/firebase/types';
-import { currencyService } from '@/utils/currencyConverter';
+import { Subscription, BillingCycle } from '@/services/firebase/types';
+import { currencyService } from '@/services/currencyService';
 
-export const getMonthlyCost = (amount: number, cycle: 'weekly' | 'monthly' | 'yearly'): number => {
+export const getMonthlyCost = (amount: number, cycle: BillingCycle): number => {
   switch (cycle) {
     case 'weekly': return amount * (52 / 12);
-    case 'yearly': return amount / 12;
     case 'monthly': return amount;
+    case 'quarterly': return amount / 3;
+    case 'biannually': return amount / 6;
+    case 'yearly': return amount / 12;
+    case 'biennially': return amount / 24;
     default: return amount;
   }
 };
 
-export const getYearlyCost = (amount: number, cycle: 'weekly' | 'monthly' | 'yearly'): number => {
+export const getYearlyCost = (amount: number, cycle: BillingCycle): number => {
   switch (cycle) {
     case 'weekly': return amount * 52;
     case 'monthly': return amount * 12;
+    case 'quarterly': return amount * 4;
+    case 'biannually': return amount * 2;
     case 'yearly': return amount;
+    case 'biennially': return amount / 2;
     default: return amount;
   }
 };
@@ -51,7 +57,7 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
   const next30Days = new Date(today);
   next30Days.setDate(today.getDate() + 30);
 
-  const getNextRenewalDate = (currentRenewal: Date, cycle: 'weekly' | 'monthly' | 'yearly'): Date => {
+  const getNextRenewalDate = (currentRenewal: Date, cycle: BillingCycle): Date => {
     let nextDate = new Date(currentRenewal);
     // Move the date forward until it's today or in the future
     while (nextDate < today) {
@@ -59,8 +65,14 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
         nextDate.setDate(nextDate.getDate() + 7);
       } else if (cycle === 'monthly') {
         nextDate.setMonth(nextDate.getMonth() + 1);
+      } else if (cycle === 'quarterly') {
+        nextDate.setMonth(nextDate.getMonth() + 3);
+      } else if (cycle === 'biannually') {
+        nextDate.setMonth(nextDate.getMonth() + 6);
       } else if (cycle === 'yearly') {
         nextDate.setFullYear(nextDate.getFullYear() + 1);
+      } else if (cycle === 'biennially') {
+        nextDate.setFullYear(nextDate.getFullYear() + 2);
       }
     }
     return nextDate;

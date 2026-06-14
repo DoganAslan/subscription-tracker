@@ -3,35 +3,41 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
 import { getMonthlyCost } from '../utils/calculations';
+import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   mostExpensive: Subscription | null;
 }
 
-export function SpendingInsightsCard({ mostExpensive }: Props) {
+export const SpendingInsightsCard = React.memo(function SpendingInsightsCard({ mostExpensive }: Props) {
   const hasData = mostExpensive !== null;
   const monthlyCost = hasData ? getMonthlyCost(mostExpensive.amount, mostExpensive.billingCycle) : 0;
+  const { colors } = useTheme();
+  const { t } = useTranslation();
+  
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
   return (
-    <View style={styles.cardContainer}>
-      <View style={styles.iconContainer}>
-        <Ionicons name="sparkles" size={24} color="#3B82F6" />
+    <View style={dynamicStyles.cardContainer}>
+      <View style={dynamicStyles.iconContainer}>
+        <Ionicons name="sparkles" size={24} color={colors.primary} />
       </View>
-      <View style={styles.textContainer}>
-        <Text style={styles.insightTitle}>Highest Expense</Text>
+      <View style={dynamicStyles.textContainer}>
+        <Text style={dynamicStyles.insightTitle}>{t('home.highestExpense')}</Text>
         {hasData === true ? (
-          <Text style={styles.insightValue}>
-            {mostExpensive.name} <Text style={styles.insightAmount}>— ${monthlyCost.toFixed(2)}/mo</Text>
+          <Text style={dynamicStyles.insightValue}>
+            {mostExpensive.name} <Text style={dynamicStyles.insightAmount}>— ${monthlyCost.toFixed(2)}/mo</Text>
           </Text>
         ) : (
-          <Text style={styles.insightValue}>No active expenses this month</Text>
+          <Text style={dynamicStyles.insightValue}>{t('calendar.noPayments')}</Text>
         )}
       </View>
     </View>
   );
-}
+});
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   cardContainer: {
     backgroundColor: 'rgba(59, 130, 246, 0.08)',
     borderRadius: 16,
@@ -55,7 +61,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   insightTitle: {
-    color: '#9CA3AF',
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: 'bold',
     textTransform: 'uppercase',
@@ -63,12 +69,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   insightValue: {
-    color: '#FFFFFF',
+    color: colors.text,
     fontSize: 16,
     fontWeight: '600',
   },
   insightAmount: {
-    color: '#9CA3AF',
+    color: colors.textSecondary,
     fontWeight: 'normal',
   }
 });

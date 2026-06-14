@@ -3,17 +3,18 @@ import { View, SafeAreaView, TouchableOpacity, Text, useColorScheme } from 'reac
 import { SubscriptionList } from '@/features/subscriptions/components/SubscriptionList';
 import { Header } from '@/components/common/Header';
 import { useRouter } from 'expo-router';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 export default function SubscriptionListScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const theme = colorScheme === 'dark' ? colors.dark : colors.light;
+  const { colors } = useTheme();
+  const { t } = useTranslation();
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#0B0F19' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-        <Header title="Subscriptions" />
+        <Header title={t('subs.subscriptions')} />
       </View>
 
       <SubscriptionList />
@@ -28,11 +29,11 @@ export default function SubscriptionListScreen() {
           right: 24,
           width: 64,
           height: 64,
-          backgroundColor: theme.primary,
+          backgroundColor: colors.primary,
           borderRadius: 32,
           alignItems: 'center',
           justifyContent: 'center',
-          shadowColor: theme.primary,
+          shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.3,
           shadowRadius: 8,

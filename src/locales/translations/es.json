@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito"
+  },
+  "onboarding": {
+    "takeControl": "Toma el control",
+    "takeControlDesc": "Administre todas sus suscripciones en un solo lugar.",
+    "smartInsights": "Información inteligente",
+    "smartInsightsDesc": "Visualiza tus gastos y realiza un seguimiento de las próximas facturas.",
+    "alwaysUpdated": "Siempre actualizado",
+    "alwaysUpdatedDesc": "Controla tus gastos directamente desde los widgets de tu pantalla de inicio.",
+    "skip": "Omitir",
+    "next": "Siguiente",
+    "getStarted": "Empezar"
+  },
+  "settings": {
+    "accountSettings": "Configuración de la cuenta",
+    "profileInfo": "Información del perfil",
+    "email": "Correo electrónico",
+    "accountId": "ID de cuenta",
+    "language": "Idioma",
+    "deleteAccount": "Eliminar cuenta",
+    "deleteWarning": "Esta acción es irreversible. Todos sus datos serán eliminados permanentemente. Por favor ingrese su contraseña para confirmar.",
+    "permanentlyDelete": "Eliminar permanentemente",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "security": "Seguridad y biometría",
+    "changeEmail": "Cambiar correo electrónico",
+    "changePassword": "Cambiar contraseña",
+    "about": "Acerca de SubMate",
+    "privacyPolicy": "Política de Privacidad",
+    "termsOfService": "Términos de servicio",
+    "logout": "Cerrar sesión de forma segura",
+    "theme": "Tema",
+    "exportData": "Exportar datos",
+    "currencyPref": "Preferencias de moneda",
+    "homeBaseCurrency": "Moneda base local"
+  },
+  "tabs": {
+    "home": "Inicio",
+    "subscriptions": "Suscripciones",
+    "calendar": "Calendario",
+    "settings": "Configuración"
+  },
+  "home": {
+    "failedToLoad": "Error al cargar los datos del panel.",
+    "yourListIsEmpty": "Tu lista está vacía",
+    "addFirstSub": "Agregue su primera suscripción para comenzar a realizar un seguimiento de sus gastos.",
+    "addSubscription": "Agregar suscripción",
+    "upcomingPayments": "Próximos pagos",
+    "viewAll": "VER TODO",
+    "totalMonthlySpend": "GASTO MENSUAL TOTAL",
+    "estimatedYearlySpend": "Gasto anual estimado",
+    "categoryBreakdown": "Desglose de categorías",
+    "spendingInsights": "Información sobre gastos",
+    "highestExpense": "Gasto más alto"
+  },
+  "subs": {
+    "subscriptions": "Suscripciones",
+    "searchPlaceholder": "Buscar suscripciones...",
+    "addSubscription": "Agregar suscripción",
+    "activeCount": "{{count}} Activo",
+    "noResults": "No se encontraron suscripciones.",
+    "name": "Nombre",
+    "price": "Precio",
+    "billingCycle": "Ciclo de facturación",
+    "category": "Categoría",
+    "firstPaymentDate": "Primera fecha de pago",
+    "notes": "Notas",
+    "add": "Agregar",
+    "update": "Actualizar",
+    "monthly": "Mensual",
+    "yearly": "Anual",
+    "weekly": "Semanal",
+    "paused": "Pausado",
+    "trial": "PRUEBA",
+    "renews": "Renueva el {{date}}",
+    "activeFor": "ACTIVO PARA",
+    "months": "meses",
+    "totalSpend": "GASTO TOTAL"
+  },
+  "calendar": {
+    "calendar": "Calendario",
+    "noPayments": "No hay pagos programados para este día."
+  }
+}

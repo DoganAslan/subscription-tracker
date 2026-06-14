@@ -3,10 +3,11 @@ import { SubscriptionService } from '@/services/firebase/firestore';
 import { Subscription } from '@/services/firebase/types';
 import { SubscriptionFormData } from '../schemas/subscription.schema';
 import { Timestamp } from 'firebase/firestore';
-import { useToastStore } from '@/store/useToastStore';
+import Toast from 'react-native-toast-message';
+import { Alert } from 'react-native';
 import { useAuthStore } from '@/store/useAuthStore';
-import { NotificationService } from '@/features/notifications/services/notificationService';
-import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
+import { scheduleRenewalReminder, cancelSubscriptionNotifications } from '@/utils/NotificationService';
 
 // React Query Keys
 export const subscriptionKeys = {
@@ -22,18 +23,18 @@ export function useSubscriptions() {
     queryKey: subscriptionKeys.list(user?.uid || ''),
     queryFn: () => SubscriptionService.getSubscriptions(user!.uid),
     enabled: !!user?.uid, // Only fetch if user exists
+    initialData: [], // Ensure subscriptions array is never undefined
   });
 }
 
 export function useAddSubscription() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
-  const showToast = useToastStore(state => state.showToast);
+
 
   return useMutation({
     mutationFn: async (data: SubscriptionFormData) => {
       if (!user) throw new Error("Not authenticated");
-      
       const payload = {
         ...data,
         notes: data.notes || '',
@@ -41,17 +42,20 @@ export function useAddSubscription() {
         trialEndDate: data.trialEndDate ? Timestamp.fromDate(data.trialEndDate) : undefined,
       };
       
-      const id = await SubscriptionService.addSubscription(user.uid, payload);
-      return { id, payload };
+      const docRef = await SubscriptionService.addSubscription(user.uid, payload);
+      return { id: typeof docRef === 'string' ? docRef : docRef?.id || `temp_${Date.now()}`, payload };
     },
     onSuccess: (result) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user!.uid) });
-      showToast('Subscription added successfully', 'success');
-      NotificationService.scheduleSubscriptionNotifications({ id: result.id, ...result.payload } as any);
+      triggerHaptic('success');
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
+      }
+      scheduleRenewalReminder(result.id, result.payload.name, result.payload.renewalDate.toDate()).catch(() => {});
+      Toast.show({ type: 'success', text1: 'Subscription Saved', position: 'top' });
     },
     onError: (error) => {
-      showToast('Failed to add subscription', 'error');
+      triggerHaptic('error');
+      Toast.show({ type: 'error', text1: 'Failed to add subscription', position: 'top' });
       console.error(error);
     }
   });
@@ -60,12 +64,10 @@ export function useAddSubscription() {
 export function useUpdateSubscription() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
-  const showToast = useToastStore(state => state.showToast);
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: SubscriptionFormData }) => {
       if (!user) throw new Error("Not authenticated");
-      
       const payload = {
         ...data,
         notes: data.notes || '',
@@ -77,13 +79,16 @@ export function useUpdateSubscription() {
       return { id, payload };
     },
     onSuccess: (result) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user!.uid) });
-      showToast('Subscription updated', 'success');
-      NotificationService.scheduleSubscriptionNotifications({ id: result.id, ...result.payload } as any);
+      triggerHaptic('success');
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
+      }
+      scheduleRenewalReminder(result.id, result.payload.name, result.payload.renewalDate.toDate()).catch(() => {});
+      Toast.show({ type: 'success', text1: 'Subscription Updated', position: 'top' });
     },
     onError: (error) => {
-      showToast('Failed to update subscription', 'error');
+      triggerHaptic('error');
+      Toast.show({ type: 'error', text1: 'Failed to update subscription', position: 'top' });
       console.error(error);
     }
   });
@@ -92,7 +97,7 @@ export function useUpdateSubscription() {
 export function useDeleteSubscription() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
-  const showToast = useToastStore(state => state.showToast);
+
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -100,44 +105,18 @@ export function useDeleteSubscription() {
       await SubscriptionService.deleteSubscription(user.uid, id);
       return id;
     },
-    // Optimistic Update Implementation
-    onMutate: async (deletedId) => {
-      if (!user) return;
-      
-      // Cancel any outgoing refetches so they don't overwrite our optimistic update
-      await queryClient.cancelQueries({ queryKey: subscriptionKeys.list(user.uid) });
-      
-      // Snapshot the previous value
-      const previousSubscriptions = queryClient.getQueryData<Subscription[]>(subscriptionKeys.list(user.uid));
-
-      // Optimistically update to the new value
-      if (previousSubscriptions) {
-        queryClient.setQueryData<Subscription[]>(
-          subscriptionKeys.list(user.uid),
-          previousSubscriptions.filter(sub => sub.id !== deletedId)
-        );
-      }
-
-      // Return a context object with the snapshotted value
-      return { previousSubscriptions };
-    },
-    // If the mutation fails, use the context returned from onMutate to roll back
-    onError: (err, deletedId, context) => {
-      if (context?.previousSubscriptions && user) {
-        queryClient.setQueryData(subscriptionKeys.list(user.uid), context.previousSubscriptions);
-      }
-      showToast('Failed to delete subscription', 'error');
-    },
-    // Always refetch after error or success to sync with server
-    onSettled: () => {
+    onSuccess: (id) => {
+      triggerHaptic('success');
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
       }
+      cancelSubscriptionNotifications(id).catch(() => {});
+      Toast.show({ type: 'success', text1: 'Subscription Removed', position: 'top' });
     },
-    onSuccess: (id) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      showToast('Subscription removed', 'success');
-      NotificationService.cancelSubscriptionNotifications(id);
+    onError: (error) => {
+      triggerHaptic('error');
+      Toast.show({ type: 'error', text1: 'Failed to delete subscription', position: 'top' });
+      console.error(error);
     }
   });
 }

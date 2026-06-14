@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolg"
+  },
+  "onboarding": {
+    "takeControl": "Übernehmen Sie die Kontrolle",
+    "takeControlDesc": "Verwalten Sie alle Ihre Abonnements an einem Ort.",
+    "smartInsights": "Intelligente Einblicke",
+    "smartInsightsDesc": "Visualisieren Sie Ihre Ausgaben und verfolgen Sie anstehende Rechnungen.",
+    "alwaysUpdated": "Immer aktualisiert",
+    "alwaysUpdatedDesc": "Behalten Sie Ihre Ausgaben direkt über Ihre Startbildschirm-Widgets im Auge.",
+    "skip": "Überspringen",
+    "next": "Weiter",
+    "getStarted": "Erste Schritte"
+  },
+  "settings": {
+    "accountSettings": "Kontoeinstellungen",
+    "profileInfo": "Profilinformationen",
+    "email": "E-Mail",
+    "accountId": "Konto-ID",
+    "language": "Sprache",
+    "deleteAccount": "Konto löschen",
+    "deleteWarning": "Diese Aktion ist irreversibel. Alle Ihre Daten werden dauerhaft gelöscht. Bitte geben Sie zur Bestätigung Ihr Passwort ein.",
+    "permanentlyDelete": "Endgültig löschen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "security": "Sicherheit und Biometrie",
+    "changeEmail": "E-Mail ändern",
+    "changePassword": "Passwort ändern",
+    "about": "Über SubMate",
+    "privacyPolicy": "Datenschutzerklärung",
+    "termsOfService": "Nutzungsbedingungen",
+    "logout": "Sicher abmelden",
+    "theme": "Thema",
+    "exportData": "Daten exportieren",
+    "currencyPref": "Währungseinstellungen",
+    "homeBaseCurrency": "Heimatbasiswährung"
+  },
+  "tabs": {
+    "home": "Startseite",
+    "subscriptions": "Abonnements",
+    "calendar": "Kalender",
+    "settings": "Einstellungen"
+  },
+  "home": {
+    "failedToLoad": "Dashboard-Daten konnten nicht geladen werden.",
+    "yourListIsEmpty": "Ihre Liste ist leer",
+    "addFirstSub": "Fügen Sie Ihr erstes Abonnement hinzu, um mit der Verfolgung Ihrer Ausgaben zu beginnen.",
+    "addSubscription": "Abonnement hinzufügen",
+    "upcomingPayments": "Anstehende Zahlungen",
+    "viewAll": "ALLES ANZEIGEN",
+    "totalMonthlySpend": "GESAMTMONATLICHE AUSGABEN",
+    "estimatedYearlySpend": "Geschätzte jährliche Ausgaben",
+    "categoryBreakdown": "Kategorieaufschlüsselung",
+    "spendingInsights": "Einblicke in Ausgaben",
+    "highestExpense": "Höchste Ausgabe"
+  },
+  "subs": {
+    "subscriptions": "Abonnements",
+    "searchPlaceholder": "Abonnements suchen...",
+    "addSubscription": "Abonnement hinzufügen",
+    "activeCount": "{{count}} Aktiv",
+    "noResults": "Keine Abonnements gefunden.",
+    "name": "Name",
+    "price": "Preis",
+    "billingCycle": "Abrechnungszeitraum",
+    "category": "Kategorie",
+    "firstPaymentDate": "Erstes Zahlungsdatum",
+    "notes": "Notizen",
+    "add": "Hinzufügen",
+    "update": "Update",
+    "monthly": "Monatlich",
+    "yearly": "Jährlich",
+    "weekly": "Wöchentlich",
+    "paused": "Pausiert",
+    "trial": "TESTVERSION",
+    "renews": "Verlängert am {{date}}",
+    "activeFor": "AKTIV FÜR",
+    "months": "Monate",
+    "totalSpend": "GESAMTAUSGABEN"
+  },
+  "calendar": {
+    "calendar": "Kalender",
+    "noPayments": "Für diesen Tag sind keine Zahlungen geplant."
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "محفوظ کریں",
+    "cancel": "منسوخ کریں",
+    "delete": "حذف کریں",
+    "edit": "ترمیم کریں",
+    "loading": "لوڈ ہو رہا ہے...",
+    "error": "خرابی",
+    "success": "کامیابی"
+  },
+  "onboarding": {
+    "takeControl": "کنٹرول لیں",
+    "takeControlDesc": "اپنی تمام سبسکرپشنز کا ایک جگہ پر نظم کریں۔",
+    "smartInsights": "سمارٹ بصیرتیں",
+    "smartInsightsDesc": "اپنے اخراجات کا تصور کریں اور آنے والے بلوں کو ٹریک کریں۔",
+    "alwaysUpdated": "ہمیشہ اپ ڈیٹ",
+    "alwaysUpdatedDesc": "اپنے ہوم اسکرین ویجیٹس سے اپنے اخراجات پر نظر رکھیں۔",
+    "skip": "چھوڑیں",
+    "next": "اگلا",
+    "getStarted": "شروع کریں"
+  },
+  "settings": {
+    "accountSettings": "اکاؤنٹ کی ترتیبات",
+    "profileInfo": "پروفائل کی معلومات",
+    "email": "ای میل",
+    "accountId": "اکاؤنٹ ID",
+    "language": "زبان",
+    "deleteAccount": "اکاؤنٹ حذف کریں",
+    "deleteWarning": "یہ کارروائی ناقابل واپسی ہے۔ آپ کا تمام ڈیٹا مستقل طور پر حذف کر دیا جائے گا۔ تصدیق کے لیے اپنا پاس ورڈ درج کریں۔",
+    "permanentlyDelete": "مستقل طور پر حذف کریں",
+    "cancel": "منسوخ کریں",
+    "save": "محفوظ کریں",
+    "security": "سیکیورٹی اور بایومیٹرکس",
+    "changeEmail": "ای میل تبدیل کریں",
+    "changePassword": "پاس ورڈ تبدیل کریں",
+    "about": "SubMate کے بارے میں",
+    "privacyPolicy": "رازداری کی پالیسی",
+    "termsOfService": "سروس کی شرائط",
+    "logout": "محفوظ طریقے سے سائن آؤٹ کریں",
+    "theme": "تھیم",
+    "exportData": "ڈیٹا برآمد کریں",
+    "currencyPref": "کرنسی کی ترجیحات",
+    "homeBaseCurrency": "ہوم بیس کرنسی"
+  },
+  "tabs": {
+    "home": "گھر",
+    "subscriptions": "سبسکرپشنز",
+    "calendar": "کیلنڈر",
+    "settings": "ترتیبات"
+  },
+  "home": {
+    "failedToLoad": "ڈیش بورڈ ڈیٹا لوڈ کرنے میں ناکام۔",
+    "yourListIsEmpty": "آپ کی فہرست خالی ہے",
+    "addFirstSub": "اپنے اخراجات کو ٹریک کرنا شروع کرنے کے لیے اپنی پہلی رکنیت شامل کریں۔",
+    "addSubscription": "سبسکرپشن شامل کریں",
+    "upcomingPayments": "آئندہ ادائیگیاں",
+    "viewAll": "سب دیکھیں",
+    "totalMonthlySpend": "کل ماہانہ خرچ",
+    "estimatedYearlySpend": "تخمینہ سالانہ خرچ",
+    "categoryBreakdown": "زمرہ کی خرابی",
+    "spendingInsights": "خرچ کی بصیرتیں",
+    "highestExpense": "سب سے زیادہ خرچ"
+  },
+  "subs": {
+    "subscriptions": "سبسکرپشنز",
+    "searchPlaceholder": "سبسکرپشنز تلاش کریں...",
+    "addSubscription": "سبسکرپشن شامل کریں",
+    "activeCount": "{{count}} فعال",
+    "noResults": "کوئی سبسکرپشنز نہیں ملے۔",
+    "name": "نام",
+    "price": "قیمت",
+    "billingCycle": "بلنگ سائیکل",
+    "category": "زمرہ",
+    "firstPaymentDate": "پہلی ادائیگی کی تاریخ",
+    "notes": "نوٹس",
+    "add": "شامل کریں",
+    "update": "اپ ڈیٹ کریں",
+    "monthly": "ماہانہ",
+    "yearly": "سالانہ",
+    "weekly": "ہفتہ وار",
+    "paused": "روکا ہوا",
+    "trial": "ٹرائل",
+    "renews": "تجدید {{date}}",
+    "activeFor": "کے لیے فعال",
+    "months": "مہینے",
+    "totalSpend": "کل خرچ"
+  },
+  "calendar": {
+    "calendar": "کیلنڈر",
+    "noPayments": "اس دن کے لیے کوئی ادائیگی طے شدہ نہیں ہے۔"
+  }
+}

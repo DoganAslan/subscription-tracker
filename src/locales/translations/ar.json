@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "loading": "جارٍ التحميل...",
+    "error": "خطأ",
+    "success": "النجاح"
+  },
+  "onboarding": {
+    "takeControl": "التحكم",
+    "takeControlDesc": "إدارة جميع اشتراكاتك في مكان واحد.",
+    "smartInsights": "الرؤى الذكية",
+    "smartInsightsDesc": "تصور إنفاقك وتتبع الفواتير القادمة.",
+    "alwaysUpdated": "يتم تحديثه دائمًا",
+    "alwaysUpdatedDesc": "راقب نفقاتك مباشرةً من أدوات الشاشة الرئيسية.",
+    "skip": "تخطي",
+    "next": "التالي",
+    "getStarted": "البدء"
+  },
+  "settings": {
+    "accountSettings": "إعدادات الحساب",
+    "profileInfo": "معلومات الملف الشخصي",
+    "email": "البريد الإلكتروني",
+    "accountId": "معرف الحساب",
+    "language": "اللغة",
+    "deleteAccount": "حذف الحساب",
+    "deleteWarning": "لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك نهائيًا. الرجاء إدخال كلمة المرور الخاصة بك للتأكيد.",
+    "permanentlyDelete": "الحذف نهائيًا",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "security": "الأمان والقياسات الحيوية",
+    "changeEmail": "تغيير البريد الإلكتروني",
+    "changePassword": "تغيير كلمة المرور",
+    "about": "حول SubMate",
+    "privacyPolicy": "سياسة الخصوصية",
+    "termsOfService": "شروط الخدمة",
+    "logout": "تسجيل الخروج بشكل آمن",
+    "theme": "الموضوع",
+    "exportData": "تصدير البيانات",
+    "currencyPref": "تفضيلات العملة",
+    "homeBaseCurrency": "العملة الأساسية للمنزل"
+  },
+  "tabs": {
+    "home": "الصفحة الرئيسية",
+    "subscriptions": "الاشتراكات",
+    "calendar": "التقويم",
+    "settings": "الإعدادات"
+  },
+  "home": {
+    "failedToLoad": "فشل تحميل بيانات لوحة التحكم.",
+    "yourListIsEmpty": "قائمتك فارغة",
+    "addFirstSub": "أضف اشتراكك الأول لبدء متابعة نفقاتك.",
+    "addSubscription": "إضافة اشتراك",
+    "upcomingPayments": "الدفعات القادمة",
+    "viewAll": "عرض الكل",
+    "totalMonthlySpend": "إجمالي الإنفاق الشهري",
+    "estimatedYearlySpend": "الإنفاق السنوي المقدر",
+    "categoryBreakdown": "تقسيم الفئات",
+    "spendingInsights": "إحصاءات الإنفاق",
+    "highestExpense": "الأعلى تكلفة"
+  },
+  "subs": {
+    "subscriptions": "الاشتراكات",
+    "searchPlaceholder": "البحث في الاشتراكات...",
+    "addSubscription": "إضافة اشتراك",
+    "activeCount": "{{count}} نشط",
+    "noResults": "لم يتم العثور على أي اشتراكات.",
+    "name": "الاسم",
+    "price": "السعر",
+    "billingCycle": "دورة الفوترة",
+    "category": "الفئة",
+    "firstPaymentDate": "تاريخ الدفعة الأولى",
+    "notes": "ملاحظات",
+    "add": "إضافة",
+    "update": "تحديث",
+    "monthly": "شهريًا",
+    "yearly": "سنويًا",
+    "weekly": "أسبوعيًا",
+    "paused": "متوقف مؤقتًا",
+    "trial": "تجربة",
+    "renews": "يتم التجديد في {{date}}",
+    "activeFor": "نشط لمدة",
+    "months": "أشهر",
+    "totalSpend": "إجمالي الإنفاق"
+  },
+  "calendar": {
+    "calendar": "التقويم",
+    "noPayments": "لم تتم جدولة أي دفعات لهذا اليوم."
+  }
+}

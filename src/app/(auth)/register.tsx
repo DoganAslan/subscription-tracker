@@ -2,24 +2,29 @@ import React from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
 import { RegisterForm } from '@/features/auth/components/RegisterForm';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function RegisterScreen() {
+  const { colors } = useTheme();
+  
+  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
+
   return (
     <KeyboardAvoidingView 
-      style={styles.container}
+      style={dynamicStyles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Start tracking your subscriptions today</Text>
+      <ScrollView contentContainerStyle={dynamicStyles.scrollContent}>
+        <View style={dynamicStyles.headerContainer}>
+          <Text style={dynamicStyles.title}>Create Account</Text>
+          <Text style={dynamicStyles.subtitle}>Start tracking your subscriptions today</Text>
         </View>
 
         <RegisterForm />
 
-        <View style={styles.footerContainer}>
-          <Text style={styles.footerText}>Already have an account? </Text>
-          <Link href="/(auth)" style={styles.footerLink}>
+        <View style={dynamicStyles.footerContainer}>
+          <Text style={dynamicStyles.footerText}>Already have an account? </Text>
+          <Link href="/(auth)" style={dynamicStyles.footerLink}>
             Log in
           </Link>
         </View>
@@ -28,10 +33,10 @@ export default function RegisterScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B0F19',
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -45,12 +50,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#F9FAFB',
+    color: colors.text,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#9CA3AF',
+    color: colors.textSecondary,
   },
   footerContainer: {
     flexDirection: 'row',
@@ -58,11 +63,11 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   footerText: {
-    color: '#9CA3AF',
+    color: colors.textSecondary,
     fontSize: 16,
   },
   footerLink: {
-    color: '#3B82F6',
+    color: colors.primary,
     fontWeight: '600',
     fontSize: 16,
   },

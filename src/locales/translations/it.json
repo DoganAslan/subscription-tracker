@@ -1,0 +1,92 @@
+{
+  "common": {
+    "save": "Salva",
+    "cancel": "Annulla",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "loading": "Caricamento in corso...",
+    "error": "Errore",
+    "success": "Successo"
+  },
+  "onboarding": {
+    "takeControl": "Prendi il controllo",
+    "takeControlDesc": "Gestisci tutti i tuoi abbonamenti in un unico posto.",
+    "smartInsights": "Approfondimenti intelligenti",
+    "smartInsightsDesc": "Visualizza le tue spese e monitora le prossime fatture.",
+    "alwaysUpdated": "Sempre aggiornato",
+    "alwaysUpdatedDesc": "Tieni d'occhio le tue spese direttamente dai widget della schermata Home.",
+    "skip": "Salta",
+    "next": "Avanti",
+    "getStarted": "Inizia"
+  },
+  "settings": {
+    "accountSettings": "Impostazioni account",
+    "profileInfo": "Informazioni sul profilo",
+    "email": "E-mail",
+    "accountId": "ID account",
+    "language": "Lingua",
+    "deleteAccount": "Elimina account",
+    "deleteWarning": "Questa azione è irreversibile. Tutti i tuoi dati verranno eliminati definitivamente. Inserisci la tua password per confermare.",
+    "permanentlyDelete": "Elimina definitivamente",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "security": "Sicurezza e biometria",
+    "changeEmail": "Cambia email",
+    "changePassword": "Cambia password",
+    "about": "Informazioni su SubMate",
+    "privacyPolicy": "Informativa sulla privacy",
+    "termsOfService": "Termini di servizio",
+    "logout": "Esci in sicurezza",
+    "theme": "Tema",
+    "exportData": "Esporta dati",
+    "currencyPref": "Preferenze valuta",
+    "homeBaseCurrency": "Valuta base di origine"
+  },
+  "tabs": {
+    "home": "Casa",
+    "subscriptions": "Abbonamenti",
+    "calendar": "Calendario",
+    "settings": "Impostazioni"
+  },
+  "home": {
+    "failedToLoad": "Impossibile caricare i dati del dashboard.",
+    "yourListIsEmpty": "La tua lista è vuota",
+    "addFirstSub": "Aggiungi il tuo primo abbonamento per iniziare a monitorare le tue spese.",
+    "addSubscription": "Aggiungi abbonamento",
+    "upcomingPayments": "Pagamenti imminenti",
+    "viewAll": "VISUALIZZA TUTTO",
+    "totalMonthlySpend": "SPESA MENSILE TOTALE",
+    "estimatedYearlySpend": "Spesa annuale stimata",
+    "categoryBreakdown": "Ripartizione per categoria",
+    "spendingInsights": "Approfondimenti sulla spesa",
+    "highestExpense": "Spesa massima"
+  },
+  "subs": {
+    "subscriptions": "Abbonamenti",
+    "searchPlaceholder": "Cerca abbonamenti...",
+    "addSubscription": "Aggiungi abbonamento",
+    "activeCount": "{{count}} attivo",
+    "noResults": "Nessun abbonamento trovato.",
+    "name": "Nome",
+    "price": "Prezzo",
+    "billingCycle": "Ciclo di fatturazione",
+    "category": "Categoria",
+    "firstPaymentDate": "Prima data di pagamento",
+    "notes": "Note",
+    "add": "Aggiungi",
+    "update": "Aggiorna",
+    "monthly": "Mensile",
+    "yearly": "Annuale",
+    "weekly": "Settimanale",
+    "paused": "In pausa",
+    "trial": "PROVA",
+    "renews": "Rinnova il {{date}}",
+    "activeFor": "ATTIVO PER",
+    "months": "mesi",
+    "totalSpend": "SPESA TOTALE"
+  },
+  "calendar": {
+    "calendar": "Calendario",
+    "noPayments": "Nessun pagamento pianificato per questo giorno."
+  }
+}
