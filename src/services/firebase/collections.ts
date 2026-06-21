@@ -1,6 +1,6 @@
 import { collection, doc, CollectionReference, DocumentReference } from 'firebase/firestore';
 import { db } from './config';
-import { User, Subscription } from './types';
+import { User, Subscription, Card } from './types';
 
 // Helper to strongly type collections
 const createCollection = <T = import('firebase/firestore').DocumentData>(collectionName: string) => {
@@ -18,4 +18,13 @@ export const getSubscriptionsCollection = () => {
 
 export const getSubscriptionDoc = (subscriptionId: string) => {
   return doc(db, `subscriptions/${subscriptionId}`) as DocumentReference<Subscription>;
+};
+
+// Cards collection
+export const getCardsCollection = () => {
+  return collection(db, 'cards') as CollectionReference<Card>;
+};
+
+export const getCardDoc = (cardId: string) => {
+  return doc(db, `cards/${cardId}`) as DocumentReference<Card>;
 };

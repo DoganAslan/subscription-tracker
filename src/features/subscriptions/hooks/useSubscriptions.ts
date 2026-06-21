@@ -50,7 +50,15 @@ export function useAddSubscription() {
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
       }
-      scheduleRenewalReminder(result.id, result.payload.name, result.payload.renewalDate.toDate()).catch(() => {});
+      try {
+        scheduleRenewalReminder(result.id, result.payload.name, result.payload.renewalDate.toDate(), 2, result.payload.billingCycle).then((triggerDate) => {
+          if (triggerDate) {
+            console.log(`[Notification Audit] Scheduled for: ${triggerDate.toISOString()}`);
+          }
+        });
+      } catch (err) {
+        console.error("Error scheduling:", err);
+      }
       Toast.show({ type: 'success', text1: 'Subscription Saved', position: 'top' });
     },
     onError: (error) => {
@@ -83,7 +91,15 @@ export function useUpdateSubscription() {
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
       }
-      scheduleRenewalReminder(result.id, result.payload.name, result.payload.renewalDate.toDate()).catch(() => {});
+      try {
+        scheduleRenewalReminder(result.id, result.payload.name, result.payload.renewalDate.toDate(), 2, result.payload.billingCycle).then((triggerDate) => {
+          if (triggerDate) {
+            console.log(`[Notification Audit] Scheduled for: ${triggerDate.toISOString()}`);
+          }
+        });
+      } catch (err) {
+        console.error("Error scheduling:", err);
+      }
       Toast.show({ type: 'success', text1: 'Subscription Updated', position: 'top' });
     },
     onError: (error) => {

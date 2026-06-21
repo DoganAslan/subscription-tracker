@@ -9,9 +9,10 @@ export const subscriptionSchema = z.object({
   renewalDate: z.date(),
   status: z.enum(['active', 'paused']).optional().default('active'),
   reminderOffset: z.enum(['none', '1_day', '3_days', '1_week']).optional().default('1_day'),
-  isFreeTrial: z.boolean().optional().default(false),
-  trialEndDate: z.date().optional(),
-  notes: z.string().optional(),
+  isFreeTrial: z.boolean().default(false).optional().nullable(),
+  trialEndDate: z.date().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  cardId: z.string().optional().nullable(),
 });
 
 export type SubscriptionFormData = z.infer<typeof subscriptionSchema>;

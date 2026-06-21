@@ -11,6 +11,7 @@ import { Subscription } from '@/services/firebase/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { useCards } from '@/features/cards/hooks/useCards';
 
 export const CATEGORIES = [
   { name: 'Entertainment', hint: 'Netflix, Disney+, Cable' },
@@ -100,6 +101,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const [showRenewalPicker, setShowRenewalPicker] = useState(false);
   const [showTrialPicker, setShowTrialPicker] = useState(false);
+  const [isCardModalVisible, setIsCardModalVisible] = useState(false);
+  
+  const { data: cards = [] } = useCards();
   
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -121,6 +125,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
       trialEndDate: initialData?.trialEndDate?.toDate() || new Date(),
       notes: initialData?.notes || '',
       status: initialData?.status || 'active',
+      cardId: initialData?.cardId || null,
     }
   });
 
@@ -185,6 +190,31 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             )}
           </View>
         )}
+
+        <Controller
+          control={control}
+          name="cardId"
+          render={({ field: { value, onChange } }) => {
+            const selectedCard = cards.find(c => c.id === value);
+            return (
+              <TouchableOpacity 
+                activeOpacity={0.8} 
+                onPress={() => setIsCardModalVisible(true)}
+                style={{ marginBottom: 16 }}
+              >
+                <View pointerEvents="none">
+                  <Input 
+                    label="Payment Method / Link Card" 
+                    placeholder="Select a card" 
+                    value={selectedCard ? `💳 ${selectedCard.type.toUpperCase()} - ${selectedCard.name} (•••• ${selectedCard.lastFourDigits || '****'})` : 'None / No Card'} 
+                    error={errors.cardId?.message} 
+                    editable={false}
+                  />
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
 
         <Controller
           control={control}
@@ -589,6 +619,57 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                         )}
                       </View>
                       {value === item.name && (
+                        <Text style={dynamicStyles.checkIcon}>✓</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Card Selection Modal */}
+      <Modal
+        visible={isCardModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsCardModalVisible(false)}
+      >
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={[dynamicStyles.modalContent, { height: '50%' }]}>
+            <View style={dynamicStyles.modalHeader}>
+              <Text style={dynamicStyles.modalTitle}>Select Payment Method</Text>
+              <TouchableOpacity onPress={() => setIsCardModalVisible(false)}>
+                <Text style={dynamicStyles.modalClose}>Close</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Controller
+              control={control}
+              name="cardId"
+              render={({ field: { onChange, value } }) => (
+                <FlatList
+                  data={[{ id: null, name: 'None / No Card' }, ...cards]}
+                  keyExtractor={item => item.id || 'none'}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 40 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      onPress={() => {
+                        onChange(item.id);
+                        setIsCardModalVisible(false);
+                      }}
+                      style={[
+                        dynamicStyles.modalRow,
+                        value === item.id && dynamicStyles.modalRowSelected
+                      ]}
+                    >
+                      <Text style={[dynamicStyles.modalRowText, value === item.id && dynamicStyles.modalRowTextSelected]}>
+                        {item.id ? `💳 ${item.type?.toUpperCase()} - ${item.name} (•••• ${item.lastFourDigits || '****'})` : item.name}
+                      </Text>
+                      {value === item.id && (
                         <Text style={dynamicStyles.checkIcon}>✓</Text>
                       )}
                     </TouchableOpacity>

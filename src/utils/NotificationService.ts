@@ -72,27 +72,45 @@ export const scheduleRenewalReminder = async (
   subscriptionId: string,
   subscriptionName: string,
   renewalDate: Date,
-  daysBefore: number = 2
-) => {
-  if (Platform.OS === 'web') return;
+  daysBefore: number = 2,
+  billingCycle: string = 'monthly'
+): Promise<Date | null> => {
+  if (Platform.OS === 'web') return null;
 
   try {
-    // Check permissions first
     const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') return;
+    if (status !== 'granted') return null;
 
-    // Cancel existing notifications for this subscription to avoid duplicates
     await cancelSubscriptionNotifications(subscriptionId);
 
-    // Calculate the trigger date
-    const triggerDate = new Date(renewalDate);
-    triggerDate.setDate(triggerDate.getDate() - daysBefore);
-    // Set notification time to 10:00 AM
-    triggerDate.setHours(10, 0, 0, 0);
+    let targetDate = new Date(renewalDate);
+    targetDate.setHours(9, 0, 0, 0); // Default to 9:00 AM
 
-    // If the trigger date is in the past, don't schedule it
-    if (triggerDate.getTime() <= Date.now()) {
-      return;
+    let triggerDate = new Date(targetDate);
+    triggerDate.setDate(triggerDate.getDate() - daysBefore);
+
+    const today = new Date();
+
+    if (triggerDate.getTime() <= today.getTime()) {
+      while (triggerDate.getTime() <= today.getTime()) {
+        if (billingCycle === 'weekly') {
+          targetDate.setDate(targetDate.getDate() + 7);
+        } else if (billingCycle === 'monthly') {
+          targetDate.setMonth(targetDate.getMonth() + 1);
+        } else if (billingCycle === 'quarterly') {
+          targetDate.setMonth(targetDate.getMonth() + 3);
+        } else if (billingCycle === 'biannually') {
+          targetDate.setMonth(targetDate.getMonth() + 6);
+        } else if (billingCycle === 'yearly') {
+          targetDate.setFullYear(targetDate.getFullYear() + 1);
+        } else if (billingCycle === 'biennially') {
+          targetDate.setFullYear(targetDate.getFullYear() + 2);
+        } else {
+          targetDate.setMonth(targetDate.getMonth() + 1);
+        }
+        triggerDate = new Date(targetDate);
+        triggerDate.setDate(triggerDate.getDate() - daysBefore);
+      }
     }
 
     await Notifications.scheduleNotificationAsync({
@@ -104,11 +122,14 @@ export const scheduleRenewalReminder = async (
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: triggerDate,
+        channelId: 'default',
       },
     });
     
     console.log(`Scheduled reminder for ${subscriptionName} at ${triggerDate.toLocaleString()}`);
+    return triggerDate;
   } catch (error) {
     console.error('Error scheduling notification:', error);
+    return null;
   }
 };

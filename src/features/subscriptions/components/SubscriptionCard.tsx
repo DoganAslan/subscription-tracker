@@ -10,6 +10,8 @@ import { getMonthlyCost } from '@/features/dashboard/utils/calculations';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { currencyService } from '@/services/currencyService';
 import { useTranslation } from 'react-i18next';
+import { useCards } from '@/features/cards/hooks/useCards';
+import { Ionicons } from '@expo/vector-icons';
 
 interface Props {
   subscription: Subscription;
@@ -23,6 +25,9 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
   const { mutate: deleteSubscription } = useDeleteSubscription();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { data: cards } = useCards();
+
+  const linkedCard = cards?.find(c => c.id === subscription.cardId);
 
   const handlePress = () => {
     router.push(`/(tabs)/subscriptions/${subscription.id}`);
@@ -181,6 +186,20 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
           <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '800', marginBottom: 6, letterSpacing: 0.5 }}>{t('subs.totalSpend')}</Text>
           <Text style={{ color: colors.text, fontSize: 20, fontWeight: '900' }}>{totalSpend.toFixed(0)} <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '600' }}>{subscription.currency}</Text></Text>
         </View>
+      </View>
+
+      {/* Payment Method Footer */}
+      <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16, marginTop: 16, flexDirection: 'row', alignItems: 'center' }}>
+        <Ionicons name="card-outline" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
+        {linkedCard ? (
+          <Text style={{ fontSize: 13, color: colors.text, fontWeight: '600' }}>
+            <Text style={{ textTransform: 'capitalize' }}>{linkedCard.type}</Text> • {linkedCard.name} •••• {linkedCard.lastFourDigits || '****'}
+          </Text>
+        ) : (
+          <Text style={{ fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' }}>
+            {t('subs.noPaymentMethod', 'No payment method linked')}
+          </Text>
+        )}
       </View>
 
     </TouchableOpacity>
