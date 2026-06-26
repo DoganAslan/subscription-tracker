@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Dimensions, Platform, StyleSheet } from 'react-native';
-import { PieChart } from 'react-native-chart-kit';
+import { View, Text, Platform, StyleSheet } from 'react-native';
+import Svg, { G, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 interface Props {
   breakdown: { category: string; amount: number; percentage: number }[];
@@ -12,7 +13,6 @@ interface Props {
 }
 
 const VIBRANT_COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#F43F5E', '#06B6D4', '#EC4899', '#EAB308'];
-const screenWidth = Dimensions.get('window').width;
 
 export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({ breakdown, monthlyTotal }: Props) {
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
@@ -24,24 +24,40 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
   // Total spend
   const totalSpend = monthlyTotal > 0 ? monthlyTotal : breakdown.reduce((sum, item) => sum + item.amount, 0);
 
-  const chartData = breakdown.map((item, index) => {
-    const color = VIBRANT_COLORS[index % VIBRANT_COLORS.length];
-    return {
-      name: item.category,
-      amount: item.amount,
-      color: color,
-      legendFontColor: 'transparent', // Hide the native legend text
-      legendFontSize: 0 // Hide the native legend font
-    };
-  });
-
   const hasData = breakdown.length > 0;
   
-  // Clean pie chart size
-  const chartSize = 120;
+  // Custom SVG Solid Pie Math
+  const chartSize = 150;
+  const center = chartSize / 2;
+  const radius = center / 2; // Math to create a solid pie
+  const strokeWidth = center; // Stroke covers from center to edge
+  const circumference = 2 * Math.PI * radius;
+  
+  let cumulativePercentage = 0;
+  const svgSlices = breakdown.map((item, index) => {
+    const pct = totalSpend > 0 ? item.amount / totalSpend : 0;
+    const strokeDashoffset = circumference - (pct * circumference);
+    const rotation = cumulativePercentage * 360;
+    cumulativePercentage += pct;
+    
+    return (
+      <Circle
+        key={item.category}
+        cx={center}
+        cy={center}
+        r={radius}
+        stroke={VIBRANT_COLORS[index % VIBRANT_COLORS.length]}
+        strokeWidth={strokeWidth}
+        strokeDasharray={`${circumference} ${circumference}`}
+        strokeDashoffset={strokeDashoffset}
+        transform={`rotate(${rotation} ${center} ${center})`}
+        fill="transparent"
+      />
+    );
+  });
 
   return (
-    <View style={dynamicStyles.cardContainer}>
+    <Animated.View entering={FadeInUp.duration(600).springify()} style={dynamicStyles.cardContainer}>
       <View style={dynamicStyles.headerRow}>
         <Text style={dynamicStyles.cardTitle}>{t('home.categoryBreakdown')}</Text>
       </View>
@@ -51,65 +67,62 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
       ) : (
         <View style={dynamicStyles.contentColumn}>
           
-          {/* TOP SECTION: Pie Chart (Left) + Category List (Right) */}
-          <View style={dynamicStyles.topSection}>
+          {/* TOP SECTION: Large Centered Donut Chart */}
+          <Animated.View entering={ZoomIn.duration(800).delay(200)} style={dynamicStyles.topSection}>
             <View style={dynamicStyles.pieContainer}>
-              <View style={[dynamicStyles.chartWrapper, { width: chartSize, height: chartSize }]}>
+              <View style={[dynamicStyles.chartSquareWrapper, { width: chartSize, height: chartSize }]}>
                 {Platform.OS === 'web' && typeof window === 'undefined' ? (
                   <View style={dynamicStyles.ssrFallback}>
-                    <Text style={{ color: colors.text }}>Loading...</Text>
+                    <Text style={{ color: colors.text }}>{t('global.loading')}</Text>
                   </View>
                 ) : (
                   <View pointerEvents={Platform.OS === 'web' ? 'none' : 'auto'}>
-                    <PieChart
-                      data={chartData}
-                      width={chartSize}
-                      height={chartSize}
-                      hasLegend={false}
-                      chartConfig={{
-                        color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                      }}
-                      accessor="amount"
-                      backgroundColor="transparent"
-                      paddingLeft={Platform.OS === 'ios' ? '30' : '30'} 
-                      absolute={true}
-                    />
+                    <Svg width={chartSize} height={chartSize} viewBox={`0 0 ${chartSize} ${chartSize}`}>
+                      <G transform={`rotate(-90 ${center} ${center})`}>
+                        {svgSlices}
+                      </G>
+                    </Svg>
                   </View>
                 )}
-                
-                {/* Donut Hole perfectly centered */}
-                <View style={dynamicStyles.donutHole}>
-                  <Text style={dynamicStyles.donutHoleText}>Total</Text>
-                </View>
               </View>
             </View>
+          </Animated.View>
 
-            {/* Right: Compact Category List */}
-            <View style={dynamicStyles.categoryList}>
-              {breakdown.map((item, index) => {
-                const pct = totalSpend > 0 ? Math.round((item.amount / totalSpend) * 100) : 0;
-                const color = VIBRANT_COLORS[index % VIBRANT_COLORS.length];
-                
-                return (
-                  <View key={item.category} style={dynamicStyles.categoryRow}>
+          {/* BOTTOM SECTION: Progress Metric Bars */}
+          <View style={dynamicStyles.categoryList}>
+            {breakdown.map((item, index) => {
+              const pct = totalSpend > 0 ? Math.round((item.amount / totalSpend) * 100) : 0;
+              const color = VIBRANT_COLORS[index % VIBRANT_COLORS.length];
+              
+              return (
+                <Animated.View entering={FadeInDown.duration(500).delay(300 + index * 100)} key={item.category} style={dynamicStyles.categoryRow}>
+                  
+                  {/* Info Row */}
+                  <View style={dynamicStyles.catInfoRow}>
                     <View style={dynamicStyles.catLeft}>
-                      <View style={[dynamicStyles.catDot, { backgroundColor: color }]} />
-                      <Text style={dynamicStyles.catName} numberOfLines={1}>
-                        {item.category}
-                      </Text>
+                      <Text style={dynamicStyles.catName} numberOfLines={1}>{item.category}</Text>
+                      <View style={[dynamicStyles.pillBadge, { backgroundColor: color + '20' }]}>
+                        <Text style={[dynamicStyles.pillText, { color: color }]}>%{pct}</Text>
+                      </View>
                     </View>
-                    <Text style={dynamicStyles.catPercent}>%{pct}</Text>
                     <Text style={dynamicStyles.catAmount}>
                       {item.amount.toFixed(0)} {baseCurrency}
                     </Text>
                   </View>
-                );
-              })}
-            </View>
+
+                  {/* Progress Bar */}
+                  <View style={dynamicStyles.progressBarBg}>
+                    <View style={[styles.progressBarFill, { width: `${pct}%`, backgroundColor: color }]} />
+                  </View>
+
+                </Animated.View>
+              );
+            })}
           </View>
+
         </View>
       )}
-    </View>
+    </Animated.View>
   );
 });
 
@@ -126,7 +139,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16, // Reduced from 24
   },
   cardTitle: {
     fontSize: 18,
@@ -142,24 +155,28 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: '100%',
   },
   topSection: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    marginBottom: 20, // Reduced from 32
+    marginTop: 0, // Reduced from 8
   },
   pieContainer: {
-    width: 120,
     alignItems: 'center',
     justifyContent: 'center',
   },
   categoryList: {
     flex: 1,
-    marginLeft: 24,
     justifyContent: 'center',
   },
   categoryRow: {
+    flexDirection: 'column',
+    marginBottom: 16,
+  },
+  catInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
   catLeft: {
     flex: 1,
@@ -167,32 +184,35 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     marginRight: 8,
   },
-  catDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
-  },
   catName: {
     color: colors.text,
-    fontWeight: '500',
-    fontSize: 14,
+    fontWeight: '700',
+    fontSize: 16,
     flexShrink: 1,
+    marginRight: 10,
   },
-  catPercent: {
-    color: colors.textSecondary,
+  pillBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pillText: {
     fontSize: 13,
-    fontWeight: '600',
-    width: 36,
-    textAlign: 'right',
-    marginRight: 8,
+    fontWeight: '900',
   },
   catAmount: {
     color: colors.text,
-    fontWeight: '700',
-    fontSize: 14,
-    width: 60,
-    textAlign: 'right',
+    fontWeight: '800',
+    fontSize: 16,
+  },
+  progressBarBg: {
+    height: 4, // Reduced from 8
+    backgroundColor: colors.border,
+    borderRadius: 9999,
+    width: '100%',
+    overflow: 'hidden',
   },
   ssrFallback: {
     position: 'absolute',
@@ -203,24 +223,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  chartWrapper: {
+  chartSquareWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
     position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  donutHole: {
-    position: 'absolute',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.surface, 
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  donutHoleText: {
-    color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    marginVertical: 8,
+  }
+});
+
+const styles = StyleSheet.create({
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 9999,
   }
 });

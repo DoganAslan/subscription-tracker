@@ -8,10 +8,12 @@ import { useDeleteSubscription } from '@/features/subscriptions/hooks/useSubscri
 import { useTheme } from '@/context/ThemeContext';
 import { getMonthlyCost } from '@/features/dashboard/utils/calculations';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
-import { currencyService } from '@/services/currencyService';
+import { convertCurrency } from '@/utils/currency';
 import { useTranslation } from 'react-i18next';
 import { useCards } from '@/features/cards/hooks/useCards';
 import { Ionicons } from '@expo/vector-icons';
+import { TrialCountdownWidget } from './TrialCountdownWidget';
+
 
 interface Props {
   subscription: Subscription;
@@ -53,7 +55,7 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
   const monthlyCost = getMonthlyCost(subscription.amount, subscription.billingCycle);
   const totalSpend = monthlyCost * (activeMonths === 0 ? 1 : activeMonths);
   
-  const convertedAmount = currencyService.convert(subscription.amount, subscription.currency || 'USD', baseCurrency);
+  const convertedAmount = convertCurrency(subscription.amount, subscription.currency || 'USD', baseCurrency);
   const showConversion = (subscription.currency || 'USD') !== baseCurrency;
 
   const handleDelete = () => {

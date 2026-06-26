@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
@@ -18,16 +19,16 @@ export function LoginForm() {
   
   const handleForgotPassword = async () => {
     if (!resetEmail) {
-      Alert.alert("Error", "Please enter your email address.");
+      Alert.alert(i18n.t('global.error'), i18n.t('global.pleaseEnterYourEmail'));
       return;
     }
     try {
       await AuthService.sendPasswordResetEmail(resetEmail);
-      Alert.alert("Success", "Password reset link sent! Check your inbox.");
+      Alert.alert(i18n.t('global.success'), i18n.t('global.passwordResetLinkSen'));
       setResetModalVisible(false);
       setResetEmail('');
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to send reset email.");
+      Alert.alert(i18n.t('global.error'), error.message || "Failed to send reset email.");
     }
   };
   
@@ -48,7 +49,7 @@ export function LoginForm() {
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Email Address"
-            placeholder="you@example.com"
+            placeholder={i18n.t('global.youexamplecom')}
             keyboardType="email-address"
             autoCapitalize="none"
             onBlur={onBlur}
@@ -64,7 +65,7 @@ export function LoginForm() {
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Password"
-            placeholder="••••••••"
+            placeholder={i18n.t('global.symbol291')}
             secureTextEntry
             onBlur={onBlur}
             onChangeText={onChange}
@@ -80,7 +81,7 @@ export function LoginForm() {
           setResetModalVisible(true);
         }}
       >
-        <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot Password?</Text>
+        <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>{i18n.t('global.forgotPassword')}</Text>
       </TouchableOpacity>
 
       <Button 
@@ -93,14 +94,12 @@ export function LoginForm() {
       <Modal visible={isResetModalVisible} animationType="fade" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: '#0B0F19', borderColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: '#FFFFFF' }]}>Reset Password</Text>
-            <Text style={[styles.modalSubtitle, { color: '#9CA3AF' }]}>
-              Enter your registered email address and we will send you a link to reset your password.
-            </Text>
+            <Text style={[styles.modalTitle, { color: '#FFFFFF' }]}>{i18n.t('global.resetPassword')}</Text>
+            <Text style={[styles.modalSubtitle, { color: '#9CA3AF' }]}>{i18n.t('global.enterYourRegisteredE')}</Text>
             
             <TextInput
               style={[styles.input, { backgroundColor: '#111827', borderColor: colors.border, color: '#FFFFFF' }]}
-              placeholder="Email Address"
+              placeholder={i18n.t('global.emailAddress')}
               placeholderTextColor="#6B7280"
               value={resetEmail}
               onChangeText={setResetEmail}

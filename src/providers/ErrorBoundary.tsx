@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
 
@@ -33,9 +34,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <SafeAreaView className="flex-1 bg-white dark:bg-slate-900">
           <View className="flex-1 items-center justify-center p-6">
-            <Text className="text-2xl font-bold text-slate-900 dark:text-white mb-2 text-center">
-              Oops! Something went wrong.
-            </Text>
+            <Text className="text-2xl font-bold text-slate-900 dark:text-white mb-2 text-center">{i18n.t('global.oopsSomethingWentWro')}</Text>
             <Text className="text-slate-500 dark:text-slate-400 mb-8 text-center">
               {this.state.error?.message || 'An unexpected error occurred.'}
             </Text>
@@ -43,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
               onPress={this.handleReset}
               className="bg-blue-600 px-6 py-3 rounded-full active:bg-blue-700"
             >
-              <Text className="text-white font-semibold text-lg">Try Again</Text>
+              <Text className="text-white font-semibold text-lg">{i18n.t('global.tryAgain')}</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>

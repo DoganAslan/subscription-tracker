@@ -14,10 +14,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomSplashScreen } from '@/components/SplashScreen';
 import { registerForPushNotificationsAsync } from '@/services/notifications/notificationService';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { getMarketRatesWithCache } from '@/utils/currency';
+import { neutralizeProductionLogs } from '@/utils/security';
 import '../../global.css';
 import '../locales/i18n';
 
-
+// Fire immediately upon JS Engine boot:
+neutralizeProductionLogs();
 // Suppress third-party web-only SVG touch warnings
 LogBox.ignoreLogs([
   'Unknown event handler property `onPressIn`',
@@ -38,6 +41,9 @@ function RootLayout() {
   const hasRequestedToken = useRef(false);
 
   useEffect(() => {
+    // Fire and forget: syncs rates silently in the background
+    getMarketRatesWithCache();
+    
     if (Platform.OS !== 'web') {
       if (hasRequestedToken.current) return;
       hasRequestedToken.current = true;

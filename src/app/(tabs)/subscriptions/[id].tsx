@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { triggerHaptic } from '@/utils/haptics';
-import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet, Share, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
 import { DeleteConfirmationModal } from '@/features/subscriptions/components/DeleteConfirmationModal';
@@ -26,7 +26,8 @@ export default function EditSubscriptionScreen() {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isEnglish = i18n.language === 'en';
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
   const handleGoBack = () => {
@@ -36,6 +37,32 @@ export default function EditSubscriptionScreen() {
       router.replace('/(tabs)/subscriptions');
     }
   };
+
+  const handleRemindParticipant = async (participantName: string, amount: number, currency: string, subscriptionName: string) => {
+    triggerHaptic('selection');
+    const message = `Selam ${participantName}! 👋 Bu ayki "${subscriptionName}" ortaklığımız için ${amount} ${currency} ödeme payın bulunuyor. Müsait olduğunda gönderebilirsen süper olur, teşekkürler! 🚀`;
+
+    try {
+      const result = await Share.share({
+        message: message,
+        title: `${subscriptionName} Ödeme Hatırlatması`, 
+      });
+
+      if (result?.action === Share.sharedAction) {
+        console.log('Reminder shared successfully');
+      } else if (result?.action === Share.dismissedAction) {
+        console.log('Share sheet dismissed');
+      }
+    } catch (error: any) {
+      console.log("Web platform share fallback triggered.");
+      if (Platform.OS === 'web') {
+        window.alert("Kopyalanacak Mesaj:\n\n" + message);
+      } else {
+        Alert.alert(t('global.paylamHatas'), t('global.mesajOluturulurkenBi'));
+      }
+    }
+  };
+
 
   if (isLoadingSubs || (isFetching && !subscriptions)) {
     return <AppLoader />;
@@ -47,9 +74,9 @@ export default function EditSubscriptionScreen() {
     if (isFetching || isDeleting) return <AppLoader />;
     return (
       <View style={dynamicStyles.notFoundContainer}>
-        <Text style={dynamicStyles.notFoundText}>Subscription not found</Text>
+        <Text style={dynamicStyles.notFoundText}>{t('global.subscriptionNotFound')}</Text>
         <TouchableOpacity onPress={handleGoBack} style={dynamicStyles.goBackButton}>
-          <Text style={dynamicStyles.goBackText}>Go Back</Text>
+          <Text style={dynamicStyles.goBackText}>{t('global.goBack')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -78,6 +105,36 @@ export default function EditSubscriptionScreen() {
           <Text style={dynamicStyles.headerTitle}>{t('subs.update')}</Text>
           <View style={{ width: 60 }} />{/* Spacer */}
         </View>
+        
+        
+        {subscription.isSplit && subscription.splitParticipants && subscription.splitParticipants.length > 0 && (
+          <View style={dynamicStyles.splitOverviewCard}>
+            <Text style={dynamicStyles.splitOverviewTitle}>{isEnglish ? '💰 Shared Payment Overview' : '💰 Ortak Ödeme Özeti'}</Text>
+            {subscription.splitParticipants.map((p, index) => (
+              <View key={p.id || `participant-${index}`} style={dynamicStyles.splitParticipantRow}>
+                <View>
+                  <Text style={dynamicStyles.splitParticipantName}>{p.name || (isEnglish ? 'Unnamed' : 'İsimsiz')}</Text>
+                  <Text style={dynamicStyles.splitParticipantAmount}>
+                    {parseFloat(String(p.amount)).toFixed(0)} {subscription.currency || 'TRY'} (%{subscription.amount > 0 ? Math.round((parseFloat(String(p.amount)) / subscription.amount) * 100) : 0})
+                  </Text>
+                </View>
+                <TouchableOpacity 
+                  style={{ backgroundColor: '#1E3A8A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
+                  onPress={() => handleRemindParticipant(
+                    p.name || (isEnglish ? 'Unnamed' : 'İsimsiz'), 
+                    p.amount, 
+                    subscription.currency || 'TRY', 
+                    subscription.name
+                  )}
+                >
+                  <Text style={{ color: '#60A5FA', fontSize: 13, fontWeight: '600' }}>{isEnglish ? 'Remind' : 'Hatırlat'}</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+        )}
+        
+
         
         <SubscriptionForm 
           initialData={subscription}
@@ -142,4 +199,39 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
   }
+,
+  splitOverviewCard: {
+    backgroundColor: colors.surfaceHover,
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  splitOverviewTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  splitParticipantRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  splitParticipantName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  splitParticipantAmount: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
 });

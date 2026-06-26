@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React, { useState, useRef } from 'react';
 import { View, TextInput, Text, Animated, StyleSheet, Pressable, Platform } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
@@ -48,7 +49,7 @@ export function HeroInput({ amount, onChangeAmount, currency }: HeroInputProps) 
             value={amount}
             onChangeText={onChangeAmount}
             keyboardType="decimal-pad"
-            placeholder="0.00"
+            placeholder={i18n.t('global.000')}
             placeholderTextColor={colors.primary + '80'}
             onFocus={handleFocus}
             onBlur={handleBlur}

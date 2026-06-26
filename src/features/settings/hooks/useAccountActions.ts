@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
@@ -29,10 +30,10 @@ export function useAccountActions() {
       queryClient.setQueryData(subscriptionKeys.list(user.uid), []);
       queryClient.invalidateQueries({ queryKey: subscriptionKeys.all });
       
-      Alert.alert('Success', 'All your data has been permanently deleted. Your account is still active.');
+      Alert.alert(i18n.t('global.success'), i18n.t('global.allYourDataHasBeenPe'));
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to delete data. Please try again later.');
+      Alert.alert(i18n.t('global.error'), i18n.t('global.failedToDeleteDataPl'));
     } finally {
       setIsDeletingData(false);
     }
@@ -55,9 +56,9 @@ export function useAccountActions() {
     } catch (error: any) {
       console.error(error);
       if (error?.code === 'auth/requires-recent-login') {
-        Alert.alert('Re-authentication Required', 'For security reasons, please sign out and sign back in before deleting your account.');
+        Alert.alert(i18n.t('global.reauthenticationRequ'), i18n.t('global.forSecurityReasonsPl'));
       } else {
-        Alert.alert('Error', 'Failed to delete account. Please try again later.');
+        Alert.alert(i18n.t('global.error'), i18n.t('global.failedToDeleteAccoun'));
       }
     } finally {
       setIsDeletingAccount(false);
@@ -65,9 +66,7 @@ export function useAccountActions() {
   };
 
   const confirmDeleteData = () => {
-    Alert.alert(
-      'Delete All Data?',
-      'This will permanently erase all your subscriptions. Your account will remain open. This action cannot be undone.',
+    Alert.alert(i18n.t('global.deleteAllData'), i18n.t('global.thisWillPermanentlyE'),
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete', style: 'destructive', onPress: deleteAllData }
@@ -76,9 +75,7 @@ export function useAccountActions() {
   };
 
   const confirmDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account?',
-      'This will permanently erase your account, subscriptions, and all associated data. This action cannot be undone.',
+    Alert.alert(i18n.t('global.deleteAccount1'), i18n.t('global.thisWillPermanentlyE1'),
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete Account', style: 'destructive', onPress: deleteAccount }
@@ -87,9 +84,7 @@ export function useAccountActions() {
   };
 
   const confirmSignOut = () => {
-    Alert.alert(
-      'Sign Out?',
-      'Are you sure you want to sign out?',
+    Alert.alert(i18n.t('global.signOut'), i18n.t('global.areYouSureYouWantToS'),
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -102,7 +97,7 @@ export function useAccountActions() {
               router.replace('/(auth)');
             } catch (error) {
               console.error('Logout error:', error);
-              Alert.alert('Error', 'Failed to sign out properly.');
+              Alert.alert(i18n.t('global.error'), i18n.t('global.failedToSignOutPrope'));
             }
           } 
         }

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
 import { getMonthlyCost } from '../utils/calculations';
+import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
@@ -13,6 +14,7 @@ interface Props {
 export const SpendingInsightsCard = React.memo(function SpendingInsightsCard({ mostExpensive }: Props) {
   const hasData = mostExpensive !== null;
   const monthlyCost = hasData ? getMonthlyCost(mostExpensive.amount, mostExpensive.billingCycle) : 0;
+  const baseCurrency = useCurrencyStore(state => state.baseCurrency);
   const { colors } = useTheme();
   const { t } = useTranslation();
   
@@ -27,7 +29,7 @@ export const SpendingInsightsCard = React.memo(function SpendingInsightsCard({ m
         <Text style={dynamicStyles.insightTitle}>{t('home.highestExpense')}</Text>
         {hasData === true ? (
           <Text style={dynamicStyles.insightValue}>
-            {mostExpensive.name} <Text style={dynamicStyles.insightAmount}>— ${monthlyCost.toFixed(2)}/mo</Text>
+            {mostExpensive.name} <Text style={dynamicStyles.insightAmount}>— {monthlyCost.toFixed(2)} {baseCurrency}/mo</Text>
           </Text>
         ) : (
           <Text style={dynamicStyles.insightValue}>{t('calendar.noPayments')}</Text>
@@ -39,14 +41,19 @@ export const SpendingInsightsCard = React.memo(function SpendingInsightsCard({ m
 
 const getStyles = (colors: any) => StyleSheet.create({
   cardContainer: {
-    backgroundColor: 'rgba(59, 130, 246, 0.08)',
-    borderRadius: 16,
+    backgroundColor: colors.surface + '80', // semi-transparent
+    borderRadius: 20,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.2)',
+    borderColor: 'rgba(255,255,255,0.15)',
     flexDirection: 'row',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
   },
   iconContainer: {
     backgroundColor: 'rgba(59, 130, 246, 0.15)',

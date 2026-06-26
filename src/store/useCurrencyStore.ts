@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { secureStorageAdapter } from '@/utils/secureStorage';
 
 interface CurrencyState {
   baseCurrency: string;
@@ -15,7 +15,7 @@ export const useCurrencyStore = create<CurrencyState>()(
     }),
     {
       name: 'currency-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => secureStorageAdapter),
     }
   )
 );

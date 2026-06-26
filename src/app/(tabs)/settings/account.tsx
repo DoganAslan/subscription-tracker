@@ -83,7 +83,7 @@ export default function AccountSettingsScreen() {
       setReauthPassword('');
       setReauthModalVisible(true);
     } else {
-      Alert.alert('Error', error.message || 'An unexpected error occurred.');
+      Alert.alert(t('global.error'), error.message || 'An unexpected error occurred.');
     }
   };
 
@@ -92,11 +92,11 @@ export default function AccountSettingsScreen() {
     
     if (pendingAction === 'email') {
       await AuthService.updateEmailAddress(newEmail);
-      Alert.alert('Success', 'Email updated successfully.');
+      Alert.alert(t('global.success'), t('global.emailUpdatedSuccessf'));
       setEmailModalVisible(false);
     } else if (pendingAction === 'password') {
       await AuthService.updateUserPassword(newPassword);
-      Alert.alert('Success', 'Password updated successfully.');
+      Alert.alert(t('global.success'), t('global.passwordUpdatedSucce'));
       setPasswordModalVisible(false);
     } else if (pendingAction === 'delete') {
       await AuthService.deleteAccount();
@@ -107,7 +107,7 @@ export default function AccountSettingsScreen() {
 
   const handleReauthSubmit = async () => {
     if (!reauthPassword) {
-      Alert.alert('Delete Error', 'Please enter your password to delete your account.');
+      Alert.alert(t('global.deleteError'), t('global.pleaseEnterYourPassw'));
       return;
     }
 
@@ -117,11 +117,11 @@ export default function AccountSettingsScreen() {
       await executePendingAction();
     } catch (error: any) {
       if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        Alert.alert('Delete Error', 'The password you entered is incorrect.');
+        Alert.alert(t('global.deleteError'), t('global.thePasswordYouEntere'));
       } else if (error.code === 'auth/requires-recent-login') {
-        Alert.alert('Delete Error', 'Session expired. Please log out and log back in before deleting.');
+        Alert.alert(t('global.deleteError'), t('global.sessionExpiredPlease'));
       } else {
-        Alert.alert('Delete Error', error.message || 'An unexpected error occurred.');
+        Alert.alert(t('global.deleteError'), error.message || 'An unexpected error occurred.');
       }
     } finally {
       setIsLoading(false);
@@ -130,14 +130,14 @@ export default function AccountSettingsScreen() {
 
   const handleChangeEmail = async () => {
     if (!newEmail || !newEmail.includes('@')) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      Alert.alert(t('global.invalidEmail'), t('global.pleaseEnterAValidEma'));
       return;
     }
 
     setIsLoading(true);
     try {
       await AuthService.updateEmailAddress(newEmail);
-      Alert.alert('Success', 'Email updated successfully.');
+      Alert.alert(t('global.success'), t('global.emailUpdatedSuccessf'));
       setEmailModalVisible(false);
       setNewEmail('');
     } catch (error: any) {
@@ -149,15 +149,15 @@ export default function AccountSettingsScreen() {
 
   const handleChangePassword = async () => {
     if (!currentPassword) {
-      Alert.alert('Error', 'Please enter your current password.');
+      Alert.alert(t('global.error'), t('global.pleaseEnterYourCurre'));
       return;
     }
     if (!newPassword || newPassword.length < 6) {
-      Alert.alert('Invalid Password', 'Password must be at least 6 characters long.');
+      Alert.alert(t('global.invalidPassword'), t('global.passwordMustBeAtLeas'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match.');
+      Alert.alert(t('global.error'), t('global.passwordsDoNotMatch'));
       return;
     }
 
@@ -169,16 +169,16 @@ export default function AccountSettingsScreen() {
       // 2. Update password
       await AuthService.updateUserPassword(newPassword);
       
-      Alert.alert('Success', 'Password updated successfully.');
+      Alert.alert(t('global.success'), t('global.passwordUpdatedSucce'));
       setPasswordModalVisible(false);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
       if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        Alert.alert('Authentication Failed', 'Current password is incorrect.');
+        Alert.alert(t('global.authenticationFailed'), t('global.currentPasswordIsInc'));
       } else {
-        Alert.alert('Error', error.message || 'Failed to update password.');
+        Alert.alert(t('global.error'), error.message || 'Failed to update password.');
       }
     } finally {
       setIsLoading(false);
@@ -194,7 +194,7 @@ export default function AccountSettingsScreen() {
       if (Platform.OS === 'web') {
         window.alert("No authenticated user found.");
       } else {
-        Alert.alert("Error", "No authenticated user found.");
+        Alert.alert(t('global.error'), t('global.noAuthenticatedUserF'));
       }
       return;
     }
@@ -206,14 +206,14 @@ export default function AccountSettingsScreen() {
         if (Platform.OS === 'web') {
           window.alert("Password reset email sent. Please check your inbox.");
         } else {
-          Alert.alert("Success", "Password reset email sent. Please check your inbox.");
+          Alert.alert(t('global.success'), t('global.passwordResetEmailSe'));
         }
       } catch (error: any) {
         console.error("Reset Email Error:", error);
         if (Platform.OS === 'web') {
           window.alert(error.message || "Failed to send reset email.");
         } else {
-          Alert.alert("Error", error.message || "Failed to send reset email.");
+          Alert.alert(t('global.error'), error.message || "Failed to send reset email.");
         }
       } finally {
         setIsLoading(false);
@@ -224,9 +224,7 @@ export default function AccountSettingsScreen() {
       const confirmed = window.confirm(`Send a password reset link to ${currentUser.email}?`);
       if (confirmed) await executeReset();
     } else {
-      Alert.alert(
-        "Reset Password",
-        `Send a password reset link to ${currentUser.email}?`,
+      Alert.alert(t('global.resetPassword'), t('global.sendAPasswordResetLi'),
         [
           { text: "Cancel", style: "cancel" },
           { text: "Send", onPress: executeReset }
@@ -242,7 +240,7 @@ export default function AccountSettingsScreen() {
 
   const confirmAndDelete = async () => {
     if (!deletePassword) {
-      Alert.alert("Error", "Password is required to delete your account.");
+      Alert.alert(t('global.error'), t('global.passwordIsRequiredTo'));
       return;
     }
     
@@ -253,11 +251,11 @@ export default function AccountSettingsScreen() {
     } catch (error: any) {
       console.error("Deletion Error:", error);
       if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        Alert.alert('Deletion Failed', 'The password you entered is incorrect.');
+        Alert.alert(t('global.deletionFailed'), t('global.thePasswordYouEntere'));
       } else if (error.code === 'auth/requires-recent-login') {
-        Alert.alert('Deletion Failed', 'Session expired. Please log out and log back in before deleting.');
+        Alert.alert(t('global.deletionFailed'), t('global.sessionExpiredPlease'));
       } else {
-        Alert.alert('Deletion Failed', error.message || 'Please check your password and try again.');
+        Alert.alert(t('global.deletionFailed'), error.message || 'Please check your password and try again.');
       }
     } finally {
       setIsLoading(false);
@@ -332,9 +330,7 @@ export default function AccountSettingsScreen() {
                   style={{ flexDirection: 'row', alignItems: 'center', padding: 4 }}
                 >
                   <Ionicons name="eye-outline" size={16} color={colors.primary} />
-                  <Text style={[dynamicStyles.infoValue, { color: colors.primary, marginLeft: 6, fontWeight: '500' }]}>
-                    Reveal ID
-                  </Text>
+                  <Text style={[dynamicStyles.infoValue, { color: colors.primary, marginLeft: 6, fontWeight: '500' }]}>{t('global.revealId')}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -357,7 +353,7 @@ export default function AccountSettingsScreen() {
         </View>
 
         <View style={dynamicStyles.section}>
-          <Text style={dynamicStyles.sectionTitle}>Security</Text>
+          <Text style={dynamicStyles.sectionTitle}>{t('global.security')}</Text>
           <View style={dynamicStyles.card}>
             <TouchableOpacity 
               style={dynamicStyles.menuItem} 
@@ -369,7 +365,7 @@ export default function AccountSettingsScreen() {
             >
               <View style={dynamicStyles.menuItemLeft}>
                 <Ionicons name="mail-outline" size={22} color={colors.text} />
-                <Text style={dynamicStyles.menuItemText}>Change Email</Text>
+                <Text style={dynamicStyles.menuItemText}>{t('global.changeEmail')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -391,7 +387,7 @@ export default function AccountSettingsScreen() {
             >
               <View style={dynamicStyles.menuItemLeft}>
                 <Ionicons name="lock-closed-outline" size={22} color={colors.text} />
-                <Text style={dynamicStyles.menuItemText}>Change Password</Text>
+                <Text style={dynamicStyles.menuItemText}>{t('global.changePassword')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -407,7 +403,7 @@ export default function AccountSettingsScreen() {
             >
               <View style={dynamicStyles.menuItemLeft}>
                 <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
-                <Text style={dynamicStyles.menuItemText}>Send Password Reset Email</Text>
+                <Text style={dynamicStyles.menuItemText}>{t('global.sendPasswordResetEma')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -433,7 +429,7 @@ export default function AccountSettingsScreen() {
             >
               <View style={dynamicStyles.menuItemLeft}>
                 <Ionicons name="notifications-outline" size={22} color={colors.text} />
-                <Text style={dynamicStyles.menuItemText}>Test Notification</Text>
+                <Text style={dynamicStyles.menuItemText}>{t('global.testNotification')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -441,7 +437,7 @@ export default function AccountSettingsScreen() {
         </View>
 
         <View style={[dynamicStyles.section, { marginTop: 40 }]}>
-          <Text style={[dynamicStyles.sectionTitle, { color: colors.danger }]}>Danger Zone</Text>
+          <Text style={[dynamicStyles.sectionTitle, { color: colors.danger }]}>{t('global.dangerZone')}</Text>
           <View style={[dynamicStyles.card, { borderColor: colors.danger, borderWidth: 1 }]}>
             <TouchableOpacity 
               style={dynamicStyles.menuItem} 
@@ -452,7 +448,7 @@ export default function AccountSettingsScreen() {
             >
               <View style={dynamicStyles.menuItemLeft}>
                 <Ionicons name="warning-outline" size={22} color={colors.danger} />
-                <Text style={[dynamicStyles.menuItemText, { color: colors.danger, fontWeight: '600' }]}>Delete Account</Text>
+                <Text style={[dynamicStyles.menuItemText, { color: colors.danger, fontWeight: '600' }]}>{t('global.deleteAccount')}</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -463,12 +459,12 @@ export default function AccountSettingsScreen() {
       <Modal visible={emailModalVisible} animationType="slide" transparent>
         <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContent}>
-            <Text style={dynamicStyles.modalTitle}>Change Email</Text>
-            <Text style={dynamicStyles.modalSubtitle}>Enter your new email address below.</Text>
+            <Text style={dynamicStyles.modalTitle}>{t('global.changeEmail')}</Text>
+            <Text style={dynamicStyles.modalSubtitle}>{t('global.enterYourNewEmailAdd')}</Text>
             
             <TextInput
               style={dynamicStyles.input}
-              placeholder="New Email"
+              placeholder={t('global.newEmail')}
               placeholderTextColor={colors.textSecondary}
               value={newEmail}
               onChangeText={setNewEmail}
@@ -500,13 +496,13 @@ export default function AccountSettingsScreen() {
       <Modal visible={passwordModalVisible} animationType="slide" transparent>
         <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContent}>
-            <Text style={dynamicStyles.modalTitle}>Change Password</Text>
-            <Text style={dynamicStyles.modalSubtitle}>Create a new, secure password.</Text>
+            <Text style={dynamicStyles.modalTitle}>{t('global.changePassword')}</Text>
+            <Text style={dynamicStyles.modalSubtitle}>{t('global.createANewSecurePass')}</Text>
             
             <View style={dynamicStyles.passwordInputContainer}>
               <TextInput
                 style={dynamicStyles.passwordInput}
-                placeholder="Current Password"
+                placeholder={t('global.currentPassword')}
                 placeholderTextColor={colors.textSecondary}
                 value={currentPassword}
                 onChangeText={setCurrentPassword}
@@ -522,7 +518,7 @@ export default function AccountSettingsScreen() {
             <View style={dynamicStyles.passwordInputContainer}>
               <TextInput
                 style={dynamicStyles.passwordInput}
-                placeholder="New Password"
+                placeholder={t('global.newPassword')}
                 placeholderTextColor={colors.textSecondary}
                 value={newPassword}
                 onChangeText={setNewPassword}
@@ -541,7 +537,7 @@ export default function AccountSettingsScreen() {
             ]}>
               <TextInput
                 style={dynamicStyles.passwordInput}
-                placeholder="Confirm New Password"
+                placeholder={t('global.confirmNewPassword')}
                 placeholderTextColor={colors.textSecondary}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
@@ -555,7 +551,7 @@ export default function AccountSettingsScreen() {
             </View>
 
             {confirmPassword.length > 0 && newPassword !== confirmPassword ? (
-              <Text style={dynamicStyles.errorText}>Passwords do not match.</Text>
+              <Text style={dynamicStyles.errorText}>{t('global.passwordsDoNotMatch')}</Text>
             ) : null}
 
             <View style={[dynamicStyles.modalButtons, { marginTop: 8 }]}>
@@ -582,14 +578,12 @@ export default function AccountSettingsScreen() {
       <Modal visible={reauthModalVisible} animationType="fade" transparent>
         <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContent}>
-            <Text style={dynamicStyles.modalTitle}>Verify Identity</Text>
-            <Text style={dynamicStyles.modalSubtitle}>
-              This is a sensitive action. Please enter your current password to verify your identity.
-            </Text>
+            <Text style={dynamicStyles.modalTitle}>{t('global.verifyIdentity')}</Text>
+            <Text style={dynamicStyles.modalSubtitle}>{t('global.thisIsASensitiveActi')}</Text>
             
             <TextInput
               style={dynamicStyles.input}
-              placeholder="Current Password"
+              placeholder={t('global.currentPassword')}
               placeholderTextColor={colors.textSecondary}
               value={reauthPassword}
               onChangeText={setReauthPassword}
@@ -631,7 +625,7 @@ export default function AccountSettingsScreen() {
             
             <TextInput
               style={dynamicStyles.input}
-              placeholder="Enter your password"
+              placeholder={t('global.enterYourPassword')}
               placeholderTextColor={colors.textSecondary}
               value={deletePassword}
               onChangeText={setDeletePassword}

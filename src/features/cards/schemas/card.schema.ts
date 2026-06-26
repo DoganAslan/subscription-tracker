@@ -8,6 +8,7 @@ export const cardSchema = z.object({
   expiryMonth: z.number().min(1, 'Invalid month').max(12, 'Invalid month'),
   expiryYear: z.number().min(new Date().getFullYear(), 'Year cannot be in the past').max(new Date().getFullYear() + 20, 'Invalid year'),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color code'),
+  currency: z.enum(['TRY', 'USD', 'EUR', 'GBP']).default('TRY'),
 });
 
 export type CardFormData = z.infer<typeof cardSchema>;

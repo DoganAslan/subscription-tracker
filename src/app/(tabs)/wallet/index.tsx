@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
 import { useCards } from '@/features/cards/hooks/useCards';
@@ -35,10 +36,10 @@ export default function WalletScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Wallet</Text>
+        <Text style={[styles.title, { color: colors.text }]}>{i18n.t('global.wallet')}</Text>
         <TouchableOpacity onPress={handleAddCard} style={[styles.addButton, { backgroundColor: colors.primary }]}>
           <Ionicons name="add" size={20} color="#FFFFFF" />
-          <Text style={styles.addButtonText}>Add Card</Text>
+          <Text style={styles.addButtonText}>{i18n.t('global.addCard')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -50,10 +51,8 @@ export default function WalletScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Ionicons name="card-outline" size={64} color={colors.textSecondary} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>No Cards Added</Text>
-            <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>
-              Create a virtual card to track your subscription budgets easily.
-            </Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>{i18n.t('global.noCardsAdded')}</Text>
+            <Text style={[styles.emptyDesc, { color: colors.textSecondary }]}>{i18n.t('global.createAVirtualCardTo')}</Text>
           </View>
         }
         renderItem={({ item }) => (

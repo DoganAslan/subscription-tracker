@@ -5,7 +5,7 @@ import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscription
 import { SubscriptionCard } from '@/features/subscriptions/components/SubscriptionCard';
 import { getMonthlyCost } from '@/features/dashboard/utils/calculations';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
-import { currencyService } from '@/services/currencyService';
+import { convertCurrency } from '@/utils/currency';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 
@@ -79,7 +79,7 @@ export default function CalendarScreen() {
     
     let sum = 0;
     activeSubs.forEach(sub => {
-      const amountInBase = currencyService.convert(sub.amount, sub.currency, baseCurrency);
+      const amountInBase = convertCurrency(sub.amount, sub.currency, baseCurrency);
       sum += getMonthlyCost(amountInBase, sub.billingCycle);
     });
     return sum;

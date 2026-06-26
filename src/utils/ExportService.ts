@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Platform, Alert } from 'react-native';
@@ -6,7 +7,7 @@ import { Subscription } from '@/services/firebase/types';
 export const exportSubscriptionsToCSV = async (subscriptions: Subscription[]) => {
   try {
     if (!subscriptions || subscriptions.length === 0) {
-      Alert.alert('No Data', 'You have no subscriptions to export.');
+      Alert.alert(i18n.t('global.noData'), i18n.t('global.youHaveNoSubscriptio'));
       return;
     }
 
@@ -56,7 +57,7 @@ export const exportSubscriptionsToCSV = async (subscriptions: Subscription[]) =>
 
     // Share the file
     if (!(await Sharing.isAvailableAsync())) {
-      Alert.alert('Sharing Unavailable', 'Sharing is not supported on this device.');
+      Alert.alert(i18n.t('global.sharingUnavailable'), i18n.t('global.sharingIsNotSupporte'));
       return;
     }
 
@@ -68,6 +69,6 @@ export const exportSubscriptionsToCSV = async (subscriptions: Subscription[]) =>
     
   } catch (error) {
     console.error('Error exporting CSV:', error);
-    Alert.alert('Export Failed', 'An error occurred while exporting your data.');
+    Alert.alert(i18n.t('global.exportFailed'), i18n.t('global.anErrorOccurredWhile1'));
   }
 };

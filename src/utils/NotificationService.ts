@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { parseSafeDate, addMonthsClamped } from '@/utils/dateHelpers';
 
 // Set up the default notification handler to display notifications even when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -71,7 +72,7 @@ export const cancelSubscriptionNotifications = async (subscriptionId: string) =>
 export const scheduleRenewalReminder = async (
   subscriptionId: string,
   subscriptionName: string,
-  renewalDate: Date,
+  renewalDate: Date | any,
   daysBefore: number = 2,
   billingCycle: string = 'monthly'
 ): Promise<Date | null> => {
@@ -83,8 +84,9 @@ export const scheduleRenewalReminder = async (
 
     await cancelSubscriptionNotifications(subscriptionId);
 
-    let targetDate = new Date(renewalDate);
+    let targetDate = parseSafeDate(renewalDate);
     targetDate.setHours(9, 0, 0, 0); // Default to 9:00 AM
+    const originalDay = targetDate.getDate();
 
     let triggerDate = new Date(targetDate);
     triggerDate.setDate(triggerDate.getDate() - daysBefore);
@@ -96,17 +98,17 @@ export const scheduleRenewalReminder = async (
         if (billingCycle === 'weekly') {
           targetDate.setDate(targetDate.getDate() + 7);
         } else if (billingCycle === 'monthly') {
-          targetDate.setMonth(targetDate.getMonth() + 1);
+          targetDate = addMonthsClamped(targetDate, 1, originalDay);
         } else if (billingCycle === 'quarterly') {
-          targetDate.setMonth(targetDate.getMonth() + 3);
+          targetDate = addMonthsClamped(targetDate, 3, originalDay);
         } else if (billingCycle === 'biannually') {
-          targetDate.setMonth(targetDate.getMonth() + 6);
+          targetDate = addMonthsClamped(targetDate, 6, originalDay);
         } else if (billingCycle === 'yearly') {
-          targetDate.setFullYear(targetDate.getFullYear() + 1);
+          targetDate = addMonthsClamped(targetDate, 12, originalDay);
         } else if (billingCycle === 'biennially') {
-          targetDate.setFullYear(targetDate.getFullYear() + 2);
+          targetDate = addMonthsClamped(targetDate, 24, originalDay);
         } else {
-          targetDate.setMonth(targetDate.getMonth() + 1);
+          targetDate = addMonthsClamped(targetDate, 1, originalDay);
         }
         triggerDate = new Date(targetDate);
         triggerDate.setDate(triggerDate.getDate() - daysBefore);

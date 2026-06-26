@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React from 'react';
 import { View, Text, useColorScheme } from 'react-native';
 import { Subscription } from '@/services/firebase/types';
@@ -13,14 +14,14 @@ export const UpcomingRenewalsCard = React.memo(function UpcomingRenewalsCard({ r
 
   return (
     <View style={{ backgroundColor: colors.surface, borderRadius: 16, padding: 20, marginBottom: 24, shadowColor: '#000000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 2, borderWidth: 1, borderColor: colors.border }}>
-      <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>Upcoming Renewals</Text>
+      <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 16 }}>{i18n.t('global.upcomingRenewals')}</Text>
       
       {topRenewals.length === 0 ? (
         <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: 32 }}>
           <View style={{ width: 64, height: 64, backgroundColor: colors.background, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-            <Text style={{ fontSize: 24 }}>📅</Text>
+            <Text style={{ fontSize: 24 }}>{i18n.t('global.symbol603')}</Text>
           </View>
-          <Text style={{ color: colors.textSecondary, fontWeight: '500' }}>No renewals in the next 30 days</Text>
+          <Text style={{ color: colors.textSecondary, fontWeight: '500' }}>{i18n.t('global.noRenewalsInTheNext3')}</Text>
         </View>
       ) : (
         topRenewals.map((sub, index) => {

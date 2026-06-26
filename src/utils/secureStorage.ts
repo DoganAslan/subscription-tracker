@@ -1,27 +1,63 @@
-/**
- * WARNING: Android Keystore Size Limit (2048 bytes / 2KB)
- * 
- * Do NOT use this secureStorage adapter to persist entire Zustand state objects 
- * or large JSON payloads. Storing data exceeding the 2KB limit will cause 
- * the application to hard crash natively on boot.
- * 
- * Intended Use Case:
- * Use strictly for tiny, highly sensitive string values such as:
- * - auth_token
- * - pin_code
- * - encryption_keys
- */
 import * as SecureStore from 'expo-secure-store';
-import { StateStorage } from 'zustand/middleware';
+import { Platform } from 'react-native';
 
-export const secureStorage: StateStorage = {
-  getItem: async (name: string): Promise<string | null> => {
-    return await SecureStore.getItemAsync(name);
-  },
-  setItem: async (name: string, value: string): Promise<void> => {
-    await SecureStore.setItemAsync(name, value);
-  },
-  removeItem: async (name: string): Promise<void> => {
-    await SecureStore.deleteItemAsync(name);
-  },
+export const saveSecureData = async (key: string, value: string): Promise<boolean> => {
+  if (!key || value === undefined) return false;
+
+  // WEB FALLBACK: Browsers lack Hardware Secure Enclaves. Route to standard localStorage safely.
+  if (Platform.OS === 'web') {
+    try {
+      localStorage.setItem(key, value);
+      console.log(`️ Web Storage Bridge: Saved [${key}] safely.`);
+      return true;
+    } catch (e) {
+      console.error("Web Storage Exception:", e);
+      return false;
+    }
+  }
+
+  // NATIVE MOBILE: Encrypt directly into iOS Keychain / Android Keystore
+  try {
+    await SecureStore.setItemAsync(key, value, {
+      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY // Highest iOS security tier
+    });
+    return true;
+  } catch (error) {
+    console.error(`SecureStore Hardware Encryption Failed for [${key}]:`, error);
+    return false;
+  }
+};
+
+export const getSecureData = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web') {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) { return null; }
+  }
+
+  try {
+    return await SecureStore.getItemAsync(key);
+  } catch (error) {
+    console.error(`SecureStore Retrieval Failed for [${key}]:`, error);
+    return null;
+  }
+};
+
+export const deleteSecureData = async (key: string): Promise<void> => {
+  if (Platform.OS === 'web') {
+    try { localStorage.removeItem(key); } catch (e) {}
+    return;
+  }
+
+  try {
+    await SecureStore.deleteItemAsync(key);
+  } catch (error) {
+    console.error(`SecureStore Deletion Failed for [${key}]:`, error);
+  }
+};
+
+export const secureStorageAdapter = {
+  getItem: getSecureData,
+  setItem: saveSecureData,
+  removeItem: deleteSecureData,
 };

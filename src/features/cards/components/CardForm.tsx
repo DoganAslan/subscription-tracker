@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React, { useState } from 'react';
 import { View, ScrollView, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Modal, FlatList, TextInput } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
@@ -17,6 +18,13 @@ const CARD_TYPES = [
   { label: 'Troy', value: 'troy' },
   { label: 'Amex', value: 'amex' },
   { label: 'Other', value: 'other' },
+] as const;
+
+const CURRENCIES = [
+  { label: 'TRY (₺)', value: 'TRY', symbol: '₺' },
+  { label: 'USD ($)', value: 'USD', symbol: '$' },
+  { label: 'EUR (€)', value: 'EUR', symbol: '€' },
+  { label: 'GBP (£)', value: 'GBP', symbol: '£' },
 ] as const;
 
 const PREMIUM_COLORS = [
@@ -40,6 +48,7 @@ interface Props {
 
 export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDelete }: Props) {
   const [isTypeModalVisible, setIsTypeModalVisible] = useState(false);
+  const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const { colors } = useTheme();
   
   const isEdit = !!initialData;
@@ -55,6 +64,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
       expiryMonth: initialData?.expiryMonth || new Date().getMonth() + 1,
       expiryYear: initialData?.expiryYear || currentYear + 3,
       color: initialData?.color || PREMIUM_COLORS[0],
+      currency: initialData?.currency || 'TRY',
     }
   });
 
@@ -83,7 +93,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
         return (
           <View style={containerStyle}>
             <View style={{ paddingHorizontal: 4, paddingVertical: 2, borderWidth: 1.5, borderColor: '#FFFFFF', borderRadius: 4, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#FFFFFF', fontWeight: '900', fontStyle: 'italic', fontSize: 12, letterSpacing: 1 }}>TROY</Text>
+              <Text style={{ color: '#FFFFFF', fontWeight: '900', fontStyle: 'italic', fontSize: 12, letterSpacing: 1 }}>{i18n.t('global.troy')}</Text>
             </View>
           </View>
         );
@@ -123,7 +133,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
           render={({ field: { onChange, onBlur, value } }) => (
             <Input 
               label="Card Name" 
-              placeholder="e.g., Virtual Shopping Card" 
+              placeholder={i18n.t('global.egVirtualShoppingCar')} 
               onBlur={onBlur} 
               onChangeText={onChange} 
               value={value} 
@@ -142,7 +152,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
                   <View pointerEvents="none">
                     <Input 
                       label="Card Type" 
-                      placeholder="Select Type" 
+                      placeholder={i18n.t('global.selectType')} 
                       value={CARD_TYPES.find(t => t.value === value)?.label || value} 
                       error={errors.type?.message} 
                       editable={false}
@@ -159,7 +169,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input 
                   label="Last 4 Digits" 
-                  placeholder="e.g. 4321" 
+                  placeholder={i18n.t('global.eg4321')} 
                   keyboardType="numeric"
                   maxLength={4}
                   onBlur={onBlur} 
@@ -173,25 +183,48 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
           </View>
         </View>
 
-        <Controller
-          control={control}
-          name="limit"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <Input 
-              label="Monthly Limit" 
-              placeholder="0.00" 
-              keyboardType="numeric"
-              onBlur={onBlur} 
-              onChangeText={(text) => {
-                const parsed = parseFloat(text.replace(/,/g, '.'));
-                onChange(isNaN(parsed) ? 0 : parsed);
-              }} 
-              value={value ? value.toString() : ''} 
-              error={errors.limit?.message} 
-              inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+        <View style={styles.row}>
+          <View style={styles.flexHalf}>
+            <Controller
+              control={control}
+              name="limit"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input 
+                  label="Monthly Limit" 
+                  placeholder={i18n.t('global.000')} 
+                  keyboardType="numeric"
+                  onBlur={onBlur} 
+                  onChangeText={(text) => {
+                    const parsed = parseFloat(text.replace(/,/g, '.'));
+                    onChange(isNaN(parsed) ? 0 : parsed);
+                  }} 
+                  value={value ? value.toString() : ''} 
+                  error={errors.limit?.message} 
+                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+                />
+              )}
             />
-          )}
-        />
+          </View>
+          <View style={styles.flexHalf}>
+            <Controller
+              control={control}
+              name="currency"
+              render={({ field: { value } }) => (
+                <TouchableOpacity activeOpacity={0.8} onPress={() => setIsCurrencyModalVisible(true)}>
+                  <View pointerEvents="none">
+                    <Input 
+                      label="Para Birimi / Currency" 
+                      placeholder={i18n.t('global.try')} 
+                      value={CURRENCIES.find(c => c.value === value)?.label || value} 
+                      error={errors.currency?.message} 
+                      editable={false}
+                    />
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
 
         <View style={styles.row}>
           <View style={styles.flexHalf}>
@@ -201,7 +234,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input 
                   label="Expiry Month (MM)" 
-                  placeholder="MM" 
+                  placeholder={i18n.t('global.mm')} 
                   keyboardType="numeric"
                   maxLength={2}
                   onBlur={onBlur} 
@@ -220,7 +253,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input 
                   label="Expiry Year (YYYY)" 
-                  placeholder="YYYY" 
+                  placeholder={i18n.t('global.yyyy')} 
                   keyboardType="numeric"
                   maxLength={4}
                   onBlur={onBlur} 
@@ -235,7 +268,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
         </View>
 
         <View style={styles.colorSection}>
-          <Text style={[styles.colorLabel, { color: colors.textSecondary }]}>CARD COLOR</Text>
+          <Text style={[styles.colorLabel, { color: colors.textSecondary }]}>{i18n.t('global.cardColor')}</Text>
           <Controller
             control={control}
             name="color"
@@ -292,9 +325,9 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Select Card Type</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{i18n.t('global.selectCardType')}</Text>
               <TouchableOpacity onPress={() => setIsTypeModalVisible(false)}>
-                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Close</Text>
+                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{i18n.t('global.close')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -318,7 +351,48 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
                       <Text style={[styles.modalRowText, { color: value === item.value ? colors.primary : colors.text }]}>
                         {item.label}
                       </Text>
-                      {value === item.value && <Text style={{ color: colors.primary, fontWeight: 'bold' }}>✓</Text>}
+                      {value === item.value && <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{i18n.t('global.symbol66')}</Text>}
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Currency Selection Modal */}
+      <Modal visible={isCurrencyModalVisible} animationType="slide" transparent={true} onRequestClose={() => setIsCurrencyModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{i18n.t('global.selectCurrency')}</Text>
+              <TouchableOpacity onPress={() => setIsCurrencyModalVisible(false)}>
+                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{i18n.t('global.close')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Controller
+              control={control}
+              name="currency"
+              render={({ field: { onChange, value } }) => (
+                <FlatList
+                  data={CURRENCIES}
+                  keyExtractor={item => item.value}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 40 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      onPress={() => {
+                        onChange(item.value);
+                        setIsCurrencyModalVisible(false);
+                      }}
+                      style={[styles.modalRow, { borderBottomColor: colors.border }]}
+                    >
+                      <Text style={[styles.modalRowText, { color: value === item.value ? colors.primary : colors.text }]}>
+                        {item.label}
+                      </Text>
+                      {value === item.value && <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{i18n.t('global.symbol66')}</Text>}
                     </TouchableOpacity>
                   )}
                 />

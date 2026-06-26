@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React, { useState } from 'react';
 import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -60,7 +61,7 @@ export default function OnboardingScreen() {
           style={styles.skipButton}
           onPress={() => router.push('/(onboarding)/templates')}
         >
-          <Text style={styles.skipText}>Skip Intro</Text>
+          <Text style={styles.skipText}>{i18n.t('global.skipIntro')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

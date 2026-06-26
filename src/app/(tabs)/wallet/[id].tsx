@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React from 'react';
 import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { CardForm } from '@/features/cards/components/CardForm';
@@ -39,9 +40,7 @@ export default function EditCardScreen() {
 
   const handleDelete = () => {
     triggerHaptic('warning');
-    Alert.alert(
-      "Delete Card",
-      "Are you sure you want to delete this virtual card? All subscriptions linked to it will be unlinked.",
+    Alert.alert(i18n.t('global.deleteCard'), i18n.t('global.areYouSureYouWantToD1'),
       [
         { text: "Cancel", style: "cancel" },
         { 
@@ -70,9 +69,9 @@ export default function EditCardScreen() {
   if (!card) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: colors.text }}>Card not found.</Text>
+        <Text style={{ color: colors.text }}>{i18n.t('global.cardNotFound')}</Text>
         <TouchableOpacity onPress={handleGoBack} style={{ marginTop: 20 }}>
-          <Text style={{ color: colors.primary }}>Go Back</Text>
+          <Text style={{ color: colors.primary }}>{i18n.t('global.goBack')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -85,7 +84,7 @@ export default function EditCardScreen() {
           <TouchableOpacity onPress={handleGoBack} style={{ padding: 4 }}>
              <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>Edit Card</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{i18n.t('global.editCard')}</Text>
           <View style={{ width: 28 }} />
         </View>
 

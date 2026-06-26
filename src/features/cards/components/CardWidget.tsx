@@ -1,5 +1,6 @@
+import i18n from '@/locales/i18n';
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, Platform } from 'react-native';
 import { Card, Subscription } from '@/services/firebase/types';
 import { getCardHealthStatus } from '@/utils/cardHealth';
 import { useTheme } from '@/context/ThemeContext';
@@ -24,9 +25,9 @@ export function CardWidget({ card, subscriptions, style }: Props) {
   let warningColor = '#F59E0B'; // Amber
   
   const getBadge = () => {
-    if (isExpired) return <View style={[styles.badge, { backgroundColor: dangerColor }]}><Text style={styles.badgeText}>Expired</Text></View>;
-    if (isNearingExpiry) return <View style={[styles.badge, { backgroundColor: warningColor }]}><Text style={styles.badgeText}>Expiring Soon</Text></View>;
-    if (isLimitExceeded) return <View style={[styles.badge, { backgroundColor: dangerColor }]}><Text style={styles.badgeText}>Limit Exceeded</Text></View>;
+    if (isExpired) return <View style={[styles.badge, { backgroundColor: dangerColor }]}><Text style={styles.badgeText}>{i18n.t('global.expired')}</Text></View>;
+    if (isNearingExpiry) return <View style={[styles.badge, { backgroundColor: warningColor }]}><Text style={styles.badgeText}>{i18n.t('global.expiringSoon')}</Text></View>;
+    if (isLimitExceeded) return <View style={[styles.badge, { backgroundColor: dangerColor }]}><Text style={styles.badgeText}>{i18n.t('global.limitExceeded')}</Text></View>;
     return null;
   };
 
@@ -65,7 +66,7 @@ export function CardWidget({ card, subscriptions, style }: Props) {
         return (
           <View style={containerStyle}>
             <View style={{ paddingHorizontal: 4, paddingVertical: 2, borderWidth: 1.5, borderColor: '#FFFFFF', borderRadius: 4, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#FFFFFF', fontWeight: '900', fontStyle: 'italic', fontSize: 12, letterSpacing: 1 }}>TROY</Text>
+              <Text style={{ color: '#FFFFFF', fontWeight: '900', fontStyle: 'italic', fontSize: 12, letterSpacing: 1 }}>{i18n.t('global.troy')}</Text>
             </View>
           </View>
         );
@@ -76,6 +77,22 @@ export function CardWidget({ card, subscriptions, style }: Props) {
           </View>
         );
     }
+  };
+
+  const getCurrencySymbol = (currency?: string) => {
+    switch (currency) {
+      case 'USD': return '$';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'TRY': 
+      default: return '₺';
+    }
+  };
+
+  const formatAmount = (amount: number | string) => {
+    const sym = getCurrencySymbol(card.currency);
+    if (card.currency === 'TRY' || !card.currency) return `${amount} ${sym}`;
+    return `${sym}${amount}`;
   };
 
   return (
@@ -97,7 +114,7 @@ export function CardWidget({ card, subscriptions, style }: Props) {
 
       <View style={styles.footerRow}>
         <View style={styles.footerCol}>
-          <Text style={styles.label}>EXP</Text>
+          <Text style={styles.label}>{i18n.t('global.exp')}</Text>
           <Text style={styles.value}>
             {card.expiryMonth.toString().padStart(2, '0')}/{card.expiryYear.toString().slice(-2)}
           </Text>
@@ -110,7 +127,7 @@ export function CardWidget({ card, subscriptions, style }: Props) {
       <View style={styles.healthContainer}>
         <View style={styles.healthHeader}>
           <Text style={styles.healthText}>
-            <Text style={{ fontWeight: 'bold' }}>{totalExpenses.toFixed(0)}</Text> / {card.limit} Limit
+            <Text style={{ fontWeight: 'bold' }}>{formatAmount(totalExpenses.toFixed(0))}</Text> / {formatAmount(card.limit)} Limit
           </Text>
           {getBadge()}
         </View>
