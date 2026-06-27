@@ -86,11 +86,21 @@ export default function SettingsScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.5,
+        quality: 0.2,
+        base64: true,
       });
 
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        setProfileImage(result.assets[0].uri);
+      if (!result.canceled && result.assets?.[0]?.base64) {
+        const microAvatarString = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        setProfileImage(microAvatarString);
+        
+        if (auth.currentUser) {
+          try {
+            await updateProfile(auth.currentUser, { photoURL: microAvatarString });
+          } catch (e) {
+            console.error('Failed to update avatar in auth profile', e);
+          }
+        }
       }
     } catch (e) {
       console.error('Failed to pick image', e);

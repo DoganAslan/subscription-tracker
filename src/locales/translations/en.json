@@ -40,7 +40,8 @@
     "theme": "Theme",
     "exportData": "Export Data",
     "currencyPref": "Currency Preferences",
-    "homeBaseCurrency": "Home Base Currency"
+    "homeBaseCurrency": "Home Base Currency",
+    "resetConfirmMsg": "Send reset link to {{email}}?"
   },
   "tabs": {
     "home": "Home",

@@ -32,16 +32,17 @@ export function Header({ title }: HeaderProps) {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.5,
+      quality: 0.2,
+      base64: true,
     });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const uri = result.assets[0].uri;
-      setProfileImage(uri);
+    if (!result.canceled && result.assets?.[0]?.base64) {
+      const microAvatarString = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      setProfileImage(microAvatarString);
       
       if (auth.currentUser) {
         try {
-          await updateProfile(auth.currentUser, { photoURL: uri });
+          await updateProfile(auth.currentUser, { photoURL: microAvatarString });
         } catch (e) {
           Alert.alert('Error', 'Failed to save profile picture');
         }

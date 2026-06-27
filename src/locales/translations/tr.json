@@ -40,7 +40,8 @@
     "theme": "Tema",
     "exportData": "Verileri Dışa Aktar",
     "currencyPref": "Para Birimi Tercihleri",
-    "homeBaseCurrency": "Ana Para Birimi"
+    "homeBaseCurrency": "Ana Para Birimi",
+    "resetConfirmMsg": "Sıfırlama bağlantısı şu adrese gönderilsin mi: {{email}}?"
   },
   "tabs": {
     "home": "Ana Sayfa",

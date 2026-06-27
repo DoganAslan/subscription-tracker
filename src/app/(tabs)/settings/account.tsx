@@ -221,12 +221,12 @@ export default function AccountSettingsScreen() {
     };
 
     if (Platform.OS === 'web') {
-      const confirmed = window.confirm(`Send a password reset link to ${currentUser.email}?`);
+      const confirmed = window.confirm(t('settings.resetConfirmMsg', { email: currentUser.email }));
       if (confirmed) await executeReset();
     } else {
       Alert.alert(
         "Reset Password",
-        `Send a password reset link to ${currentUser.email}?`,
+        t('settings.resetConfirmMsg', { email: currentUser.email }),
         [
           { text: "Cancel", style: "cancel" },
           { text: "Send", onPress: executeReset }
