@@ -291,7 +291,10 @@ export default function AccountSettingsScreen() {
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView style={dynamicStyles.content}>
+      <ScrollView 
+        style={dynamicStyles.content}
+        contentContainerStyle={{ paddingBottom: 120, flexGrow: 1 }}
+      >
         <View style={dynamicStyles.section}>
           <Text style={dynamicStyles.sectionTitle}>{t('settings.profileInfo')}</Text>
           <View style={dynamicStyles.card}>
@@ -442,20 +445,38 @@ export default function AccountSettingsScreen() {
 
         <View style={[dynamicStyles.section, { marginTop: 40 }]}>
           <Text style={[dynamicStyles.sectionTitle, { color: colors.danger }]}>Danger Zone</Text>
-          <View style={[dynamicStyles.card, { borderColor: colors.danger, borderWidth: 1 }]}>
-            <TouchableOpacity 
-              style={dynamicStyles.menuItem} 
-              onPress={() => {
-                triggerHaptic('heavy');
-                handleDeleteAccount();
-              }}
-            >
-              <View style={dynamicStyles.menuItemLeft}>
-                <Ionicons name="warning-outline" size={22} color={colors.danger} />
-                <Text style={[dynamicStyles.menuItemText, { color: colors.danger, fontWeight: '600' }]}>Delete Account</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity 
+            activeOpacity={0.7}
+            onPress={() => {
+              triggerHaptic('heavy');
+              handleDeleteAccount();
+            }}
+            style={{
+              width: '100%',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              backgroundColor: 'rgba(239, 68, 68, 0.08)',
+              borderWidth: 1,
+              borderColor: '#7F1D1D',
+              borderRadius: 10,
+              paddingVertical: 14,
+              paddingHorizontal: 16,
+              marginTop: 24
+            }}
+          >
+            <Ionicons name="warning-outline" size={22} color="#EF4444" />
+            <Text style={{
+              color: '#EF4444',
+              fontSize: 15,
+              fontWeight: '600',
+              textAlign: 'center',
+              flexShrink: 1
+            }}>
+              Delete Account
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 

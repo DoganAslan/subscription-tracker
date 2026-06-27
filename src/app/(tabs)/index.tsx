@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect } from 'react';
-import { ScrollView, Text, SafeAreaView, RefreshControl, View, TouchableOpacity, StyleSheet, Platform, InteractionManager } from 'react-native';
+import { ScrollView, Text, RefreshControl, View, TouchableOpacity, StyleSheet, Platform, InteractionManager, StatusBar } from 'react-native';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
@@ -86,7 +86,7 @@ export default function DashboardScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={dynamicStyles.safeArea}>
+      <View style={dynamicStyles.safeArea}>
         <ScrollView 
           style={dynamicStyles.scrollView}
           showsVerticalScrollIndicator={false}
@@ -95,20 +95,20 @@ export default function DashboardScreen() {
           <Header title="SubMate" />
           <SubscriptionSkeleton count={5} />
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (isError) {
     return (
-      <SafeAreaView style={dynamicStyles.errorContainer}>
+      <View style={dynamicStyles.errorContainer}>
         <Text style={dynamicStyles.errorText}>{t('home.failedToLoad')}</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={dynamicStyles.safeArea}>
+    <View style={dynamicStyles.safeArea}>
       <ScrollView 
         style={dynamicStyles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -161,7 +161,7 @@ export default function DashboardScreen() {
         
       </ScrollView>
       <FloatingActionButton onPress={() => router.push('/(tabs)/subscriptions/add')} />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -169,20 +169,24 @@ const getStyles = (colors: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 0
   },
   scrollView: {
     flex: 1,
+    width: '100%',
     paddingHorizontal: 16,
     paddingTop: 24,
   },
   scrollContent: {
     paddingBottom: 120,
+    flexGrow: 1
   },
   errorContainer: {
     flex: 1,
     backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 10 : 0
   },
   errorText: {
     color: colors.danger,
