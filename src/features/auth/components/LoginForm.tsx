@@ -8,6 +8,7 @@ import { loginSchema, LoginFormData } from '../schemas/auth.schema';
 import { useAuthMutations } from '../hooks/useAuthMutations';
 import { AuthService } from '@/services/firebase/auth';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from 'react-i18next';
 
 export function LoginForm() {
   const { loginMutation } = useAuthMutations();
@@ -16,18 +17,36 @@ export function LoginForm() {
   const [isResetModalVisible, setResetModalVisible] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   
+  const { t } = useTranslation();
+
   const handleForgotPassword = async () => {
-    if (!resetEmail) {
-      Alert.alert("Error", "Please enter your email address.");
+    // 1. Pre-flight input sanitization
+    const cleanEmail = resetEmail?.trim();
+    if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      Alert.alert('Hata', t('auth.invalidEmailFormat', 'Geçerli bir e-posta girin.')); // Use i18n
       return;
     }
+
     try {
-      await AuthService.sendPasswordResetEmail(resetEmail);
-      Alert.alert("Success", "Password reset link sent! Check your inbox.");
+      // 2. Execute SDK call
+      await AuthService.sendPasswordResetEmail(cleanEmail);
+
+      Alert.alert('Başarılı', t('auth.resetEmailSentSuccess', 'Sıfırlama bağlantısı gönderildi.'));
       setResetModalVisible(false);
       setResetEmail('');
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to send reset email.");
+      // 3. Senior Defensive Error Mapping (NEVER let raw objects reach the user)
+      const rawCode = error?.code || error?.message || 'unknown_error';
+      console.log('[auth_reset_error]:', rawCode);
+
+      let userFriendlyMsg = t('auth.genericError', 'Bir hata oluştu.');
+      if (rawCode.includes('user-not-found')) userFriendlyMsg = t('auth.userNotFound', 'Kullanıcı bulunamadı.');
+      else if (rawCode.includes('invalid-email')) userFriendlyMsg = t('auth.invalidEmailFormat', 'Geçersiz e-posta formatı.');
+      else if (rawCode.includes('too-many-requests')) userFriendlyMsg = t('auth.tooManyRequests', 'Çok fazla deneme yaptınız, bekleyin.');
+      else if (rawCode.includes('network')) userFriendlyMsg = 'Ağ bağlantısı hatası.';
+
+      // Fallback display showing the exact code if unmapped, so QA can debug physical APKs!
+      Alert.alert('İşlem Başarısız', `${userFriendlyMsg}\n(Kod: ${rawCode})`);
     }
   };
   
