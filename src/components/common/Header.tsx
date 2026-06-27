@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, Modal, KeyboardAvoidingView, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { auth } from '@/services/firebase/config';
@@ -44,7 +45,7 @@ export function Header({ title }: HeaderProps) {
         try {
           await updateProfile(auth.currentUser, { photoURL: microAvatarString });
         } catch (e) {
-          Alert.alert('Error', 'Failed to save profile picture');
+          Alert.alert(i18n.t('global.error'), i18n.t('global.failedToSaveProfileP'));
         }
       }
     }
@@ -61,7 +62,7 @@ export function Header({ title }: HeaderProps) {
       });
       setIsProfileModalVisible(false);
     } catch (e) {
-      Alert.alert('Error', 'Failed to update profile');
+      Alert.alert(i18n.t('global.error'), i18n.t('global.failedToUpdateProfil'));
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -97,9 +98,9 @@ export function Header({ title }: HeaderProps) {
         >
           <View style={dynamicStyles.modalContent}>
             <View style={dynamicStyles.modalHeaderLayout}>
-              <Text style={dynamicStyles.modalTitle}>Edit Profile</Text>
+              <Text style={dynamicStyles.modalTitle}>{i18n.t('global.editProfile')}</Text>
               <TouchableOpacity onPress={() => setIsProfileModalVisible(false)}>
-                <Text style={dynamicStyles.modalClose}>Cancel</Text>
+                <Text style={dynamicStyles.modalClose}>{i18n.t('global.cancel')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -115,27 +116,27 @@ export function Header({ title }: HeaderProps) {
                   </View>
                 )}
                 <View style={dynamicStyles.avatarEditBadge}>
-                  <Text style={dynamicStyles.avatarEditBadgeText}>+</Text>
+                  <Text style={dynamicStyles.avatarEditBadgeText}>{i18n.t('global.symbol911')}</Text>
                 </View>
               </TouchableOpacity>
             </View>
             
-            <Text style={dynamicStyles.inputLabel}>FIRST NAME</Text>
+            <Text style={dynamicStyles.inputLabel}>{i18n.t('global.firstName')}</Text>
             <TextInput
               style={dynamicStyles.inputField}
               value={firstName}
               onChangeText={setFirstName}
               placeholderTextColor={colors.textSecondary}
-              placeholder="John"
+              placeholder={i18n.t('global.john')}
             />
 
-            <Text style={dynamicStyles.inputLabel}>LAST NAME</Text>
+            <Text style={dynamicStyles.inputLabel}>{i18n.t('global.lastName')}</Text>
             <TextInput
               style={[dynamicStyles.inputField, { marginBottom: 24 }]}
               value={lastName}
               onChangeText={setLastName}
               placeholderTextColor={colors.textSecondary}
-              placeholder="Doe"
+              placeholder={i18n.t('global.doe')}
             />
 
             <TouchableOpacity 
@@ -146,7 +147,7 @@ export function Header({ title }: HeaderProps) {
               {isUpdatingProfile ? (
                  <ActivityIndicator color={colors.background} />
               ) : (
-                 <Text style={dynamicStyles.saveBtnText}>Save Changes</Text>
+                 <Text style={dynamicStyles.saveBtnText}>{i18n.t('global.saveChanges')}</Text>
               )}
             </TouchableOpacity>
           </View>

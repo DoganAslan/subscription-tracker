@@ -11,6 +11,8 @@ import { Subscription } from '@/services/firebase/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
+import { useCards } from '@/features/cards/hooks/useCards';
+import { sanitizePriceInput, sanitizeTextInput } from '@/utils/sanitizers';
 
 export const CATEGORIES = [
   { name: 'Entertainment', hint: 'Netflix, Disney+, Cable' },
@@ -26,6 +28,18 @@ export const CATEGORIES = [
   { name: 'Food & Delivery', hint: 'Meal kits, Coffee clubs' },
   { name: 'Other', hint: '' },
 ];
+
+const formatLocalizedDate = (date: Date, localeCode: string): string => {
+  try {
+    return new Intl.DateTimeFormat(localeCode, { 
+      day: 'numeric', 
+      month: 'short', 
+      year: 'numeric' 
+    }).format(date);
+  } catch (e) {
+    return date.toISOString().split('T')[0];
+  }
+};
 
 export const CURRENCIES = [
   { code: 'TRY', label: 'TRY - Turkey' },
@@ -100,12 +114,50 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const [showRenewalPicker, setShowRenewalPicker] = useState(false);
   const [showTrialPicker, setShowTrialPicker] = useState(false);
+  const [showContractPicker, setShowContractPicker] = useState(false);
+  const [isCardModalVisible, setIsCardModalVisible] = useState(false);
+  
+  const { data: cards = [] } = useCards();
   
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const activeLang = i18n.language || 'en';
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
   const isEdit = !!initialData;
+
+  const webRenewalDateInputRef = React.useRef<any>(null);
+  const triggerWebRenewalCalendar = () => {
+    if (Platform.OS === 'web' && webRenewalDateInputRef.current) {
+      try {
+        webRenewalDateInputRef.current.showPicker();
+      } catch (e) {
+        webRenewalDateInputRef.current.click();
+      }
+    }
+  };
+
+  const webTrialDateInputRef = React.useRef<any>(null);
+  const triggerWebTrialCalendar = () => {
+    if (Platform.OS === 'web' && webTrialDateInputRef.current) {
+      try {
+        webTrialDateInputRef.current.showPicker();
+      } catch (e) {
+        webTrialDateInputRef.current.click();
+      }
+    }
+  };
+
+  const webContractDateInputRef = React.useRef<any>(null);
+  const triggerWebContractCalendar = () => {
+    if (Platform.OS === 'web' && webContractDateInputRef.current) {
+      try {
+        webContractDateInputRef.current.showPicker();
+      } catch (e) {
+        webContractDateInputRef.current.click();
+      }
+    }
+  };
 
   const { control, handleSubmit, formState: { errors }, watch } = useForm<SubscriptionFormData>({
     resolver: zodResolver(subscriptionSchema) as any,
@@ -119,8 +171,13 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
       reminderOffset: initialData?.reminderOffset || '1_day',
       isFreeTrial: initialData?.isFreeTrial || false,
       trialEndDate: initialData?.trialEndDate?.toDate() || new Date(),
+      hasContract: initialData?.hasContract || false,
+      contractEndDate: initialData?.contractEndDate 
+        ? (typeof initialData.contractEndDate.toDate === 'function' ? initialData.contractEndDate.toDate() : new Date(initialData.contractEndDate))
+        : new Date(Date.now() + 365 * 86400000),
       notes: initialData?.notes || '',
       status: initialData?.status || 'active',
+      cardId: initialData?.cardId || null,
     }
   });
 
@@ -133,6 +190,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
 
   const isPaused = watch('status') === 'paused';
   const isFreeTrial = watch('isFreeTrial');
+  const hasContract = watch('hasContract');
 
   return (
     <>
@@ -144,7 +202,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         {!hideHero && (
           <View style={dynamicStyles.heroContainerRedesigned}>
             {isFreeTrial && (
-              <Text style={dynamicStyles.postTrialLabel}>POST-TRIAL PRICE</Text>
+              <Text style={dynamicStyles.postTrialLabel}>{t('global.posttrialPrice')}</Text>
             )}
             <View style={dynamicStyles.heroInputWrapper}>
               <Controller
@@ -155,9 +213,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                     style={dynamicStyles.heroInputRedesigned}
                     keyboardType="numeric"
                     onBlur={onBlur}
-                    onChangeText={onChange}
+                    onChangeText={(text) => onChange(sanitizePriceInput(text))}
                     value={value ? value.toString() : ''}
-                    placeholder="0.00"
+                    placeholder={t('global.000')}
                     placeholderTextColor={colors.textSecondary}
                     numberOfLines={1}
                     returnKeyType="done"
@@ -175,7 +233,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                     style={dynamicStyles.currencySelector}
                   >
                     <Text style={dynamicStyles.currencyText}>{value || 'USD'}</Text>
-                    <Text style={dynamicStyles.currencyChevron}>▼</Text>
+                    <Text style={dynamicStyles.currencyChevron}>{t('global.symbol533')}</Text>
                   </TouchableOpacity>
                 )}
               />
@@ -188,14 +246,39 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
 
         <Controller
           control={control}
+          name="cardId"
+          render={({ field: { value, onChange } }) => {
+            const selectedCard = cards.find(c => c.id === value);
+            return (
+              <TouchableOpacity 
+                activeOpacity={0.8} 
+                onPress={() => setIsCardModalVisible(true)}
+                style={{ marginBottom: 16 }}
+              >
+                <View pointerEvents="none">
+                  <Input 
+                    label="Payment Method / Link Card" 
+                    placeholder={t('global.selectACard')} 
+                    value={selectedCard ? `💳 ${selectedCard.type.toUpperCase()} - ${selectedCard.name} (•••• ${selectedCard.lastFourDigits || '****'})` : 'None / No Card'} 
+                    error={errors.cardId?.message} 
+                    editable={false}
+                  />
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
+
+        <Controller
+          control={control}
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
             <View>
               <Input 
                 label={t('subs.name')} 
-                placeholder="e.g., Netflix" 
+                placeholder={t('global.egNetflix')} 
                 onBlur={onBlur} 
-                onChangeText={onChange} 
+                onChangeText={(text) => onChange(sanitizeTextInput(text, 30))} 
                 value={value} 
                 error={errors.name?.message} 
               />
@@ -239,7 +322,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
               <View pointerEvents="none">
                 <Input 
                   label={t('subs.category')} 
-                  placeholder="Select a category" 
+                  placeholder={t('global.selectACategory')} 
                   value={value} 
                   error={errors.category?.message} 
                   editable={false}
@@ -283,34 +366,49 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             control={control}
             name="renewalDate"
             render={({ field: { onChange, value } }) => (
-              <View style={dynamicStyles.flexHalf}>
-                {Platform.OS === 'web' ? (
-                  <Input 
-                    label="Renewal Date" 
-                    value={value ? value.toISOString().split('T')[0] : ''} 
-                    error={errors.renewalDate?.message} 
-                    editable={true}
-                    {...({ type: 'date' } as any)}
-                    onChangeText={(text) => {
-                      const parsed = new Date(text);
-                      if (!isNaN(parsed.getTime())) {
-                        onChange(parsed);
-                      }
+                <View style={{ width: '100%', marginBottom: 16 }}>
+                  <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>{t('global.renewalDate')}</Text>
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      if (Platform.OS === 'web') triggerWebRenewalCalendar();
+                      else setShowRenewalPicker(true);
                     }}
-                  />
-                ) : (
-                  <TouchableOpacity activeOpacity={0.8} onPress={() => setShowRenewalPicker(true)}>
-                    <View pointerEvents="none">
-                      <Input 
-                        label="Renewal Date" 
-                        placeholder="Select Date" 
-                        value={value ? value.toISOString().split('T')[0] : ''} 
-                        error={errors.renewalDate?.message} 
-                        editable={false}
-                      />
-                    </View>
+                    style={{
+                      width: '100%',
+                      padding: 16,
+                      backgroundColor: '#1E293B',
+                      borderWidth: 1,
+                      borderColor: '#334155',
+                      borderRadius: 8,
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <Text style={{ color: '#F8FAFC', fontSize: 16, fontWeight: '500' }}>
+                      {formatLocalizedDate(value || new Date(), activeLang)}
+                    </Text>
                   </TouchableOpacity>
-                )}
+
+                  {Platform.OS === 'web' && (
+                    React.createElement('input', {
+                      ref: webRenewalDateInputRef,
+                      type: 'date',
+                      value: value instanceof Date && !isNaN(value.getTime()) 
+                        ? value.toISOString().split('T')[0] 
+                        : new Date().toISOString().split('T')[0],
+                      onChange: (e: any) => {
+                        if (e.target.value) onChange(new Date(e.target.value));
+                      },
+                      style: {
+                        position: 'absolute',
+                        width: 0,
+                        height: 0,
+                        opacity: 0,
+                        pointerEvents: 'none',
+                        border: 'none'
+                      }
+                    })
+                  )}
 
                 {Platform.OS === 'ios' && showRenewalPicker && (
                   <Modal transparent={true} animationType="slide" onRequestClose={() => setShowRenewalPicker(false)}>
@@ -318,7 +416,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowRenewalPicker(false)}>
-                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t('global.done')}</Text>
                           </TouchableOpacity>
                         </View>
                         <DateTimePicker
@@ -350,7 +448,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             )}
           />
         <View style={dynamicStyles.reminderSection}>
-          <Text style={dynamicStyles.reminderLabel}>REMINDER OFFSET</Text>
+          <Text style={dynamicStyles.reminderLabel}>{t('global.reminderOffset')}</Text>
           <Controller
             control={control}
             name="reminderOffset"
@@ -386,7 +484,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           render={({ field: { onChange, onBlur, value } }) => (
             <Input 
               label={t('subs.notes')} 
-              placeholder="e.g., Shared with family" 
+              placeholder={t('global.egSharedWithFamily')} 
               onBlur={onBlur} 
               onChangeText={onChange} 
               value={value} 
@@ -399,8 +497,8 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         
         <View style={dynamicStyles.switchContainer}>
           <View>
-            <Text style={dynamicStyles.switchTitle}>This is a Free Trial</Text>
-            <Text style={dynamicStyles.switchDesc}>Track expiration and avoid charges</Text>
+            <Text style={dynamicStyles.switchTitle}>{t('global.thisIsAFreeTrial')}</Text>
+            <Text style={dynamicStyles.switchDesc}>{t('global.trackExpirationAndAv')}</Text>
           </View>
           <Controller
             control={control}
@@ -425,33 +523,48 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             control={control}
             name="trialEndDate"
             render={({ field: { onChange, value } }) => (
-              <View>
-                {Platform.OS === 'web' ? (
-                  <Input 
-                    label="Trial End Date" 
-                    value={value ? value.toISOString().split('T')[0] : ''} 
-                    error={errors.trialEndDate?.message} 
-                    editable={true}
-                    {...({ type: 'date' } as any)}
-                    onChangeText={(text) => {
-                      const parsed = new Date(text);
-                      if (!isNaN(parsed.getTime())) {
-                        onChange(parsed);
-                      }
-                    }}
-                  />
-                ) : (
-                  <TouchableOpacity activeOpacity={0.8} onPress={() => setShowTrialPicker(true)}>
-                    <View pointerEvents="none">
-                      <Input 
-                        label="Trial End Date" 
-                        placeholder="Select Date" 
-                        value={value ? value.toISOString().split('T')[0] : ''} 
-                        error={errors.trialEndDate?.message} 
-                        editable={false}
-                      />
-                    </View>
-                  </TouchableOpacity>
+              <View style={{ width: '100%', marginBottom: 16 }}>
+                <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>{t('global.trialEndDate')}</Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (Platform.OS === 'web') triggerWebTrialCalendar();
+                    else setShowTrialPicker(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: 16,
+                    backgroundColor: '#1E293B',
+                    borderWidth: 1,
+                    borderColor: '#334155',
+                    borderRadius: 8,
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Text style={{ color: '#F8FAFC', fontSize: 16, fontWeight: '500' }}>
+                    {formatLocalizedDate(value || new Date(), activeLang)}
+                  </Text>
+                </TouchableOpacity>
+
+                {Platform.OS === 'web' && (
+                  React.createElement('input', {
+                    ref: webTrialDateInputRef,
+                    type: 'date',
+                    value: value instanceof Date && !isNaN(value.getTime()) 
+                      ? value.toISOString().split('T')[0] 
+                      : new Date().toISOString().split('T')[0],
+                    onChange: (e: any) => {
+                      if (e.target.value) onChange(new Date(e.target.value));
+                    },
+                    style: {
+                      position: 'absolute',
+                      width: 0,
+                      height: 0,
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      border: 'none'
+                    }
+                  })
                 )}
 
                 {Platform.OS === 'ios' && showTrialPicker && (
@@ -460,7 +573,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowTrialPicker(false)}>
-                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t('global.done')}</Text>
                           </TouchableOpacity>
                         </View>
                         <DateTimePicker
@@ -493,12 +606,125 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           />
         )}
 
+        <View style={dynamicStyles.switchContainer}>
+          <View>
+            <Text style={dynamicStyles.switchTitle}>{t('forms.hasContract')}</Text>
+            <Text style={dynamicStyles.switchDesc}>{t('forms.contractReminderSubtext')}</Text>
+          </View>
+          <Controller
+            control={control}
+            name="hasContract"
+            render={({ field: { onChange, value } }) => (
+              <Switch
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={value ? '#FFFFFF' : colors.textSecondary}
+                ios_backgroundColor={colors.border}
+                onValueChange={(val) => {
+                  triggerHaptic('medium');
+                  onChange(val);
+                }}
+                value={value}
+              />
+            )}
+          />
+        </View>
+
+        {hasContract && (
+          <Controller
+            control={control}
+            name="contractEndDate"
+            render={({ field: { onChange, value } }) => (
+              <View style={{ width: '100%', marginBottom: 16 }}>
+                <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>
+                  {t('forms.contractEndDateLabel')}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (Platform.OS === 'web') triggerWebContractCalendar();
+                    else setShowContractPicker(true);
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: 16,
+                    backgroundColor: '#1E293B',
+                    borderWidth: 1,
+                    borderColor: '#334155',
+                    borderRadius: 8,
+                    justifyContent: 'center'
+                  }}
+                >
+                  <Text style={{ color: '#F8FAFC', fontSize: 16, fontWeight: '500' }}>
+                    {formatLocalizedDate(value || new Date(Date.now() + 365 * 86400000), activeLang)}
+                  </Text>
+                </TouchableOpacity>
+
+                {Platform.OS === 'web' && (
+                  React.createElement('input', {
+                    ref: webContractDateInputRef,
+                    type: 'date',
+                    value: value instanceof Date && !isNaN(value.getTime()) 
+                      ? value.toISOString().split('T')[0] 
+                      : new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
+                    onChange: (e: any) => {
+                      if (e.target.value) onChange(new Date(e.target.value));
+                    },
+                    style: {
+                      position: 'absolute',
+                      width: 0,
+                      height: 0,
+                      opacity: 0,
+                      pointerEvents: 'none',
+                      border: 'none'
+                    }
+                  })
+                )}
+
+                {Platform.OS === 'ios' && showContractPicker && (
+                  <Modal transparent={true} animationType="slide" onRequestClose={() => setShowContractPicker(false)}>
+                    <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+                      <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
+                          <TouchableOpacity onPress={() => setShowContractPicker(false)}>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t('global.done')}</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <DateTimePicker
+                          value={value || new Date(Date.now() + 365 * 86400000)}
+                          mode="date"
+                          display="spinner"
+                          textColor={colors.text}
+                          onChange={(event, selectedDate) => {
+                            if (selectedDate) onChange(selectedDate);
+                          }}
+                        />
+                      </View>
+                    </View>
+                  </Modal>
+                )}
+
+                {Platform.OS === 'android' && showContractPicker && (
+                  <DateTimePicker
+                    value={value || new Date(Date.now() + 365 * 86400000)}
+                    mode="date"
+                    display="default"
+                    onChange={(event, selectedDate) => {
+                      setShowContractPicker(false);
+                      if (selectedDate) onChange(selectedDate);
+                    }}
+                  />
+                )}
+              </View>
+            )}
+          />
+        )}
+
         
         {isEdit && (
           <View style={dynamicStyles.switchContainer}>
             <View>
-              <Text style={dynamicStyles.switchTitle}>Pause Subscription</Text>
-              <Text style={dynamicStyles.switchDesc}>Temporarily stop tracking this cost</Text>
+              <Text style={dynamicStyles.switchTitle}>{t('global.pauseSubscription')}</Text>
+              <Text style={dynamicStyles.switchDesc}>{t('global.temporarilyStopTrack')}</Text>
             </View>
             <Controller
               control={control}
@@ -552,9 +778,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContent}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>Select Category</Text>
+              <Text style={dynamicStyles.modalTitle}>{t('global.selectCategory')}</Text>
               <TouchableOpacity onPress={() => setIsCategoryModalVisible(false)}>
-                <Text style={dynamicStyles.modalClose}>Close</Text>
+                <Text style={dynamicStyles.modalClose}>{t('global.close')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -589,7 +815,58 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                         )}
                       </View>
                       {value === item.name && (
-                        <Text style={dynamicStyles.checkIcon}>✓</Text>
+                        <Text style={dynamicStyles.checkIcon}>{t('global.symbol66')}</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
+
+      {/* Card Selection Modal */}
+      <Modal
+        visible={isCardModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setIsCardModalVisible(false)}
+      >
+        <View style={dynamicStyles.modalOverlay}>
+          <View style={[dynamicStyles.modalContent, { height: '50%' }]}>
+            <View style={dynamicStyles.modalHeader}>
+              <Text style={dynamicStyles.modalTitle}>{t('global.selectPaymentMethod')}</Text>
+              <TouchableOpacity onPress={() => setIsCardModalVisible(false)}>
+                <Text style={dynamicStyles.modalClose}>{t('global.close')}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <Controller
+              control={control}
+              name="cardId"
+              render={({ field: { onChange, value } }) => (
+                <FlatList
+                  data={[{ id: null, name: 'None / No Card' }, ...cards]}
+                  keyExtractor={item => item.id || 'none'}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 40 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      onPress={() => {
+                        onChange(item.id);
+                        setIsCardModalVisible(false);
+                      }}
+                      style={[
+                        dynamicStyles.modalRow,
+                        value === item.id && dynamicStyles.modalRowSelected
+                      ]}
+                    >
+                      <Text style={[dynamicStyles.modalRowText, value === item.id && dynamicStyles.modalRowTextSelected]}>
+                        {item.id ? `💳 ${item.type?.toUpperCase()} - ${item.name} (•••• ${item.lastFourDigits || '****'})` : item.name}
+                      </Text>
+                      {value === item.id && (
+                        <Text style={dynamicStyles.checkIcon}>{t('global.symbol66')}</Text>
                       )}
                     </TouchableOpacity>
                   )}
@@ -610,9 +887,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         <View style={dynamicStyles.modalOverlay}>
           <View style={[dynamicStyles.modalContent, { height: '60%' }]}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>Select Currency</Text>
+              <Text style={dynamicStyles.modalTitle}>{t('global.selectCurrency')}</Text>
               <TouchableOpacity onPress={() => setIsCurrencyModalVisible(false)}>
-                <Text style={dynamicStyles.modalClose}>Close</Text>
+                <Text style={dynamicStyles.modalClose}>{t('global.close')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -640,7 +917,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                         {item.label}
                       </Text>
                       {value === item.code && (
-                        <Text style={dynamicStyles.checkIcon}>✓</Text>
+                        <Text style={dynamicStyles.checkIcon}>{t('global.symbol66')}</Text>
                       )}
                     </TouchableOpacity>
                   )}

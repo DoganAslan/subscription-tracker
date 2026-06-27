@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { secureStorageAdapter } from '@/utils/secureStorage';
 
 interface SecurityState {
   isBiometricsEnabled: boolean;
@@ -15,7 +15,7 @@ export const useSecurityStore = create<SecurityState>()(
     }),
     {
       name: 'security-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => secureStorageAdapter),
     }
   )
 );

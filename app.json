@@ -10,7 +10,8 @@
     "ios": {
       "bundleIdentifier": "com.doganaslan.submate",
       "buildNumber": "5",
-      "icon": "./assets/images/logo.png"
+      "icon": "./assets/images/logo.png",
+      "jsEngine": "hermes"
     },
     "android": {
       "package": "com.doganaslan.submate",
@@ -20,7 +21,8 @@
         "foregroundImage": "./assets/images/logo.png"
       },
       "predictiveBackGestureEnabled": false,
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "jsEngine": "hermes"
     },
     "web": {
       "output": "static",
@@ -79,6 +81,7 @@
         "projectId": "5e9ad797-f421-40c3-af7c-55cc66564254"
       }
     },
-    "owner": "doganaslan"
+    "owner": "doganaslan",
+    "jsEngine": "hermes"
   }
 }

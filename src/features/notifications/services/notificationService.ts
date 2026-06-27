@@ -77,24 +77,53 @@ export class NotificationService {
       return;
     }
 
-    const targetDate = (subscription.isFreeTrial && subscription.trialEndDate) 
+    let targetDate = (subscription.isFreeTrial && subscription.trialEndDate) 
       ? subscription.trialEndDate.toDate() 
       : subscription.renewalDate.toDate();
       
     const today = new Date();
+    targetDate.setHours(9, 0, 0, 0); // Default to 9:00 AM
     
-    // Do not schedule if the exact target time has already passed
-    if (targetDate < today) return;
+    let offsetDays = 1;
+    if (subscription.reminderOffset === '1_day') offsetDays = 1;
+    else if (subscription.reminderOffset === '3_days') offsetDays = 3;
+    else if (subscription.reminderOffset === '1_week') offsetDays = 7;
 
-    const triggerDate = new Date(targetDate.getTime() - 24 * 60 * 60 * 1000);
+    let triggerDate = new Date(targetDate.getTime() - offsetDays * 24 * 60 * 60 * 1000);
 
-    // Only schedule if the calculated trigger date is in the future
+    // If the trigger date has already passed, we need to move it to the next cycle
+    if (triggerDate.getTime() <= today.getTime()) {
+      if (subscription.isFreeTrial) {
+        return; // Trial has ended or is ending today, no future notification
+      }
+      
+      // Advance to next cycle until trigger date is in the future
+      while (triggerDate.getTime() <= today.getTime()) {
+        if (subscription.billingCycle === 'weekly') {
+          targetDate.setDate(targetDate.getDate() + 7);
+        } else if (subscription.billingCycle === 'monthly') {
+          targetDate.setMonth(targetDate.getMonth() + 1);
+        } else if (subscription.billingCycle === 'quarterly') {
+          targetDate.setMonth(targetDate.getMonth() + 3);
+        } else if (subscription.billingCycle === 'biannually') {
+          targetDate.setMonth(targetDate.getMonth() + 6);
+        } else if (subscription.billingCycle === 'yearly') {
+          targetDate.setFullYear(targetDate.getFullYear() + 1);
+        } else if (subscription.billingCycle === 'biennially') {
+          targetDate.setFullYear(targetDate.getFullYear() + 2);
+        } else {
+          targetDate.setMonth(targetDate.getMonth() + 1);
+        }
+        triggerDate = new Date(targetDate.getTime() - offsetDays * 24 * 60 * 60 * 1000);
+      }
+    }
+
     if (triggerDate > today) {
       const isTrial = subscription.isFreeTrial && subscription.trialEndDate;
-      const title = isTrial ? '🎁 Free Trial Expiring Tomorrow' : '💸 Upcoming Payment Alert';
+      const title = isTrial ? '🎁 Free Trial Expiring Soon' : '💸 Upcoming Payment Alert';
       const body = isTrial 
-        ? `Your free trial for ${subscription.name} ends tomorrow. Cancel now to avoid being automatically charged ${subscription.amount.toFixed(2)} ${subscription.currency}.`
-        : `Your ${subscription.name} subscription is renewing tomorrow. You will be charged ${subscription.amount.toFixed(2)} ${subscription.currency}.`;
+        ? `Your free trial for ${subscription.name} ends soon. Cancel now to avoid being charged ${subscription.amount.toFixed(2)} ${subscription.currency}.`
+        : `Your ${subscription.name} subscription is renewing soon. You will be charged ${subscription.amount.toFixed(2)} ${subscription.currency}.`;
 
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -105,6 +134,7 @@ export class NotificationService {
         },
         trigger: {
           date: triggerDate,
+          channelId: 'default',
         } as Notifications.DateTriggerInput,
       });
     }

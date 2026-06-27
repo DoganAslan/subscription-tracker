@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import { useMutation } from '@tanstack/react-query';
 import { AuthService } from '@/services/firebase/auth';
 import { LoginFormData, RegisterFormData } from '../schemas/auth.schema';
@@ -19,9 +20,7 @@ export const useAuthMutations = () => {
     },
     onError: (error: any) => {
       console.error("DEBUG [Firebase Auth Error]:", error.code, error.message);
-      Alert.alert(
-        "Giriş Hatası", 
-        `Kod: ${error.code}\nMesaj: ${error.message}\n\nLütfen bu kodu geliştiriciye bildirin.`
+      Alert.alert(i18n.t('global.giriHatas'), i18n.t('global.kodErrorcodenmesajEr')
       );
       const message = error?.code === 'auth/invalid-credential' 
         ? 'Invalid email or password' 

@@ -52,8 +52,8 @@ export default function AboutScreen() {
               resizeMode="cover"
             />
           </View>
-          <Text style={dynamicStyles.appName}>SubMate</Text>
-          <Text style={dynamicStyles.appVersion}>Version 1.0.0</Text>
+          <Text style={dynamicStyles.appName}>{t('global.submate')}</Text>
+          <Text style={dynamicStyles.appVersion}>{t('global.version100')}</Text>
         </View>
 
         {/* Action Cards */}
@@ -61,7 +61,7 @@ export default function AboutScreen() {
           <TouchableOpacity style={dynamicStyles.cardRow} onPress={handlePressItem} activeOpacity={0.7}>
             <View style={dynamicStyles.rowLeft}>
               <Ionicons name="star-outline" size={22} color={isDark ? '#FFFFFF' : colors.text} />
-              <Text style={dynamicStyles.rowText}>Rate SubMate</Text>
+              <Text style={dynamicStyles.rowText}>{t('global.rateSubmate')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={isDark ? '#9CA3AF' : colors.textSecondary} />
           </TouchableOpacity>
@@ -71,7 +71,7 @@ export default function AboutScreen() {
           <TouchableOpacity style={dynamicStyles.cardRow} onPress={() => router.push('/(tabs)/settings/privacy')} activeOpacity={0.7}>
             <View style={dynamicStyles.rowLeft}>
               <Ionicons name="shield-checkmark-outline" size={22} color={isDark ? '#FFFFFF' : colors.text} />
-              <Text style={dynamicStyles.rowText}>Privacy Policy</Text>
+              <Text style={dynamicStyles.rowText}>{t('global.privacyPolicy')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={isDark ? '#9CA3AF' : colors.textSecondary} />
           </TouchableOpacity>
@@ -81,7 +81,7 @@ export default function AboutScreen() {
           <TouchableOpacity style={dynamicStyles.cardRow} onPress={() => router.push('/(tabs)/settings/terms')} activeOpacity={0.7}>
             <View style={dynamicStyles.rowLeft}>
               <Ionicons name="document-text-outline" size={22} color={isDark ? '#FFFFFF' : colors.text} />
-              <Text style={dynamicStyles.rowText}>Terms of Service</Text>
+              <Text style={dynamicStyles.rowText}>{t('global.termsOfService')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={isDark ? '#9CA3AF' : colors.textSecondary} />
           </TouchableOpacity>
@@ -89,7 +89,7 @@ export default function AboutScreen() {
 
         {/* Signature Footer */}
         <View style={dynamicStyles.footer}>
-          <Text style={dynamicStyles.signatureText}>Created by Doğan Aslan</Text>
+          <Text style={dynamicStyles.signatureText}>{t('global.createdByDoanAslan')}</Text>
         </View>
       </ScrollView>
     </View>

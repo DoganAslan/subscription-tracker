@@ -1,3 +1,4 @@
+import i18n from '@/locales/i18n';
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
@@ -27,7 +28,7 @@ export function RegisterForm() {
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Full Name"
-            placeholder="John Doe"
+            placeholder={i18n.t('global.johnDoe')}
             autoCapitalize="words"
             onBlur={onBlur}
             onChangeText={onChange}
@@ -42,7 +43,7 @@ export function RegisterForm() {
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Email Address"
-            placeholder="you@example.com"
+            placeholder={i18n.t('global.youexamplecom')}
             keyboardType="email-address"
             autoCapitalize="none"
             onBlur={onBlur}
@@ -58,7 +59,7 @@ export function RegisterForm() {
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Password"
-            placeholder="••••••••"
+            placeholder={i18n.t('global.symbol291')}
             secureTextEntry
             onBlur={onBlur}
             onChangeText={onChange}
@@ -73,7 +74,7 @@ export function RegisterForm() {
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Confirm Password"
-            placeholder="••••••••"
+            placeholder={i18n.t('global.symbol291')}
             secureTextEntry
             onBlur={onBlur}
             onChangeText={onChange}

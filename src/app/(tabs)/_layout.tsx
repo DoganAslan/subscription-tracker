@@ -59,6 +59,17 @@ export default function TabsLayout() {
         }}
       />
       
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          title: t('tabs.wallet'),
+          tabBarLabel: t('tabs.wallet'),
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "wallet" : "wallet-outline"} color={color} size={size} />
+          ),
+        }}
+      />
+      
       {/* Route name must be exactly "settings" to match the directory name, not settings/index */}
       <Tabs.Screen
         name="settings"
@@ -68,6 +79,34 @@ export default function TabsLayout() {
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "settings" : "settings-outline"} color={color} size={size} />
           ),
+        }}
+      />
+      
+      <Tabs.Screen
+        name="wallet/add"
+        options={{
+          href: null,
+        }}
+      />
+      
+      <Tabs.Screen
+        name="wallet/[id]"
+        options={{
+          href: null,
+        }}
+      />
+      
+      <Tabs.Screen
+        name="subscriptions/add"
+        options={{
+          href: null,
+        }}
+      />
+      
+      <Tabs.Screen
+        name="subscriptions/[id]"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

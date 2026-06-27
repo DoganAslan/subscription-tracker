@@ -41,7 +41,7 @@ export default function SubscriptionListScreen() {
           zIndex: 50
         }}
       >
-        <Text style={{ color: '#ffffff', fontSize: 36, fontWeight: '300', marginBottom: 4 }}>+</Text>
+        <Text style={{ color: '#ffffff', fontSize: 36, fontWeight: '300', marginBottom: 4 }}>{t('global.symbol911')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

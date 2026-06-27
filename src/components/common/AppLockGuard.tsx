@@ -1,11 +1,12 @@
+import i18n from '@/locales/i18n';
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useSecurityStore } from '@/store/useSecurityStore';
 import { useSessionStore } from '@/store/useSessionStore';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
+import { authenticateBiometric } from '@/utils/biometrics';
 
 interface Props {
   children: React.ReactNode;
@@ -15,53 +16,34 @@ export function AppLockGuard({ children }: Props) {
   const { isBiometricsEnabled } = useSecurityStore();
   const { isSessionUnlocked, setSessionUnlocked } = useSessionStore();
   const isPromptingAuth = useRef(false);
-  const { colors } = useTheme();
-  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
+  // If biometrics are off globally or we already unlocked this session, bypass.
+  // Note: For Feature 6, we might want to force it if requested, 
+  // but keeping isBiometricsEnabled respects user settings.
   const isUnlocked = !isBiometricsEnabled || isSessionUnlocked;
 
   useEffect(() => {
-    // Initial check if locked on mount
     if (!isUnlocked && !isPromptingAuth.current) {
-      handleUnlock();
+      triggerGate();
     }
   }, [isUnlocked]);
 
-  const handleUnlock = async () => {
-    console.log("🔓 [AUTH] Unlock button pressed");
+  const triggerGate = async () => {
+    console.log("[AUTH] triggerGate called");
     triggerHaptic('light');
+    
     if (isPromptingAuth.current || isUnlocked) return;
     
     try {
       isPromptingAuth.current = true;
       
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      console.log("🔓 [AUTH] Has Hardware:", hasHardware);
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-      console.log("🔓 [AUTH] Is Enrolled:", isEnrolled);
-
-      if (!hasHardware || !isEnrolled) {
-        // Fallback if simulator or no biometrics: force unlock for dev
-        console.warn("No biometrics found, bypassing for development.");
-        setSessionUnlocked(true);
-        return;
-      }
-
-      const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Unlock SubMate Vault',
-        fallbackLabel: 'Use Passcode',
-        cancelLabel: 'Cancel',
-        disableDeviceFallback: false,
-      });
-
-      if (result.success) {
+      const success = await authenticateBiometric();
+      if (success) {
         setSessionUnlocked(true);
       }
     } catch (error) {
       console.error("Biometric error:", error);
-      Alert.alert("Biometric Error", String(error));
     } finally {
-      // Delay resetting the flag so the AppState change from the overlay closing is ignored
       setTimeout(() => {
         isPromptingAuth.current = false;
       }, 500);
@@ -70,19 +52,23 @@ export function AppLockGuard({ children }: Props) {
 
   if (!isUnlocked) {
     return (
-      <View style={dynamicStyles.container} pointerEvents="auto">
-        <Ionicons name="lock-closed" size={64} color={colors.primary} style={dynamicStyles.icon} />
-        <Text style={dynamicStyles.title}>SubMate Locked</Text>
+      <View style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center', padding: 24, zIndex: 9999, ...StyleSheet.absoluteFillObject }}>
+        <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#1E293B', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#3B82F6' }}>
+          <Ionicons name="shield-checkmark-outline" size={44} color="#3B82F6" />
+        </View>
+        
+        <Text style={{ color: '#F8FAFC', fontSize: 24, fontWeight: '800', letterSpacing: 0.5 }}>{i18n.t('global.submateKilitli')}</Text>
+        <Text style={{ color: '#64748B', fontSize: 14, textAlign: 'center', marginTop: 8, maxWidth: 260 }}>{i18n.t('global.finansalVerilerinizB')}</Text>
+
         <TouchableOpacity 
-          style={dynamicStyles.button} 
-          onPress={handleUnlock} 
+          onPress={triggerGate}
           onLongPress={() => {
-            console.warn("🚨 [AUTH] Emergency Dev Bypass Triggered");
+            console.warn("[AUTH] Emergency Dev Bypass Triggered");
             setSessionUnlocked(true);
           }}
-          activeOpacity={0.7}
+          style={{ marginTop: 32, backgroundColor: '#2563EB', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, width: '100%', alignItems: 'center' }}
         >
-          <Text style={dynamicStyles.buttonText}>Tap to Unlock</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{i18n.t('global.kilidiA')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -90,39 +76,3 @@ export function AppLockGuard({ children }: Props) {
 
   return <>{children}</>;
 }
-
-const getStyles = (colors: any) => StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFillObject,
-    flex: 1,
-    backgroundColor: '#0B0F19',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    zIndex: 999,
-  },
-  icon: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 40,
-  },
-  button: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-    borderWidth: 1,
-    borderColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    zIndex: 9999,
-    elevation: 9999,
-  },
-  buttonText: {
-    color: colors.primary,
-    fontSize: 18,
-    fontWeight: '600',
-  }
-});

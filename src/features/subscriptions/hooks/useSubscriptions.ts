@@ -7,7 +7,9 @@ import Toast from 'react-native-toast-message';
 import { Alert } from 'react-native';
 import { useAuthStore } from '@/store/useAuthStore';
 import { triggerHaptic } from '@/utils/haptics';
-import { scheduleRenewalReminder, cancelSubscriptionNotifications } from '@/utils/NotificationService';
+import { scheduleSubReminder, cancelSubReminder, scheduleContractDoomReminder } from '@/services/notificationService';
+import { getNextRenewalDate } from '@/features/dashboard/utils/calculations';
+import * as Notifications from 'expo-notifications';
 
 // React Query Keys
 export const subscriptionKeys = {
@@ -38,9 +40,17 @@ export function useAddSubscription() {
       const payload = {
         ...data,
         notes: data.notes || '',
+        isSplit: data.isSplit ?? false,
+        splitParticipants: data.splitParticipants ?? [],
         renewalDate: Timestamp.fromDate(data.renewalDate),
-        trialEndDate: data.trialEndDate ? Timestamp.fromDate(data.trialEndDate) : undefined,
+        trialEndDate: data.trialEndDate ? Timestamp.fromDate(data.trialEndDate) : null, // Avoid undefined
+        contractEndDate: data.hasContract && data.contractEndDate ? Timestamp.fromDate(data.contractEndDate) : null,
+        hasContract: data.hasContract || false,
       };
+      
+      delete (payload as any).paymentDetails;
+      // Clean undefined keys before Firestore
+      Object.keys(payload).forEach(key => payload[key as keyof typeof payload] === undefined && delete payload[key as keyof typeof payload]);
       
       const docRef = await SubscriptionService.addSubscription(user.uid, payload);
       return { id: typeof docRef === 'string' ? docRef : docRef?.id || `temp_${Date.now()}`, payload };
@@ -50,7 +60,15 @@ export function useAddSubscription() {
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
       }
-      scheduleRenewalReminder(result.id, result.payload.name, result.payload.renewalDate.toDate()).catch(() => {});
+      try {
+        const nextDate = getNextRenewalDate(result.payload.renewalDate, result.payload.billingCycle);
+        scheduleSubReminder({ id: result.id, ...result.payload }, nextDate).catch(() => {});
+        if (result.payload.hasContract && result.payload.contractEndDate) {
+          scheduleContractDoomReminder({ id: result.id, ...result.payload }, result.payload.contractEndDate.toDate()).catch(() => {});
+        }
+      } catch (err) {
+        // silent fail
+      }
       Toast.show({ type: 'success', text1: 'Subscription Saved', position: 'top' });
     },
     onError: (error) => {
@@ -71,9 +89,17 @@ export function useUpdateSubscription() {
       const payload = {
         ...data,
         notes: data.notes || '',
+        isSplit: data.isSplit ?? false,
+        splitParticipants: data.splitParticipants ?? [],
         renewalDate: Timestamp.fromDate(data.renewalDate),
-        trialEndDate: data.trialEndDate ? Timestamp.fromDate(data.trialEndDate) : undefined,
+        trialEndDate: data.trialEndDate ? Timestamp.fromDate(data.trialEndDate) : null,
+        contractEndDate: data.hasContract && data.contractEndDate ? Timestamp.fromDate(data.contractEndDate) : null,
+        hasContract: data.hasContract || false,
       };
+      
+      delete (payload as any).paymentDetails;
+      // Clean undefined keys before Firestore
+      Object.keys(payload).forEach(key => payload[key as keyof typeof payload] === undefined && delete payload[key as keyof typeof payload]);
       
       await SubscriptionService.updateSubscription(user.uid, id, payload);
       return { id, payload };
@@ -83,7 +109,20 @@ export function useUpdateSubscription() {
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
       }
-      scheduleRenewalReminder(result.id, result.payload.name, result.payload.renewalDate.toDate()).catch(() => {});
+      try {
+        const nextDate = getNextRenewalDate(result.payload.renewalDate, result.payload.billingCycle);
+        scheduleSubReminder({ id: result.id, ...result.payload }, nextDate).catch(() => {});
+
+        if (result.payload.hasContract && result.payload.contractEndDate) {
+          scheduleContractDoomReminder({ id: result.id, ...result.payload }).catch(() => {});
+        } else {
+          try {
+            Notifications.cancelScheduledNotificationAsync('sub_contract_doom_' + result.id);
+          } catch(e) {}
+        }
+      } catch (err) {
+        // silent fail
+      }
       Toast.show({ type: 'success', text1: 'Subscription Updated', position: 'top' });
     },
     onError: (error) => {
@@ -110,7 +149,11 @@ export function useDeleteSubscription() {
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
       }
-      cancelSubscriptionNotifications(id).catch(() => {});
+      try {
+        cancelSubReminder(id).catch(() => {});
+      } catch (err) {
+        // silent fail
+      }
       Toast.show({ type: 'success', text1: 'Subscription Removed', position: 'top' });
     },
     onError: (error) => {

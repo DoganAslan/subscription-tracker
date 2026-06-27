@@ -15,22 +15,36 @@ import { useSecurityStore } from '@/store/useSecurityStore';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { triggerHaptic } from '@/utils/haptics';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
-import { exportSubscriptionsToCSV } from '@/utils/ExportService';
+import { exportData, importData } from '@/services/backupService';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { useTranslation } from 'react-i18next';
 
 const PROFILE_NAME_KEY = '@profile_name';
 
-const CURRENCIES = [
-  { code: 'USD', symbol: '$', name: 'US Dollar' },
-  { code: 'EUR', symbol: '€', name: 'Euro' },
-  { code: 'GBP', symbol: '£', name: 'British Pound' },
-  { code: 'TRY', symbol: '₺', name: 'Turkish Lira' },
+export const GLOBAL_CURRENCY_LIST = [
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'TRY', name: 'Turkish Lira', symbol: '₺' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: '$' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: '$' },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: '¥' },
+  { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
+  { code: 'KRW', name: 'South Korean Won', symbol: '₩' },
+  { code: 'SAR', name: 'Saudi Riyal', symbol: 'ر.س' },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+  { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
 ];
 
 const getMenuOptions = (t: any) => [
   { id: 'account', label: t('settings.accountSettings') },
   { id: 'theme', label: t('settings.theme') },
-  { id: 'export', label: t('settings.exportData') },
+  { id: 'backup', label: t('settings.backupData') },
+  { id: 'restore', label: t('settings.restoreData') },
   { id: 'currency', label: t('settings.currencyPref') },
   { id: 'security', label: t('settings.security') },
   { id: 'about', label: t('settings.about') },
@@ -77,7 +91,7 @@ export default function SettingsScreen() {
   const handleAvatarPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission Required', 'We need access to your camera roll to update your profile picture.');
+      Alert.alert(t('global.permissionRequired'), t('global.weNeedAccessToYourCa'));
       return;
     }
 
@@ -104,7 +118,7 @@ export default function SettingsScreen() {
       }
     } catch (e) {
       console.error('Failed to pick image', e);
-      Alert.alert('Error', 'An error occurred while selecting the image.');
+      Alert.alert(t('global.error'), t('global.anErrorOccurredWhile'));
     }
   };
 
@@ -118,7 +132,7 @@ export default function SettingsScreen() {
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
     if (!hasHardware || !isEnrolled) {
-      Alert.alert('Unavailable', 'Your device does not support or has not set up biometric authentication. Passcode fallback will be used.');
+      Alert.alert(t('global.unavailable'), t('global.yourDeviceDoesNotSup'));
     }
 
     const result = await LocalAuthentication.authenticateAsync({
@@ -159,14 +173,77 @@ export default function SettingsScreen() {
       router.push('/(tabs)/settings/account');
     } else if (id === 'theme') {
       setThemeModalVisible(true);
-    } else if (id === 'export') {
-      exportSubscriptionsToCSV(subscriptions || []);
+    } else if (id === 'backup') {
+      handleBackup();
+    } else if (id === 'restore') {
+      handleRestore();
     } else if (id === 'security') {
       toggleBiometrics();
     } else if (id === 'currency') {
       setCurrencyModalVisible(true);
     } else if (id === 'about') {
       router.push('/(tabs)/settings/about');
+    }
+  };
+
+  const handleBackup = async () => {
+    try {
+      const success = await exportData();
+      if (!success && Platform.OS !== 'web') {
+        Alert.alert(t('global.hata'), t('global.yedeklemeSrasndaBirH'));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const executeImport = async (fileContent: string) => {
+    const success = await importData(fileContent);
+    if (success) {
+      Alert.alert(t('global.baarl'), t('global.verilerinizGeriYklen'));
+    } else {
+      Alert.alert(t('global.hata'), t('global.geersizVeyaBozukYede'));
+    }
+  };
+
+  const handleRestore = () => {
+    if (Platform.OS === 'web') {
+      const promptConfirm = window.confirm("Bu işlem mevcut tüm abonelik verilerinizi silecektir. Emin misiniz?");
+      if (!promptConfirm) return;
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e: any) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event: any) => {
+          await executeImport(event.target.result);
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    } else {
+      Alert.alert(t('global.veriGeriYkle'), t('global.buIlemMevcutTmAbonel'),
+        [
+          { text: "İptal", style: "cancel" },
+          { text: "Eminim, Yükle", style: "destructive", onPress: async () => {
+              try {
+                const result = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
+                if (result.canceled || !result.assets || result.assets.length === 0) return;
+                
+                const fileUri = result.assets[0].uri;
+                const fileContent = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
+                await executeImport(fileContent);
+              } catch (e) {
+                console.error(e);
+                Alert.alert(t('global.hata'), t('global.dosyaOkunurkenBirHat'));
+              }
+            } 
+          }
+        ]
+      );
     }
   };
 
@@ -178,7 +255,7 @@ export default function SettingsScreen() {
       router.replace('/(auth)');
     } catch (error) {
       console.error('Sign out error:', error);
-      Alert.alert('Error', 'Failed to sign out securely.');
+      Alert.alert(t('global.error'), t('global.failedToSignOutSecur'));
     }
   };
 
@@ -273,36 +350,55 @@ export default function SettingsScreen() {
           <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setCurrencyModalVisible(false)} />
           <View style={dynamicStyles.modalContent}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>Select Base Currency</Text>
+              <Text style={dynamicStyles.modalTitle}>{t('global.selectBaseCurrency')}</Text>
               <TouchableOpacity onPress={() => setCurrencyModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
+            <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={true}>
+              {GLOBAL_CURRENCY_LIST.map((item) => {
+                const isSelected = baseCurrency === item.code;
+                return (
+                  <TouchableOpacity
+                    key={item.code}
+                    onPress={() => {
+                      setBaseCurrency(item.code);
+                      setCurrencyModalVisible(false);
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      backgroundColor: isSelected ? '#1E3A8A' : '#1E293B',
+                      borderRadius: 8,
+                      paddingHorizontal: 16,
+                      paddingVertical: 14,
+                      marginBottom: 10,
+                    }}
+                  >
+                    {/* Left Side: Symbol & Details aligned horizontally */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <Text style={{ color: '#10B981', fontSize: 18, fontWeight: '700', width: 30 }}>
+                        {item.symbol}
+                      </Text>
+                      <View style={{ flexDirection: 'column' }}>
+                        <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>
+                          {item.name}
+                        </Text>
+                        <Text style={{ color: '#64748B', fontSize: 12, fontWeight: '500', textTransform: 'uppercase' }}>
+                          {item.code}
+                        </Text>
+                      </View>
+                    </View>
 
-            {CURRENCIES.map((currency) => (
-              <TouchableOpacity
-                key={currency.code}
-                style={[
-                  dynamicStyles.currencyRow,
-                  baseCurrency === currency.code && dynamicStyles.currencyRowActive
-                ]}
-                activeOpacity={0.7}
-                onPress={() => {
-                  setBaseCurrency(currency.code);
-                  setCurrencyModalVisible(false);
-                }}
-              >
-                <Text style={[
-                  dynamicStyles.currencyName,
-                  baseCurrency === currency.code && dynamicStyles.currencyNameActive
-                ]}>
-                  {currency.name} ({currency.symbol})
-                </Text>
-                {baseCurrency === currency.code && (
-                  <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-                )}
-              </TouchableOpacity>
-            ))}
+                    {/* Right Side: Checkmark selection indicator */}
+                    {isSelected && (
+                      <Ionicons name="checkmark-circle" size={22} color="#3B82F6" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -318,7 +414,7 @@ export default function SettingsScreen() {
           <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setThemeModalVisible(false)} />
           <View style={dynamicStyles.modalContent}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>Select Theme</Text>
+              <Text style={dynamicStyles.modalTitle}>{t('global.selectTheme')}</Text>
               <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>

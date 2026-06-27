@@ -1,7 +1,7 @@
 import { getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, query, where } from 'firebase/firestore';
 import { db } from './config';
-import { getSubscriptionsCollection, getSubscriptionDoc } from './collections';
-import { Subscription } from './types';
+import { getSubscriptionsCollection, getSubscriptionDoc, getCardsCollection, getCardDoc } from './collections';
+import { Subscription, Card } from './types';
 
 export const SubscriptionService = {
   // Get all subscriptions for a user
@@ -89,4 +89,66 @@ export const SubscriptionService = {
       throw error;
     }
   }
+};
+
+export const CardService = {
+  // Get all cards for a user
+  getCards: async (userId: string): Promise<Card[]> => {
+    if (!userId) throw new Error("User not authenticated");
+    const q = query(getCardsCollection(), where('userId', '==', userId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    })) as Card[];
+  },
+
+  // Add a new card
+  addCard: async (userId: string, data: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
+    const payload = {
+      ...data,
+      userId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    
+    Object.keys(payload).forEach(key => {
+      if ((payload as any)[key] === undefined) {
+        (payload as any)[key] = null;
+      }
+    });
+
+    const docRef = await addDoc(getCardsCollection(), payload);
+    return docRef.id;
+  },
+
+  // Update a card
+  updateCard: async (userId: string, cardId: string, data: Partial<Card>) => {
+    const docRef = getCardDoc(cardId);
+    
+    const payload = {
+      ...data,
+      updatedAt: serverTimestamp(),
+    };
+
+    Object.keys(payload).forEach(key => {
+      if ((payload as any)[key] === undefined) {
+        (payload as any)[key] = null;
+      }
+    });
+
+    await updateDoc(docRef, payload);
+  },
+
+  // Delete a single card
+  deleteCard: async (userId: string, cardId: string) => {
+    const docRef = getCardDoc(cardId);
+    await deleteDoc(docRef);
+
+    // Unlink card from subscriptions
+    const q = query(getSubscriptionsCollection(), where('userId', '==', userId), where('cardId', '==', cardId));
+    const snapshot = await getDocs(q);
+    const updatePromises = snapshot.docs.map(docRef => updateDoc(docRef.ref, { cardId: null, updatedAt: serverTimestamp() }));
+    await Promise.all(updatePromises);
+  },
 };

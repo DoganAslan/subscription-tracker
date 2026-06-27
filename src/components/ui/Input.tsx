@@ -2,7 +2,7 @@ import React, { forwardRef, useState } from 'react';
 import { TextInput, View, Text, TextInputProps, StyleSheet } from 'react-native';
 
 interface InputProps extends TextInputProps {
-  label: string;
+  label?: string;
   error?: string;
   containerStyle?: object;
 }
@@ -16,9 +16,11 @@ export const Input = forwardRef<TextInput, InputProps>(({ label, error, containe
 
   return (
     <View style={[dynamicStyles.container, containerStyle]}>
-      <Text style={dynamicStyles.label}>
-        {label.toUpperCase()}
-      </Text>
+      {label ? (
+        <Text style={dynamicStyles.label}>
+          {typeof label === 'string' ? label.toUpperCase() : ''}
+        </Text>
+      ) : null}
       <TextInput
         ref={ref}
         onFocus={(e) => {

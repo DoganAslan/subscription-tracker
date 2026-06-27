@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import { parseSafeDate, addMonthsClamped } from '@/utils/dateHelpers';
 
 // Set up the default notification handler to display notifications even when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -71,28 +72,47 @@ export const cancelSubscriptionNotifications = async (subscriptionId: string) =>
 export const scheduleRenewalReminder = async (
   subscriptionId: string,
   subscriptionName: string,
-  renewalDate: Date,
-  daysBefore: number = 2
-) => {
-  if (Platform.OS === 'web') return;
+  renewalDate: Date | any,
+  daysBefore: number = 2,
+  billingCycle: string = 'monthly'
+): Promise<Date | null> => {
+  if (Platform.OS === 'web') return null;
 
   try {
-    // Check permissions first
     const { status } = await Notifications.getPermissionsAsync();
-    if (status !== 'granted') return;
+    if (status !== 'granted') return null;
 
-    // Cancel existing notifications for this subscription to avoid duplicates
     await cancelSubscriptionNotifications(subscriptionId);
 
-    // Calculate the trigger date
-    const triggerDate = new Date(renewalDate);
-    triggerDate.setDate(triggerDate.getDate() - daysBefore);
-    // Set notification time to 10:00 AM
-    triggerDate.setHours(10, 0, 0, 0);
+    let targetDate = parseSafeDate(renewalDate);
+    targetDate.setHours(9, 0, 0, 0); // Default to 9:00 AM
+    const originalDay = targetDate.getDate();
 
-    // If the trigger date is in the past, don't schedule it
-    if (triggerDate.getTime() <= Date.now()) {
-      return;
+    let triggerDate = new Date(targetDate);
+    triggerDate.setDate(triggerDate.getDate() - daysBefore);
+
+    const today = new Date();
+
+    if (triggerDate.getTime() <= today.getTime()) {
+      while (triggerDate.getTime() <= today.getTime()) {
+        if (billingCycle === 'weekly') {
+          targetDate.setDate(targetDate.getDate() + 7);
+        } else if (billingCycle === 'monthly') {
+          targetDate = addMonthsClamped(targetDate, 1, originalDay);
+        } else if (billingCycle === 'quarterly') {
+          targetDate = addMonthsClamped(targetDate, 3, originalDay);
+        } else if (billingCycle === 'biannually') {
+          targetDate = addMonthsClamped(targetDate, 6, originalDay);
+        } else if (billingCycle === 'yearly') {
+          targetDate = addMonthsClamped(targetDate, 12, originalDay);
+        } else if (billingCycle === 'biennially') {
+          targetDate = addMonthsClamped(targetDate, 24, originalDay);
+        } else {
+          targetDate = addMonthsClamped(targetDate, 1, originalDay);
+        }
+        triggerDate = new Date(targetDate);
+        triggerDate.setDate(triggerDate.getDate() - daysBefore);
+      }
     }
 
     await Notifications.scheduleNotificationAsync({
@@ -104,11 +124,14 @@ export const scheduleRenewalReminder = async (
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: triggerDate,
+        channelId: 'default',
       },
     });
     
     console.log(`Scheduled reminder for ${subscriptionName} at ${triggerDate.toLocaleString()}`);
+    return triggerDate;
   } catch (error) {
     console.error('Error scheduling notification:', error);
+    return null;
   }
 };
