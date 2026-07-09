@@ -1,6 +1,5 @@
-const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY || '';
-const MODEL_NAME = 'gemini-flash-latest';
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
+import { db } from '../firebase/config'; // Adjust path if necessary
+import { doc, getDoc } from 'firebase/firestore';
 
 export interface ScannedSubscription {
   name?: string;
@@ -11,6 +10,20 @@ export interface ScannedSubscription {
 
 export const analyzeReceiptImage = async (base64Image: string, mimeType: string = 'image/jpeg'): Promise<ScannedSubscription | null> => {
   try {
+    // 1. Fetch the secret API key from Firestore
+    const secretDoc = await getDoc(doc(db, 'config', 'secrets'));
+    if (!secretDoc.exists()) {
+      throw new Error('Secret config not found');
+    }
+    
+    const GEMINI_API_KEY = secretDoc.data().GEMINI_API_KEY;
+    if (!GEMINI_API_KEY) {
+      throw new Error('API key missing in config');
+    }
+
+    const MODEL_NAME = 'gemini-flash-latest';
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${GEMINI_API_KEY}`;
+
     const promptText = `
       Analyze this receipt or invoice image and extract the subscription details.
       Return ONLY a raw, valid JSON object with no markdown formatting and no backticks.
@@ -38,7 +51,7 @@ export const analyzeReceiptImage = async (base64Image: string, mimeType: string 
         }
       ],
       generationConfig: {
-        temperature: 0.1, // Low temperature for factual extraction
+        temperature: 0.1,
       }
     };
 
@@ -57,11 +70,7 @@ export const analyzeReceiptImage = async (base64Image: string, mimeType: string 
     }
 
     const data = await response.json();
-    
-    // Parse the response
     const candidateText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    
-    // Clean up potential markdown formatting (e.g. \`\`\`json ... \`\`\`)
     const cleanedText = candidateText.replace(/```json/g, '').replace(/```/g, '').trim();
 
     if (!cleanedText) {
