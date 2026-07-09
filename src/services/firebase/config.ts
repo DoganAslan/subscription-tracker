@@ -7,17 +7,16 @@ import Constants from 'expo-constants';
 import { t } from '@/locales/i18n';
 
 const firebaseConfig = {
-  authDomain: "submate-4fc0a.firebaseapp.com",
-  projectId: "submate-4fc0a",
-  storageBucket: "submate-4fc0a.appspot.com",
-  messagingSenderId: "360341077180",
-  appId: "1:360341077180:web:8e30b691090be4b29f7998",
-  measurementId: "G-H8E7L8V6W9",
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
 
-  // Injecting the exact validated production tokens
   apiKey: Platform.OS === 'android' 
-    ? 'AIzaSyCvzeEMPTniMkea5cbVfPDRqFMVWqCgO8Q' // Verified Android Key
-    : 'AIzaSyBqOv-mRCWtyRKDkr39wHqFZLvHyE8e7sk', // Verified Browser/Web Key
+    ? process.env.EXPO_PUBLIC_FIREBASE_API_KEY_ANDROID
+    : process.env.EXPO_PUBLIC_FIREBASE_API_KEY_WEB,
 };
 
 // Initialize Firebase App

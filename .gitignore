@@ -44,3 +44,5 @@ example
 # /android
 android/.gradle
 android/build
+
+.env
