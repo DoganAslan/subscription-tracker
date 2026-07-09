@@ -11,3 +11,4 @@ content = content.replace(/subs: \{ addSubscription: 'Add Subscription', name: '
 );
 
 fs.writeFileSync('src/locales/index.ts', content);
+

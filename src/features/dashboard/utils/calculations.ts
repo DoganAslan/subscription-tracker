@@ -250,3 +250,5 @@ export const calculateVampireScore = (subscriptions: any[], totalMonthlyCostTL: 
     adviceKeys: triggeredAdvice
   };
 };
+
+

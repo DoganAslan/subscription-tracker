@@ -56,3 +56,5 @@ export const getCancelUrl = (subscriptionName: string | undefined): string => {
   const encodedName = encodeURIComponent(subscriptionName);
   return `https://www.google.com/search?q=how+to+cancel+${encodedName}+subscription`;
 };
+
+

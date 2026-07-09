@@ -9,3 +9,5 @@ export const useSessionStore = create<SessionState>((set) => ({
   isSessionUnlocked: false,
   setSessionUnlocked: (unlocked) => set({ isSessionUnlocked: unlocked }),
 }));
+
+

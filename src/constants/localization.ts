@@ -31,3 +31,5 @@ export const TR_LABELS = {
     trialSubtitle: 'Süre bitimini takip edin ve sürpriz ücretlerden kaçının',
   }
 };
+
+

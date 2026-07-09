@@ -126,3 +126,5 @@ export async function registerBackgroundSync() {
     console.error('[Background Sync] Registration failed:', err);
   }
 }
+
+

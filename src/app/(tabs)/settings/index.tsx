@@ -726,3 +726,5 @@ const getStyles = (colors: any) => StyleSheet.create({
   btnText: { color: colors.textSecondary, fontWeight: '600' },
   activeBtnText: { color: '#FFFFFF' },
 });
+
+

@@ -74,3 +74,5 @@ const styles = StyleSheet.create({
   langText: { color: '#94A3B8', fontSize: 16, fontWeight: '500' },
   activeText: { color: '#FFF', fontWeight: 'bold' }
 });
+
+

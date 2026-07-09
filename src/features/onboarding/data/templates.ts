@@ -62,3 +62,5 @@ export const subscriptionTemplates: Record<string, SubscriptionTemplate[]> = {
     { id: 'digitalocean', name: 'DigitalOcean', category: 'Utilities & Cloud', billingCycle: 'monthly' },
   ]
 };
+
+

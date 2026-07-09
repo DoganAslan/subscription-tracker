@@ -33,3 +33,5 @@ export const seedSubscriptions = async (userId: string) => {
   console.log(`Successfully seeded ${successCount} subscriptions!`);
   return successCount;
 };
+
+

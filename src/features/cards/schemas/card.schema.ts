@@ -12,3 +12,5 @@ export const cardSchema = z.object({
 });
 
 export type CardFormData = z.infer<typeof cardSchema>;
+
+

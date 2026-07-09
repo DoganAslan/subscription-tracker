@@ -194,3 +194,5 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     color: '#F43F5E',
   }
 });
+
+

@@ -27,3 +27,5 @@ const styles = StyleSheet.create({
   btn: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#2563EB', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 14 },
   btnText: { color: '#FFF', fontSize: 16, fontWeight: '700' }
 });
+
+

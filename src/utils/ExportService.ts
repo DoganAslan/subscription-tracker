@@ -72,3 +72,5 @@ export const exportSubscriptionsToCSV = async (subscriptions: Subscription[]) =>
     Alert.alert(t.global.exportFailed, t.global.anErrorOccurredWhile1);
   }
 };
+
+

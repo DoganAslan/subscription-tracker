@@ -32,3 +32,5 @@ export const darkColors: ThemeColors = {
   danger: '#EF4444',
   success: '#10B981',
 };
+
+

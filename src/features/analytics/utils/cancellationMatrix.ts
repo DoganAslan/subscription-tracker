@@ -27,3 +27,5 @@ export function getCancellationLink(subscriptionName: string): string {
   // Fallback to Google Search
   return `https://www.google.com/search?q=how+to+cancel+${encodeURIComponent(subscriptionName)}+subscription`;
 }
+
+

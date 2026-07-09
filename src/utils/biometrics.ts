@@ -30,3 +30,5 @@ export const authenticateUser = async (): Promise<boolean> => {
     return true; // Safe fail-open principle for app recovery
   }
 };
+
+

@@ -50,3 +50,5 @@ const styles = StyleSheet.create({
   label: { color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: '700', marginBottom: 2 },
   amount: { color: '#FFF', fontSize: 18, fontWeight: '800' }
 });
+
+

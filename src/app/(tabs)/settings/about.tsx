@@ -213,3 +213,5 @@ const getStyles = (colors: any, isDark: boolean, insets: any) => StyleSheet.crea
     letterSpacing: 0.5,
   }
 });
+
+

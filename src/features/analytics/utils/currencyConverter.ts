@@ -25,3 +25,5 @@ export const convertToTRY = (amount: number, currency: string): number => {
   const rate = EXCHANGE_RATES[currency.toUpperCase()] || 1;
   return amount * rate;
 };
+
+

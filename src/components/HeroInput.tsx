@@ -95,3 +95,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: Platform.OS === 'ios' ? 8 : 4,
   }
 });
+
+

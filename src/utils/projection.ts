@@ -82,3 +82,5 @@ export const generate6MonthProjection = (
     totalAmount: Math.round(p.totalAmount * 100) / 100
   }));
 };
+
+

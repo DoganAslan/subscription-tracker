@@ -28,3 +28,5 @@ export const getCardsCollection = () => {
 export const getCardDoc = (cardId: string) => {
   return doc(db, `cards/${cardId}`) as DocumentReference<Card>;
 };
+
+

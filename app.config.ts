@@ -15,3 +15,4 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [...(config.plugins || []), 'expo-localization', 'expo-secure-store']
 });
+

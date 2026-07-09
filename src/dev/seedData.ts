@@ -20,3 +20,5 @@ export const testSubscriptions = [
   { name: 'Internet Bill', category: 'Utilities', amount: 65.00, currency: 'USD', billingCycle: 'monthly', notes: 'Comcast Xfinity' },
   { name: 'Car Insurance', category: 'Insurance', amount: 120.00, currency: 'USD', billingCycle: 'monthly', notes: 'Geico' },
 ];
+
+

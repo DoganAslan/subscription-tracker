@@ -196,3 +196,4 @@ content = content.replace(
 
 fs.writeFileSync(filePath, content);
 console.log('Successfully updated locales/index.ts with 20 languages and healthScore variables.');
+

@@ -222,3 +222,5 @@ export const termsTranslations: Record<string, TermsTranslation> = {
     terminationText: 'Мы можем удалить или приостановить действие вашей учетной записи в случае нарушения Условий.'
   }
 };
+
+

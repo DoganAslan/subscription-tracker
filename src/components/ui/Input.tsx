@@ -90,3 +90,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '500',
   }
 });
+
+

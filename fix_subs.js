@@ -14,3 +14,4 @@ content = content.replace(/  \[category: string\]/g, (match) => {
 });
 
 fs.writeFileSync('src/locales/index.ts', content);
+

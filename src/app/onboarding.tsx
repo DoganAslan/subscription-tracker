@@ -183,3 +183,5 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
   interactiveArea: { padding: 10 }
 });
+
+

@@ -31,3 +31,4 @@ for (const file of files) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
 }
 console.log('Sign-Up keys injected.');
+

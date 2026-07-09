@@ -10,3 +10,5 @@ export function useAnalytics(subscriptions: Subscription[] | undefined): Dashboa
     return calculateMetrics(subscriptions || [], baseCurrency);
   }, [subscriptions, baseCurrency]);
 }
+
+

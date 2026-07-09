@@ -136,3 +136,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     opacity: 0.9,
   }
 });
+
+

@@ -41,3 +41,4 @@ Uygulamanın ana ekranı, finansal durumunuzun anlık bir özetini sunar.
 - **Güvenli Alan (Safe Area) Uyumu:** Çentikli telefonlar ve iPhone kamera adalarına tam uyumlu estetik kenar boşlukları.
 
 SubMate, finansal özgürlüğe giden yolda gereksiz harcamalarınızı budayan ve paranızın kontrolünü tamamen size veren en iyi dijital asistanınızdır.
+

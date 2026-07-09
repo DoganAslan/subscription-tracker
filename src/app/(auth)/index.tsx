@@ -105,3 +105,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
   },
 });
+
+

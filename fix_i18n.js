@@ -14,3 +14,4 @@ for (const file of files) {
   fs.writeFileSync(filePath, content, 'utf8');
 }
 console.log('Dictionaries fixed.');
+

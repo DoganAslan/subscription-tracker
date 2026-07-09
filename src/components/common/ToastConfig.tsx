@@ -60,3 +60,5 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     fontFamily: 'Hanken Grotesk',
   }
 });
+
+

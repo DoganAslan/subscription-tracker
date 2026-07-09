@@ -19,3 +19,4 @@ sdk.dir=${sdkDir}
 } else {
   console.log('ℹ️ android/local.properties already exists.');
 }
+

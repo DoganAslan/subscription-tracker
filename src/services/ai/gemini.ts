@@ -85,3 +85,5 @@ export const analyzeReceiptImage = async (base64Image: string, mimeType: string 
     return null;
   }
 };
+
+

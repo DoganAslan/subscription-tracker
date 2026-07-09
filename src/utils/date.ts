@@ -29,3 +29,5 @@ export const getTrialHoursLeft = (trialEndDate?: string | Date | null): number =
   const diffMs = end - now;
   return Math.floor(diffMs / (1000 * 60 * 60)); // Exact integer hours left
 };
+
+

@@ -77,3 +77,4 @@ const OnboardingScreen = ({ onComplete }: { onComplete: () => void }) => {
 
 fs.writeFileSync('src/app/(onboarding)/index.tsx', content, 'utf8');
 console.log('Onboarding UI built.');
+
