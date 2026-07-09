@@ -1,3 +1,4 @@
+import { t } from '@/locales/i18n';
 export type LegalTranslation = {
   title: string;
   subtitle: string;

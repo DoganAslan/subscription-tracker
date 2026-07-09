@@ -1,3 +1,4 @@
+import { t } from '@/locales/i18n';
 import React, { forwardRef, useState } from 'react';
 import { TextInput, View, Text, TextInputProps, StyleSheet } from 'react-native';
 

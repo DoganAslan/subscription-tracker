@@ -93,9 +93,9 @@
     "noPayments": "Tidak ada pembayaran yang dijadwalkan untuk hari ini."
   },
   "forms": {
-    "hasContract": "Kontrak Komitmen Tahunan",
-    "contractReminderSubtext": "Ingatkan 7 hari sebelum kedaluwarsa",
-    "contractEndDateLabel": "TANGGAL AKHIR KONTRAK"
+    "hasContract": "Perjanjian Komitmen Tahunan Tersedia",
+    "contractReminderSubtext": "Ingatkan saya 7 hari sebelum tanggal jatuh tempo",
+    "contractEndDateLabel": "TANGGAL BERAKHIR KOMITMEN"
   },
   "global": {
     "welcomeBack": "Welcome back",
@@ -186,9 +186,9 @@
     "noRenewalsInTheNext3": "No renewals in the next 30 days",
     "remindFriends": "Remind Friends",
     "symbol721": "💡",
-    "deleteSubscription": "Delete Subscription?",
+    "deleteSubscription": "Hapus Langganan?",
     "areYouSureYouWantToD": "Are you sure you want to delete this subscription? This action cannot be undone and will be removed from your tracking immediately.",
-    "delete": "Delete",
+    "delete": "Menghapus",
     "posttrialPrice": "POST-TRIAL PRICE",
     "renewalDate": "RENEWAL DATE",
     "reminderOffset": "REMINDER OFFSET",
@@ -288,7 +288,13 @@
     "selectACard": "Select a card",
     "egNetflix": "e.g., Netflix",
     "selectACategory": "Select a category",
-    "egSharedWithFamily": "e.g., Shared with family"
+    "egSharedWithFamily": "e.g., Shared with family",
+    "subscriptionSaved": "Langganan Disimpan",
+    "subscriptionUpdated": "Langganan Diperbarui",
+    "subscriptionDeleted": "Langganan Dihapus",
+    "failedToAddSub": "Tidak dapat menambahkan langganan",
+    "failedToUpdateSub": "Langganan tidak dapat diperbarui",
+    "failedToDeleteSub": "Langganan tidak dapat dihapus"
   },
   "health": {
     "statusExcellent": "Ironclad Wallet",
@@ -298,5 +304,61 @@
     "adviceClash": "Multiple payment dates clash on the same day.",
     "adviceDoom": "Commitment contracts are expiring soon!",
     "meterTitle": "SKOR KESEHATAN KEUANGAN"
+  },
+  "features": {
+    "lastXHours": "FINAL {{hours}} HOURS",
+    "xHoursLeft": "{{hours}} HOURS LEFT",
+    "trialVersionTag": "Trial Version",
+    "sharedPaymentOverview": "💰 Shared Payment Overview",
+    "unnamed": "Unnamed",
+    "remind": "Remind",
+    "aiScannerAutoFill": "Auto-Fill with AI Scanner",
+    "smartTipsTitle": "Smart Tips",
+    "insteadOf": "Instead of: ",
+    "becauseYouPayFor": "Because you pay for {{subName}}.",
+    "deleteDoesNotCancel": "Deleting this subscription from SubMate does not cancel your actual subscription. If you wish to cancel the actual subscription, you can use the button below.",
+    "goToCancelPage": "Go to Cancel Page",
+    "doesNotCancelBold": "does not cancel",
+    "altReason_spotify": "Instead of ChatGPT Plus, you can often zero out your AI costs by using Claude 3.5 Sonnet or Google Gemini (free version) which offer generous free tiers.",
+    "altReason_midjourney": "Instead of a Midjourney subscription, you can meet your image generation needs for free by using Leonardo AI, which gives free daily tokens.",
+    "altReason_adobe": "Instead of Adobe Creative Cloud, consider Affinity Photo & Designer which are one-time purchases, or free alternatives like Photopea and Canva.",
+    "altReason_netflix": "Check if your mobile plan or internet provider includes Netflix for free. Also, consider Amazon Prime Video which might already be included in your Prime shipping plan.",
+    "cancelledToSave": "Saya membatalkan untuk menghemat uang!",
+    "justDelete": "Hapus saja dari aplikasi",
+    "trackUsage": "Lacak Penggunaan",
+    "usedXTimes": "Digunakan {{count}} kali.",
+    "lastUsed": "Akhir: {{date}}",
+    "iUsedThisToday": "Saya menggunakannya hari ini"
+  },
+  "legal": {
+    "privacyPolicy": "Kebijakan Privasi",
+    "termsOfUse": "Ketentuan Penggunaan",
+    "privacyPolicyContent": "Di SubMate, kami sangat mementingkan privasi data pribadi dan keuangan Anda. Kebijakan Privasi Komprehensif ini menjelaskan dengan jelas data mana yang diproses, disimpan, dan diamankan saat menggunakan Aplikasi kami dan bagaimana caranya. \n\n1. Tidak Ada Kebijakan Pengumpulan Data dan Sistem Sovereign Vault\nSubMate dikembangkan dengan pendekatan berorientasi privasi (\"Privasi berdasarkan Desain\"). Dalam hal ini, prinsip dasar kami adalah sebagai berikut:\nKAMI TIDAK MENGUMPULKAN DATA ANDA. INFORMASI BERLANGGANAN, JUMLAH PEMBAYARAN ATAU LABEL DOMPET YANG ANDA MASUKKAN DALAM APLIKASI TIDAK AKAN DIKIRIM KE SERVER PERUSAHAAN KAMI (CLOUD) ATAU DISIMPAN. \nSemua data Anda disimpan hanya di memori lokal ponsel cerdas Anda menggunakan Enkripsi Pada Perangkat. Oleh karena itu, akses tidak sah, penjualan, atau kebocoran data Anda secara teknis tidak mungkin dilakukan oleh kami. \n\n2. Jenis dan Ruang Lingkup Data yang Diolah\n2.1. Data Keuangan dan Langganan\nNama langganan (Netflix, Gym, Sewa, dll.), kategori pengeluaran, jumlah, dan tanggal pemberitahuan kalender yang Anda tambahkan ke aplikasi disimpan sepenuhnya di memori perangkat Anda. Perusahaan kami tidak membuat profil kebiasaan belanja Anda. \n2.2. Informasi Kartu Kredit dan Dompet\nBagian \"Dompet\" pada aplikasi hanyalah sistem penandaan yang membantu Anda memisahkan anggaran secara mental. Aplikasi tidak pernah meminta, menerima, atau menyimpan 16 digit nomor kartu kredit, tanggal kedaluwarsa (SKT) atau kode keamanan (CVV/CVC) yang valid. Hanya \"Nama\" (Mis: Kartu Gaji Saya) dan 4 digit nomor pengingat yang Anda tentukan untuk membedakan kartu Anda yang disimpan secara lokal di perangkat. Oleh karena itu, aplikasi berada di luar cakupan PCI-DSS (Standar Keamanan Data Industri Kartu Pembayaran) dan tidak dapat diwakili secara hukum dalam kasus seperti penyalinan/pencurian kartu. \n\n3. Izin Perangkat dan Verifikasi Biometrik\nBeberapa izin mungkin diminta dari sistem operasi agar aplikasi dapat berjalan:\n• Data Biometrik (ID Wajah / ID Sentuh): Jika Anda ingin memasukkan kata sandi pada login aplikasi, proses verifikasi dilakukan sepenuhnya di lingkungan aman perangkat Anda (Enklave Aman). SubMate tidak pernah memiliki akses ke sidik jari atau data wajah Anda, SubMate hanya menerima sinyal \"Diotentikasi\" atau \"Ditolak\" dari sistem operasi. \n• Notifikasi: Untuk memberitahukan tentang pembayaran langganan yang akan datang. Jumlah sensitif tidak ditampilkan dalam konten notifikasi. \n• Penyimpanan / Akses File: Digunakan untuk menyimpan file di perangkat Anda hanya ketika Anda ingin mengekspor atau mengimpor (Ekspor/Impor) data Anda dalam format JSON. \n\n4. Integrasi Pihak Ketiga dan Berbagi Data\nSubMate memiliki kontak terbatas dengan sumber eksternal untuk menghadirkan fitur-fiturnya:\n• API Nilai Tukar: Mengambil nilai tukar saat ini dari sumber eksternal untuk melakukan analisis nilai tukar. Kueri ini bersifat anonim; Ukuran portofolio atau langganan Anda tidak dikirim ke API eksternal. \n• Analisis dan Debugging (Crashlytics, dll.): Jika aplikasi mogok, log kesalahan teknis yang sepenuhnya anonim seperti versi sistem operasi dan model perangkat Anda dapat dikumpulkan untuk menyelesaikan masalah. Log ini tidak berisi data pribadi atau keuangan apa pun. \n\n5. Hak untuk Menghapus dan Mentransfer Data\nKarena data Anda tidak ada di server kami, Anda tidak perlu mengirimkan permintaan \"penghapusan akun\" atau \"penghapusan data\" kepada kami. Segera setelah Anda menghapus aplikasi SubMate dari perangkat Anda, sistem operasi Anda akan menghapus semua data Anda secara permanen dan tidak dapat diubah lagi. Kontrol dan pencadangan data Anda sepenuhnya menjadi tanggung jawab pengguna. \n\n6. Batasan Usia\nSubMate dirancang untuk digunakan oleh individu berusia 18 tahun ke atas. Karena aplikasi tidak mengumpulkan data pribadi, maka tidak ada pelanggaran jika sengaja mengumpulkan data anak. \n\n7. Pembaruan Kebijakan dan Komunikasi\nPerusahaan berhak memperbarui Kebijakan Privasi ini kapan saja. Karena aplikasi tidak mengumpulkan data, Anda dapat menghubungi kami melalui saluran komunikasi toko (App Store / Play Store) untuk pertanyaan dan masalah teknis apa pun yang mungkin timbul terkait privasi Anda.",
+    "termsOfUseContent": "Harap baca perjanjian Ketentuan Penggunaan ini (\"Perjanjian\") dengan cermat sebelum mengunduh, menginstal, atau menggunakan aplikasi seluler SubMate (\"Aplikasi\"). Perjanjian ini merupakan satu-satunya perjanjian yang mengikat secara hukum antara Anda (“Pengguna”) dan pengembang Aplikasi (“Perusahaan”, “Kami” atau “Kami”) mengenai penggunaan Aplikasi. \n\n1. Sifat dan Penerimaan Pelayanan\nSubMate adalah alat organisasi informasi mandiri yang dirancang untuk membantu Anda melacak langganan digital pribadi Anda, mengelola anggaran, dan mencatat tanggal perpanjangan. Dengan menginstal Aplikasi pada perangkat Anda, Anda tanpa syarat menyetujui semua syarat, penafian, dan batasan tanggung jawab dalam Perjanjian ini. Jika Anda tidak menerima ketentuan ini, Anda harus segera menghapus Aplikasi dari perangkat Anda. \n\n2. Penafian dan Batasan Layanan (PENTING)\nSubMate bukanlah lembaga keuangan, bank, gateway pembayaran, perusahaan manajemen portofolio, atau penasihat keuangan. Penggunaan aplikasi sepenuhnya menjadi risiko Anda sendiri. \n\n2.1. Transaksi Keuangan dan Pembatalan\nTidak ada pembayaran aktual yang dapat dilakukan, langganan dapat dimulai, atau langganan yang sudah ada dapat dibatalkan melalui aplikasi. SubMate hanya mengatur data yang dimasukkan pengguna secara manual. Anda sepenuhnya bertanggung jawab untuk membatalkan langganan tepat waktu, memantau jumlah yang didebit dari kartu kredit atau rekening bank Anda, dan hubungan hukum Anda dengan penyedia layanan pihak ketiga (Netflix, Spotify, dll.). \n\n2.2. Pemberitahuan dan Pengingat Dijamin\nTIDAK ADA PEMBERITAHUAN TIDAK DAPAT DIJAMIN TIBA TEPAT WAKTU. JIKA PEMBERITAHUAN APLIKASI TIDAK DITAMPILKAN KARENA MODE HEMAT BATERAI PADA SISTEM OPERASI (iOS/ANDROID), PEMBATASAN LATAR BELAKANG, ATAU KESALAHAN PERANGKAT LUNAK, PERUSAHAAN BERTANGGUNG JAWAB ATAS KERUSAKAN KEUANGAN YANG TIMBUL DARI PELANGGAN YANG LUPA MEMBATALKAN. ITU TIDAK BISA DILAKUKAN. \n\n2.3. Risiko Nilai Tukar dan Akurasi Konverter Mata Uang\n\"Analisis Risiko Mata Uang\" (Risiko Mata Uang) dan fitur terjemahan mata uang yang ditawarkan dalam aplikasi didasarkan pada data instan atau tertunda yang disediakan dari API pihak ketiga. Karena biaya transaksi internasional yang dikenakan oleh bank Anda sendiri, spread valuta asing, dan fluktuasi nilai tukar instan, mungkin ada perbedaan antara jumlah yang ditampilkan di layar dan jumlah yang tertera di laporan mutasi Anda. Aplikasi tidak menjamin 100% keakuratan jumlah tersebut. \n\n2.4. \"Langganan Vampir\" (Peringatan Vampir) dan Nasihat Keuangan\nFitur Deteksi Langganan Vampir hanya melakukan klasifikasi algoritmik sederhana dan memberikan perkiraan apakah pengguna membayar untuk layanan serupa atau tidak aktif. Ini bukan nasihat keuangan. Keputusan untuk membatalkan langganan apa pun merupakan kebijakan pengguna sepenuhnya. \n\n3. Tanggung Jawab Kehilangan Data dan Pencadangan\nSubMate menyimpan semua data Anda secara lokal di perangkat Anda (Sovereign Vault) untuk melindungi privasi Anda. Aplikasi tidak memiliki infrastruktur cadangan cloud. Perusahaan tidak bertanggung jawab dengan cara apa pun atas hilangnya data pelacakan keuangan Anda akibat penghapusan aplikasi, kehilangan atau kerusakan pada perangkat, atau kerusakan yang mungkin terjadi selama pembaruan sistem operasi. Sepenuhnya menjadi tanggung jawab Pengguna untuk melakukan backup data secara berkala menggunakan fitur ekspor JSON yang ditawarkan oleh aplikasi. \n\n4. Hak Penggunaan Aplikasi dan Kekayaan Intelektual\nSeluruh infrastruktur kode SubMate (termasuk arsitektur React Native & Expo), desain antarmuka, logo, algoritme, dan teks adalah milik Perusahaan. Pengguna diberikan lisensi non-eksklusif yang tidak dapat dipindahtangankan untuk menggunakan aplikasi semata-mata untuk tujuan pribadi dan non-komersial. Dilarang keras merekayasa balik, menyalin, atau mencoba menguraikan kode sumber aplikasi.\n\n5. Pernyataan dan Ganti Rugi \"Apa Adanya\". \nAPLIKASI DISEDIAKAN \"SEBAGAIMANA ADANYA\" DAN \"SEBAGAIMANA TERSEDIA\" TANPA JAMINAN APA PUN, BAIK TERSURAT MAUPUN TERSIRAT. PERUSAHAAN SECARA TEGAS MENOLAK JAMINAN APA PUN ATAS KELAYAKAN UNTUK DIPERDAGANGKAN, KESESUAIAN UNTUK TUJUAN TERTENTU, ATAU TIDAK ADA PELANGGARAN. Pengguna secara tidak dapat ditarik kembali membebaskan Perusahaan, manajer, karyawan, dan mitra bisnisnya dari segala kerugian langsung, tidak langsung, insidental, khusus, atau hukuman yang mungkin timbul akibat penggunaan aplikasi. \n\n6. Penyelesaian Sengketa\nHukum Republik Türkiye akan diterapkan dalam menyelesaikan setiap sengketa hukum yang timbul akibat Perjanjian ini. Pembatalan suatu klausul kontrak oleh pengadilan yang berwenang tidak akan mempengaruhi keabsahan klausul lainnya.",
+    "close": "Menutup",
+    "consentText": "Saya telah membaca, memahami dan menerima Kebijakan Privasi dan Ketentuan Penggunaan."
+  },
+  "authLeaks": {
+    "emailAddress": "Alamat Surel",
+    "password": "Kata sandi",
+    "forgotPasswordLabel": "Lupa kata sandi saya?",
+    "logInBtn": "Login",
+    "fullName": "Nama Nama Keluarga",
+    "confirmPassword": "Konfirmasi Kata Sandi",
+    "createAccountBtn": "Buat Akun"
+  },
+  "categories": {
+    "Entertainment": "Hiburan",
+    "Music & Audio": "Musik & Suara",
+    "Productivity": "Produktivitas",
+    "Utilities & Cloud": "Alat & Awan",
+    "Health & Fitness": "Kesehatan & Olahraga",
+    "Finance & Insurance": "Keuangan & Asuransi",
+    "Education & Learning": "Pendidikan & Pelatihan",
+    "Gaming": "Permainan",
+    "Shopping & E-commerce": "Belanja & E-niaga",
+    "News & Media": "Berita & Media",
+    "Food & Delivery": "Makanan & Pengiriman",
+    "Other": "Lainnya"
   }
 }

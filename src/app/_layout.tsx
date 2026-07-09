@@ -1,9 +1,10 @@
-import { Slot, useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { LogBox, Platform, AppState, View, Image, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ErrorBoundary } from '@/providers/ErrorBoundary';
 import { QueryProvider } from '@/providers/QueryProvider';
 import { AuthProvider } from '@/providers/AuthProvider';
+import { LanguageProvider } from '@/context/LanguageContext';
 import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '@/components/common/ToastConfig';
@@ -12,12 +13,15 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomSplashScreen } from '@/components/SplashScreen';
+import { authenticateUser } from '@/utils/biometrics';
+import { BiometricOverlay } from '@/components/BiometricOverlay';
 import { registerForPushNotificationsAsync } from '@/services/notifications/notificationService';
 import { ThemeProvider } from '@/context/ThemeContext';
-import { getMarketRatesWithCache } from '@/utils/currency';
+import { getMarketRatesWithDynamicCache } from '@/utils/currency';
 import { neutralizeProductionLogs } from '@/utils/security';
 import '../../global.css';
 import '../locales/i18n';
+import { t } from '@/locales/i18n';
 
 // Fire immediately upon JS Engine boot:
 neutralizeProductionLogs();
@@ -42,7 +46,7 @@ function RootLayout() {
 
   useEffect(() => {
     // Fire and forget: syncs rates silently in the background
-    getMarketRatesWithCache();
+    getMarketRatesWithDynamicCache();
     
     if (Platform.OS !== 'web') {
       if (hasRequestedToken.current) return;
@@ -54,14 +58,42 @@ function RootLayout() {
     SplashScreen.hideAsync().catch(() => {});
   }, []);
 
+  const [isLocked, setIsLocked] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
+    // Check initial setting
+    AsyncStorage.getItem('@submate_biometric_enabled').then(val => {
+      setBiometricEnabled(val === 'true');
+    });
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async nextAppState => {
+      // Transition from background to active
+      if (appState.match(/inactive|background/) && nextAppState === 'active') {
+        const enabled = await AsyncStorage.getItem('@submate_biometric_enabled');
+        if (enabled === 'true') {
+          setIsLocked(true);
+          const success = await authenticateUser();
+          if (success) {
+            setIsLocked(false);
+          }
+        }
+      }
       setAppState(nextAppState);
     });
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [appState]);
+
+  const triggerAuth = async () => {
+    const success = await authenticateUser();
+    if (success) {
+      setIsLocked(false);
+    }
+  };
 
   if (!isReady) {
     return null;
@@ -70,18 +102,25 @@ function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ErrorBoundary>
-        <ThemeProvider>
-          <QueryProvider>
-            <AuthProvider>
-              <ProtectedRoute>
-                <AppLockGuard>
-                  <Slot />
-                  <Toast config={toastConfig} />
-                </AppLockGuard>
-              </ProtectedRoute>
-            </AuthProvider>
-          </QueryProvider>
-        </ThemeProvider>
+        <LanguageProvider>
+          <ThemeProvider>
+            <QueryProvider>
+              <AuthProvider>
+                <ProtectedRoute>
+                  <>
+                    {isLocked && <BiometricOverlay onUnlockRetry={triggerAuth} />}
+                    <Stack screenOptions={{ headerShown: false }}>
+                      <Stack.Screen name="index" />
+                      <Stack.Screen name="onboarding" />
+                      <Stack.Screen name="(tabs)" />
+                    </Stack>
+                    <Toast config={toastConfig} />
+                  </>
+                </ProtectedRoute>
+              </AuthProvider>
+            </QueryProvider>
+          </ThemeProvider>
+        </LanguageProvider>
       </ErrorBoundary>
       {appState !== 'active' && (
         <View style={styles.privacyShield}>

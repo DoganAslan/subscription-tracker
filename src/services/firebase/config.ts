@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { getFirestore, initializeFirestore, persistentLocalCache, Firestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { t } from '@/locales/i18n';
 
 const firebaseConfig = {
   authDomain: "submate-4fc0a.firebaseapp.com",

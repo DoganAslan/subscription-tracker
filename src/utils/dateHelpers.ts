@@ -1,3 +1,4 @@
+import { t } from '@/locales/i18n';
 export const parseSafeDate = (val: string | Date | number | any): Date => {
   if (!val) return new Date();
   if (val instanceof Date) return val;

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 
 export function EmptyState() {
   const router = useRouter();
@@ -25,10 +25,10 @@ export function EmptyState() {
         resizeMode="contain"
       />
       
-      <Text style={dynamicStyles.title}>{t('home.yourListIsEmpty')}</Text>
+      <Text style={dynamicStyles.title}>{t.home.yourListIsEmpty}</Text>
       
       <Text style={dynamicStyles.subtext}>
-        {t('home.addFirstSub')}
+        {t.home.addFirstSub}
       </Text>
 
       <TouchableOpacity 
@@ -36,7 +36,7 @@ export function EmptyState() {
         onPress={handlePress}
         activeOpacity={0.8}
       >
-        <Text style={dynamicStyles.buttonText}>{t('home.addSubscription')}</Text>
+        <Text style={dynamicStyles.buttonText}>{t.home.addSubscription}</Text>
       </TouchableOpacity>
     </View>
   );

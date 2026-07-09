@@ -1,11 +1,11 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 // src/utils/export.ts
 import { Platform, Share, Alert } from 'react-native';
 import { calculateMonthlyCosts } from './calculations'; 
 
 export const exportSubscriptionsToCSV = async (subscriptions: any[], activeCurrency: string) => {
   if (!subscriptions || subscriptions.length === 0) {
-    Alert.alert(i18n.t('global.exportError'), i18n.t('global.noSubscriptionDataAv'));
+    Alert.alert(t.global.exportError, t.global.noSubscriptionDataAv);
     return;
   }
 

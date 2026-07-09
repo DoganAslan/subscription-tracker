@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SavingsTip } from '../utils/savingsEngine';
@@ -11,7 +11,7 @@ interface Props {
 export function SavingsTipCard({ tip, currency }: Props) {
   return (
     <View style={styles.cardContainer}>
-      <Text style={styles.icon}>{i18n.t('global.symbol721')}</Text>
+      <Text style={styles.icon}>💡</Text>
       <View style={styles.textContainer}>
         <Text style={styles.message}>
           {tip.message}

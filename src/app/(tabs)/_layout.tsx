@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { triggerHaptic } from '@/utils/haptics';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 
 export default function TabsLayout() {
   const { colors } = useTheme();
@@ -27,8 +27,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: t('tabs.home'),
-          tabBarLabel: t('tabs.home'),
+          title: t.tabs.home,
+          tabBarLabel: t.tabs.home,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "home" : "home-outline"} color={color} size={size} />
           ),
@@ -39,8 +39,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="subscriptions"
         options={{
-          title: t('tabs.subscriptions'),
-          tabBarLabel: t('tabs.subscriptions'),
+          title: t.tabs.subscriptions,
+          tabBarLabel: t.tabs.subscriptions,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "list" : "list-outline"} color={color} size={size} />
           ),
@@ -51,8 +51,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="calendar"
         options={{
-          title: t('tabs.calendar'),
-          tabBarLabel: t('tabs.calendar'),
+          title: t.tabs.calendar,
+          tabBarLabel: t.tabs.calendar,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "calendar" : "calendar-outline"} color={color} size={size} />
           ),
@@ -62,8 +62,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="wallet"
         options={{
-          title: t('tabs.wallet'),
-          tabBarLabel: t('tabs.wallet'),
+          title: t.tabs.wallet,
+          tabBarLabel: t.tabs.wallet,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "wallet" : "wallet-outline"} color={color} size={size} />
           ),
@@ -74,8 +74,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: t('tabs.settings'),
-          tabBarLabel: t('tabs.settings'),
+          title: t.tabs.settings,
+          tabBarLabel: t.tabs.settings,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons name={focused ? "settings" : "settings-outline"} color={color} size={size} />
           ),

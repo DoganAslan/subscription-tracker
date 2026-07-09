@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { getCancellationLink } from '../utils/cancellationMatrix';
@@ -29,7 +29,7 @@ export function UsageAnalyticsCard({ subscriptionName, usageFrequency, usageScor
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{i18n.t('global.usageAnalyticsRating')}</Text>
+      <Text style={styles.title}>{t.global.usageAnalyticsRating}</Text>
       
       <View style={styles.buttonRow}>
         <FrequencyButton 
@@ -57,7 +57,7 @@ export function UsageAnalyticsCard({ subscriptionName, usageFrequency, usageScor
       {usageScore !== undefined && (
         <View style={styles.scoreContainer}>
           <View style={styles.scoreHeader}>
-            <Text style={styles.scoreLabel}>{i18n.t('global.usageScore')}</Text>
+            <Text style={styles.scoreLabel}>{t.global.usageScore}</Text>
             <Text style={[styles.scoreValue, isZombie && styles.zombieText]}>{usageScore}%</Text>
           </View>
           
@@ -73,7 +73,7 @@ export function UsageAnalyticsCard({ subscriptionName, usageFrequency, usageScor
           
           {isZombie && (
             <View style={styles.zombieWarning}>
-              <Text style={styles.zombieBadge}>{i18n.t('global.zombieSubscriptionDe')}</Text>
+              <Text style={styles.zombieBadge}>{t.global.zombieSubscriptionDe}</Text>
               <TouchableOpacity 
                 style={styles.cancelWizardBtn}
                 onPress={() => {
@@ -81,7 +81,7 @@ export function UsageAnalyticsCard({ subscriptionName, usageFrequency, usageScor
                   Linking.openURL(url).catch(err => console.error("Could not open URL", err));
                 }}
               >
-                <Text style={styles.cancelWizardBtnText}>{i18n.t('global.cancelSubscriptionVi')}</Text>
+                <Text style={styles.cancelWizardBtnText}>{t.global.cancelSubscriptionVi}</Text>
               </TouchableOpacity>
             </View>
           )}

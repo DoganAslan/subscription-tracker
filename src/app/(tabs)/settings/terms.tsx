@@ -5,9 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
 import Markdown from 'react-native-markdown-display';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 
 import termsPoliciesRaw from '@/constants/termsPolicies.json';
+import { t } from '@/locales/i18n';
 
 const termsPolicies: Record<string, string> = termsPoliciesRaw;
 const languages = Object.keys(termsPolicies);

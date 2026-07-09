@@ -93,9 +93,9 @@
     "noPayments": "今天没有安排付款。"
   },
   "forms": {
-    "hasContract": "年度承诺合同",
-    "contractReminderSubtext": "到期前7天提醒",
-    "contractEndDateLabel": "合同截止日期"
+    "hasContract": "年度承诺协议可用",
+    "contractReminderSubtext": "在预产期前 7 天提醒我",
+    "contractEndDateLabel": "承诺结束日期"
   },
   "global": {
     "welcomeBack": "Welcome back",
@@ -186,9 +186,9 @@
     "noRenewalsInTheNext3": "No renewals in the next 30 days",
     "remindFriends": "Remind Friends",
     "symbol721": "💡",
-    "deleteSubscription": "Delete Subscription?",
+    "deleteSubscription": "删除订阅？",
     "areYouSureYouWantToD": "Are you sure you want to delete this subscription? This action cannot be undone and will be removed from your tracking immediately.",
-    "delete": "Delete",
+    "delete": "删除",
     "posttrialPrice": "POST-TRIAL PRICE",
     "renewalDate": "RENEWAL DATE",
     "reminderOffset": "REMINDER OFFSET",
@@ -288,7 +288,13 @@
     "selectACard": "Select a card",
     "egNetflix": "e.g., Netflix",
     "selectACategory": "Select a category",
-    "egSharedWithFamily": "e.g., Shared with family"
+    "egSharedWithFamily": "e.g., Shared with family",
+    "subscriptionSaved": "订阅已保存",
+    "subscriptionUpdated": "订阅已更新",
+    "subscriptionDeleted": "订阅已删除",
+    "failedToAddSub": "无法添加订阅",
+    "failedToUpdateSub": "订阅无法更新",
+    "failedToDeleteSub": "订阅无法删除"
   },
   "health": {
     "statusExcellent": "Ironclad Wallet",
@@ -298,5 +304,61 @@
     "adviceClash": "Multiple payment dates clash on the same day.",
     "adviceDoom": "Commitment contracts are expiring soon!",
     "meterTitle": "财务健康评分"
+  },
+  "features": {
+    "lastXHours": "FINAL {{hours}} HOURS",
+    "xHoursLeft": "{{hours}} HOURS LEFT",
+    "trialVersionTag": "Trial Version",
+    "sharedPaymentOverview": "💰 Shared Payment Overview",
+    "unnamed": "Unnamed",
+    "remind": "Remind",
+    "aiScannerAutoFill": "Auto-Fill with AI Scanner",
+    "smartTipsTitle": "Smart Tips",
+    "insteadOf": "Instead of: ",
+    "becauseYouPayFor": "Because you pay for {{subName}}.",
+    "deleteDoesNotCancel": "Deleting this subscription from SubMate does not cancel your actual subscription. If you wish to cancel the actual subscription, you can use the button below.",
+    "goToCancelPage": "Go to Cancel Page",
+    "doesNotCancelBold": "does not cancel",
+    "altReason_spotify": "Instead of ChatGPT Plus, you can often zero out your AI costs by using Claude 3.5 Sonnet or Google Gemini (free version) which offer generous free tiers.",
+    "altReason_midjourney": "Instead of a Midjourney subscription, you can meet your image generation needs for free by using Leonardo AI, which gives free daily tokens.",
+    "altReason_adobe": "Instead of Adobe Creative Cloud, consider Affinity Photo & Designer which are one-time purchases, or free alternatives like Photopea and Canva.",
+    "altReason_netflix": "Check if your mobile plan or internet provider includes Netflix for free. Also, consider Amazon Prime Video which might already be included in your Prime shipping plan.",
+    "cancelledToSave": "为了省钱我取消了！",
+    "justDelete": "只需从应用程序中删除即可",
+    "trackUsage": "追踪使用情况",
+    "usedXTimes": "使用 {{count}} 次。",
+    "lastUsed": "结束： {{date}}",
+    "iUsedThisToday": "我今天用过"
+  },
+  "legal": {
+    "privacyPolicy": "隐私政策",
+    "termsOfUse": "使用条款",
+    "privacyPolicyContent": "在 SubMate，我们非常重视您的个人和财务数据的隐私。 本综合隐私政策清楚地解释了在使用我们的应用程序时处理、存储和保护哪些数据以及如何处理、存储和保护哪些数据。 \n\n1. 无数据收集政策和主权金库系统\nSubMate 是采用注重隐私的方法（“隐私设计”）开发的。 对此，我们的基本原则是：\n我们不收集您的数据。 您在应用程序中输入的任何订阅信息、付款金额或钱包标签都不会发送到我们公司的服务器（云）或保存。 \n您的所有数据仅使用设备上加密存储在您自己的智能手机的本地内存中。 因此，对我们来说，未经授权的访问、出售或泄露您的数据在技术上是不可能的。 \n\n2. 处理数据的类型和范围\n2.1.财务数据和订阅\n您添加到应用程序中的订阅名称（Netflix、Gym、Rent 等）、支出类别、金额和日历通知日期完全存储在设备的内存中。 我们公司不会创建您的消费习惯档案。 \n2.2.信用卡和钱包信息\n该应用程序的“钱包”部分只是一个标签系统，可帮助您在心里区分预算。 该应用程序绝不会请求、接收或存储有效的 16 位信用卡号、到期日期 (SKT) 或安全码 (CVV/CVC)。 仅“姓名”（例如：我的工资卡）和您确定用于区分卡的提醒 4 位数字保留在设备本地。 因此，该申请不属于PCI-DSS（支付卡行业数据安全标准）的范围，在卡复制/盗窃等情况下无法合法代表。 \n\n3. 设备权限和生物特征验证\n可能会向操作系统请求一些权限才能运行应用程序：\n• 生物识别数据（Face ID / Touch ID）：如果您想在应用程序登录时设置密码，则验证过程完全在您设备自己的安全环境（Secure Enclave）中进行。 SubMate 永远无法访问您的指纹或面部数据，它仅从操作系统接收“已验证”或“已拒绝”信号。 \n• 通知：通知即将进行的订阅付款。 敏感金额不会在通知内容中显示。 \n• 存储/文件访问：仅当您想要以JSON 格式导出或导入（导出/导入）数据时，用于将文件保存在您的设备上。 \n\n4. 第三方集成和数据共享\nSubMate 与外部资源的联系有限以提供其功能：\n• 汇率API：从外部源获取当前汇率以执行汇率分析。 这些查询是匿名的；您的投资组合规模或订阅不会发送到外部 API。 \n• 分析和调试（Crashlytics 等）：如果应用程序崩溃，可能会收集完全匿名的技术错误日志（例如您的操作系统版本和设备型号）以解决问题。 这些日志不包含任何个人或财务数据。 \n\n5. 删除和传输数据的权利\n由于您的数据不在我们的服务器上，因此您无需向我们发送“帐户删除”或“数据删除”请求。 一旦您从设备上卸载 SubMate 应用程序，您的操作系统将永久且不可逆转地删除您的所有数据。 数据的控制和备份完全由用户负责。 \n\n6. 年龄限制\nSubMate 专为 18 岁及以上人士使用而设计。 由于该应用程序不收集个人数据，因此不存在故意收集儿童数据的违法行为。 \n\n7. 政策更新和沟通\n公司保留随时更新本隐私政策的权利。 由于该应用程序不收集数据，因此您可以通过商店（App Store / Play Store）沟通渠道联系我们，以解决可能出现的有关您隐私的任何疑问和技术问题。",
+    "termsOfUseContent": "在下载、安装或使用 SubMate（“应用程序”）移动应用程序之前，请仔细阅读本使用条款协议（“协议”）。 本协议是您（“用户”）和应用程序开发商（“公司”、“我们”或“我们”）之间关于应用程序的使用的唯一具有法律约束力的协议。 \n\n1. 服务的性质和接受\nSubMate 是一款独立的信息组织工具，旨在帮助您跟踪个人数字订阅、管理预算和记录续订日期。 在您的设备上安装应用程序，即表示您无条件同意本协议中的所有条款、免责声明和责任限制。 如果您不接受这些条款，则必须立即从设备中删除该应用程序。 \n\n2. 免责声明和服务限制（重要）\nSubMate 不是金融机构、银行、支付网关、投资组合管理公司或财务顾问。 使用该应用程序的风险完全由您自行承担。 \n\n2.1.金融交易和取消\n无法进行实际付款，可以开始订阅，或者可以通过应用程序取消现有订阅。 SubMate 仅组织用户手动输入的数据。 您对按时取消订阅、监控从您的信用卡或银行帐户中扣除的金额以及您与第三方服务提供商（Netflix、Spotify 等）的法律关系负全部责任。 \n\n2.2.保证通知和提醒\n任何通知均不能保证按时送达。 如果由于操作系统（iOS/Android）的省电模式、后台限制或软件错误而导致应用程序通知不显示，则公司对因忘记取消订阅而造成的任何财务损失承担严格责任。 它无法举行。 \n\n2.3.汇率风险和货币换算准确性\n应用程序内提供的“货币风险分析”（Currency Risk）和货币换算功能基于第三方 API 提供的即时或延迟数据。 由于您自己的银行收取的国际交易费用、外汇点差和即时汇率波动，屏幕上显示的金额与您对账单上反映的金额可能会存在差异。 该应用程序不保证这些金额 100% 准确。 \n\n2.4. “吸血鬼订阅”（吸血鬼警报）和财务建议\n吸血鬼订阅检测功能仅进行简单的算法分类，并提供用户是否为类似或休眠服务付费的估计。 这不是财务建议。 取消任何订阅的决定由用户自行决定。 \n\n3. 数据丢失和备份责任\nSubMate 将您的所有数据本地存储在您的设备上 (Sovereign Vault)，以保护您的隐私。 该应用程序没有云备份基础设施。 对于因删除应用程序、设备丢失或损坏或操作系统更新期间可能发生的崩溃而导致的财务跟踪数据丢失，公司不承担任何责任。 使用应用程序提供的 JSON 导出功能定期备份数据完全是用户的责任。 \n\n4. 应用程序使用权和知识产权\nSubMate 的整个代码基础架构（包括 React Native 和 Expo 架构）、界面设计、徽标、算法和文本均属于公司。 用户被授予不可转让的、非排他性的许可，仅可出于个人和非商业目的使用该应用程序。 严格禁止逆向工程、复制或尝试破译应用程序的源代码。 \n\n5.“现状”声明和赔偿\n本应用程序按“原样”和“可用”提供，不提供任何明示或暗示的保证。 公司明确否认对适销性、特定用途的适用性或不侵权提供任何保证。 用户不可撤销地免除公司、其经理、员工和业务合作伙伴因使用该应用程序而可能产生的任何直接、间接、附带、特殊或惩罚性损害。 \n\n六、争议解决\n因本协议引起的任何法律纠纷均适用土耳其共和国法律。 有管辖权的法院宣告合同任何条款无效，不会影响其他条款的有效性。",
+    "close": "关闭",
+    "consentText": "我已阅读、理解并接受隐私政策和使用条款。"
+  },
+  "authLeaks": {
+    "emailAddress": "电子邮件",
+    "password": "密码",
+    "forgotPasswordLabel": "忘记密码了？",
+    "logInBtn": "登录",
+    "fullName": "姓名",
+    "confirmPassword": "确认密码",
+    "createAccountBtn": "创建账户"
+  },
+  "categories": {
+    "Entertainment": "娱乐",
+    "Music & Audio": "音乐与声音",
+    "Productivity": "生产率",
+    "Utilities & Cloud": "工具与云",
+    "Health & Fitness": "健康与运动",
+    "Finance & Insurance": "金融与保险",
+    "Education & Learning": "教育与培训",
+    "Gaming": "游戏",
+    "Shopping & E-commerce": "购物与电子商务",
+    "News & Media": "新闻与媒体",
+    "Food & Delivery": "食品与配送",
+    "Other": "其他"
   }
 }

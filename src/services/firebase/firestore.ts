@@ -2,6 +2,7 @@ import { getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, query, whe
 import { db } from './config';
 import { getSubscriptionsCollection, getSubscriptionDoc, getCardsCollection, getCardDoc } from './collections';
 import { Subscription, Card } from './types';
+import { t } from '@/locales/i18n';
 
 export const SubscriptionService = {
   // Get all subscriptions for a user

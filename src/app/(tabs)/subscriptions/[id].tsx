@@ -3,13 +3,17 @@ import { triggerHaptic } from '@/utils/haptics';
 import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet, Share, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
+import { LifetimeCostSimulator } from '@/features/subscriptions/components/LifetimeCostSimulator';
+import { PauseSubscriptionCard } from '@/features/subscriptions/components/PauseSubscriptionCard';
 import { DeleteConfirmationModal } from '@/features/subscriptions/components/DeleteConfirmationModal';
-import { useSubscriptions, useUpdateSubscription, useDeleteSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
+import { useSubscriptions, useUpdateSubscription, useDeleteSubscription, useTogglePauseSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
 import { AppLoader } from '@/components/common/AppLoader';
 import { SubscriptionFormData } from '@/features/subscriptions/schemas/subscription.schema';
 import { scheduleRenewalReminder, cancelSubscriptionNotifications } from '@/utils/NotificationService';
 import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
+import { useSavingsStore } from '@/store/useSavingsStore';
+import { calculateMonthlyCosts } from '@/utils/calculations';
 
 // Removed DESIGN_TOKENS
 
@@ -21,13 +25,14 @@ export default function EditSubscriptionScreen() {
   
   const { data: subscriptions, isLoading: isLoadingSubs, isFetching } = useSubscriptions();
   const { mutate: updateSubscription, isPending: isUpdating } = useUpdateSubscription();
+  const { mutate: togglePauseSubscription } = useTogglePauseSubscription();
   const { mutate: deleteSubscription, isPending: isDeleting } = useDeleteSubscription();
   
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   
   const { colors } = useTheme();
-  const { t, i18n } = useTranslation();
-  const isEnglish = i18n.language === 'en';
+  const { t, currentLanguage } = useTranslation();
+  const isEnglish = currentLanguage === 'en';
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
   const handleGoBack = () => {
@@ -40,7 +45,12 @@ export default function EditSubscriptionScreen() {
 
   const handleRemindParticipant = async (participantName: string, amount: number, currency: string, subscriptionName: string) => {
     triggerHaptic('selection');
-    const message = `Selam ${participantName}! 👋 Bu ayki "${subscriptionName}" ortaklığımız için ${amount} ${currency} ödeme payın bulunuyor. Müsait olduğunda gönderebilirsen süper olur, teşekkürler! 🚀`;
+    const baseMsg = t.features?.whatsappReminderMsg || `Selam {{name}}! 👋 Bu ayki "{{subName}}" ortaklığımız için {{amount}} {{currency}} ödeme payın bulunuyor. Müsait olduğunda gönderebilirsen süper olur, teşekkürler! 🚀`;
+    const message = baseMsg
+      .replace('{{name}}', participantName)
+      .replace('{{subName}}', subscriptionName)
+      .replace('{{amount}}', amount.toString())
+      .replace('{{currency}}', currency);
 
     try {
       const result = await Share.share({
@@ -58,7 +68,7 @@ export default function EditSubscriptionScreen() {
       if (Platform.OS === 'web') {
         window.alert("Kopyalanacak Mesaj:\n\n" + message);
       } else {
-        Alert.alert(t('global.paylamHatas'), t('global.mesajOluturulurkenBi'));
+        Alert.alert(t.global.paylamHatas, t.global.mesajOluturulurkenBi);
       }
     }
   };
@@ -74,9 +84,9 @@ export default function EditSubscriptionScreen() {
     if (isFetching || isDeleting) return <AppLoader />;
     return (
       <View style={dynamicStyles.notFoundContainer}>
-        <Text style={dynamicStyles.notFoundText}>{t('global.subscriptionNotFound')}</Text>
+        <Text style={dynamicStyles.notFoundText}>{t.global.subscriptionNotFound}</Text>
         <TouchableOpacity onPress={handleGoBack} style={dynamicStyles.goBackButton}>
-          <Text style={dynamicStyles.goBackText}>{t('global.goBack')}</Text>
+          <Text style={dynamicStyles.goBackText}>{t.global.goBack}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -88,11 +98,34 @@ export default function EditSubscriptionScreen() {
     handleGoBack();
   };
 
-  const handleDelete = () => {
+  const addSavings = useSavingsStore(state => state.addSavings);
+
+  const handleDelete = (didSaveMoney?: boolean) => {
     triggerHaptic('error');
     setIsDeleteModalVisible(false);
+    
+    if (didSaveMoney && subscription) {
+      const costs = calculateMonthlyCosts(subscription, subscription.currency);
+      addSavings(costs.net, subscription.currency || 'USD');
+    }
+    
     deleteSubscription(id);
     router.replace('/(tabs)/subscriptions');
+  };
+
+  const handleTrackUsage = () => {
+    triggerHaptic('success');
+    updateSubscription({ 
+      id, 
+      data: { 
+        ...subscription, 
+        renewalDate: subscription.renewalDate.toDate(),
+        trialEndDate: subscription.trialEndDate ? subscription.trialEndDate.toDate() : undefined,
+        contractEndDate: subscription.contractEndDate ? subscription.contractEndDate.toDate() : undefined,
+        usageScore: (subscription.usageScore || 0) + 1,
+        lastUsedDate: new Date().toISOString()
+      } as any 
+    });
   };
 
   return (
@@ -100,20 +133,20 @@ export default function EditSubscriptionScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={dynamicStyles.keyboardView}>
         <View style={dynamicStyles.header}>
           <TouchableOpacity onPress={handleGoBack} style={dynamicStyles.backButton}>
-             <Text style={dynamicStyles.backButtonText}>← {t('common.cancel')}</Text>
+             <Text style={dynamicStyles.backButtonText}>{t.form.cancel}</Text>
           </TouchableOpacity>
-          <Text style={dynamicStyles.headerTitle}>{t('subs.update')}</Text>
+          <Text style={dynamicStyles.headerTitle}>{t.form.updateHeader}</Text>
           <View style={{ width: 60 }} />{/* Spacer */}
         </View>
         
         
         {subscription.isSplit && subscription.splitParticipants && subscription.splitParticipants.length > 0 && (
           <View style={dynamicStyles.splitOverviewCard}>
-            <Text style={dynamicStyles.splitOverviewTitle}>{isEnglish ? '💰 Shared Payment Overview' : '💰 Ortak Ödeme Özeti'}</Text>
+            <Text style={dynamicStyles.splitOverviewTitle}>{t.features?.sharedPaymentOverview || (isEnglish ? '💰 Shared Payment Overview' : '💰 Ortak Ödeme Özeti')}</Text>
             {subscription.splitParticipants.map((p, index) => (
               <View key={p.id || `participant-${index}`} style={dynamicStyles.splitParticipantRow}>
                 <View>
-                  <Text style={dynamicStyles.splitParticipantName}>{p.name || (isEnglish ? 'Unnamed' : 'İsimsiz')}</Text>
+                  <Text style={dynamicStyles.splitParticipantName}>{p.name || t.features?.unnamed || (isEnglish ? 'Unnamed' : 'İsimsiz')}</Text>
                   <Text style={dynamicStyles.splitParticipantAmount}>
                     {parseFloat(String(p.amount)).toFixed(0)} {subscription.currency || 'TRY'} (%{subscription.amount > 0 ? Math.round((parseFloat(String(p.amount)) / subscription.amount) * 100) : 0})
                   </Text>
@@ -121,34 +154,55 @@ export default function EditSubscriptionScreen() {
                 <TouchableOpacity 
                   style={{ backgroundColor: '#1E3A8A', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}
                   onPress={() => handleRemindParticipant(
-                    p.name || (isEnglish ? 'Unnamed' : 'İsimsiz'), 
+                    p.name || t.features?.unnamed || (isEnglish ? 'Unnamed' : 'İsimsiz'), 
                     p.amount, 
                     subscription.currency || 'TRY', 
                     subscription.name
                   )}
                 >
-                  <Text style={{ color: '#60A5FA', fontSize: 13, fontWeight: '600' }}>{isEnglish ? 'Remind' : 'Hatırlat'}</Text>
+                  <Text style={{ color: '#60A5FA', fontSize: 13, fontWeight: '600' }}>{t.features?.remind || (isEnglish ? 'Remind' : 'Hatırlat')}</Text>
                 </TouchableOpacity>
               </View>
             ))}
           </View>
         )}
         
-
-        
         <SubscriptionForm 
           initialData={subscription}
           onSubmit={handleUpdate} 
           isLoading={isUpdating} 
-          submitLabel={t('common.save')}
+          submitLabel={t.form.updateHeader}
           onDelete={() => setIsDeleteModalVisible(true)}
-        />
+        >
+          <PauseSubscriptionCard 
+            subscription={subscription} 
+            onUpdate={(data) => togglePauseSubscription({ id, data })} 
+          />
+          <LifetimeCostSimulator subscription={subscription} />
+        </SubscriptionForm>
+
+        <View style={dynamicStyles.usageCard}>
+          <View>
+            <Text style={dynamicStyles.usageTitle}>{(t.features as any)?.trackUsage || 'Track Usage'}</Text>
+            <Text style={dynamicStyles.usageSubtitle}>
+              {((t.features as any)?.usedXTimes || 'Used {{count}} times.').replace('{{count}}', (subscription.usageScore || 0).toString())}
+              {subscription.lastUsedDate ? ` ${((t.features as any)?.lastUsed || 'Last: {{date}}').replace('{{date}}', new Date(subscription.lastUsedDate).toLocaleDateString())}` : ''}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={dynamicStyles.usageButton}
+            onPress={handleTrackUsage}
+          >
+            <Text style={dynamicStyles.usageButtonText}>{(t.features as any)?.iUsedThisToday || 'I used this today'}</Text>
+          </TouchableOpacity>
+        </View>
         
         <DeleteConfirmationModal
           visible={isDeleteModalVisible}
           onConfirm={handleDelete}
           onCancel={() => setIsDeleteModalVisible(false)}
           isLoading={isDeleting}
+          subscriptionName={subscription?.name}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -234,4 +288,38 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
+  usageCard: {
+    backgroundColor: colors.surfaceHover,
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 40,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  usageTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  usageSubtitle: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  usageButton: {
+    backgroundColor: '#10B981',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  usageButtonText: {
+    color: '#FFF',
+    fontWeight: '700',
+    fontSize: 13,
+  }
 });

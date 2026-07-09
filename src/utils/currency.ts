@@ -7,64 +7,72 @@ export let CURRENCY_RATES: Record<string, number> = {
   SAR: 0.11, AED: 0.11, INR: 2.56, RUB: 2.77, BRL: 0.16,
 };
 
-const CACHE_KEY = '@submate_rates_v1';
-const CACHE_TIMESTAMP_KEY = '@submate_rates_ts_v1';
-const TTL_MILLISECONDS = 12 * 60 * 60 * 1000; // 12 Hours
+const CACHE_KEY = '@submate_rates_v2';
+const CACHE_EXPIRY_KEY = '@submate_rates_expiry_v2';
 
-export const getMarketRatesWithCache = async (baseCurrency: string = 'TRY') => {
-  let rates = null;
+export const getMarketRatesWithDynamicCache = async (baseCurrency: string = 'TRY') => {
+  let finalRates = null;
   try {
-    // 1. Check Local Cache & Timestamp
+    // 1. Check Local Cache & Dynamic Expiry Timestamp
     const cachedRates = await AsyncStorage.getItem(CACHE_KEY);
-    const cachedTime = await AsyncStorage.getItem(CACHE_TIMESTAMP_KEY);
+    const cachedExpiry = await AsyncStorage.getItem(CACHE_EXPIRY_KEY);
 
-    if (cachedRates && cachedTime) {
-      const cacheAge = Date.now() - parseInt(cachedTime, 10);
+    const nowInSeconds = Math.floor(Date.now() / 1000);
 
-      // If cache is younger than 12 hours, serve immediately
-      if (cacheAge < TTL_MILLISECONDS) {
-        const ageInMinutes = Math.round(cacheAge / (1000 * 60));
-        console.log(`Serving cached exchange rates (Age: ${ageInMinutes} mins). Network bypassed.`);
-        rates = JSON.parse(cachedRates);
+    if (cachedRates && cachedExpiry) {
+      const expiryTimestamp = parseInt(cachedExpiry, 10);
+
+      // If current time is strictly BEFORE the server's next scheduled update, cache is 100% valid
+      if (nowInSeconds < expiryTimestamp) {
+        const remainingMinutes = Math.round((expiryTimestamp - nowInSeconds) / 60);
+        console.log(`⚡ Serving dynamically cached rates. Next remote sync in: ${remainingMinutes} mins. Network bypassed.`);
+        finalRates = JSON.parse(cachedRates);
       }
     }
 
-    if (!rates) {
-      // 2. Cache expired or empty -> Fetch live from API
-      console.log("Cache expired or empty. Fetching live rates from ExchangeRate-API...");
+    if (!finalRates) {
+      // 2. Cache is expired or empty -> Fetch live from API
+      console.log(`🌐 Cache expired or empty. Syncing with remote API updates for ${baseCurrency}...`);
       const response = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`);
       const data = await response.json();
 
-      if (data && data.rates) {
-        // 3. Save fresh snapshot to disk
+      if (data && data.rates && data.time_next_update_unix) {
+        // 3. EXTRACT DYNAMIC TTL FROM API METADATA
+        // The server explicitly tells us exactly when the next data window opens
+        const remoteExpiryTimestamp = data.time_next_update_unix; 
+        
+        // 4. Save snapshots to hardware disk
         await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data.rates));
-        await AsyncStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-        rates = data.rates;
+        await AsyncStorage.setItem(CACHE_EXPIRY_KEY, remoteExpiryTimestamp.toString());
+        
+        const dynamicWindowMinutes = Math.round((remoteExpiryTimestamp - nowInSeconds) / 60);
+        console.log(`💾 Saved fresh rates. Cache locked dynamically for the next ${dynamicWindowMinutes} minutes based on server window.`);
+        
+        finalRates = data.rates;
       } else if (cachedRates) {
-        // 4. If live fetch returned malformed data, fallback to stale cache
-        rates = JSON.parse(cachedRates);
+        // 5. Fallback mechanisms if live fetch fails or is malformed
+        finalRates = JSON.parse(cachedRates);
       }
     }
   } catch (error) {
-    // 5. OFFLINE FALLBACK: User has no internet. Serve stale cache safely without crashing.
-    console.warn("Offline mode detected. Serving stale cache fallback.");
+    console.warn("📴 Dynamic Engine: Offline mode triggered. Serving stale fallback cache.");
     const staleCache = await AsyncStorage.getItem(CACHE_KEY);
-    if (staleCache) rates = JSON.parse(staleCache);
+    if (staleCache) finalRates = JSON.parse(staleCache);
   }
 
-  // 6. Absolute Doomsday Fallback (Prevents division by zero crashes)
-  if (!rates) {
-    rates = { TRY: 1, USD: 0.03, EUR: 0.027, GBP: 0.023 };
+  // Doomsday absolute fallback to prevent division by zero rendering crashes
+  if (!finalRates) {
+    finalRates = { TRY: 1, USD: 0.03, EUR: 0.027, GBP: 0.023 };
   }
 
-  // Atomically update memory map
-  CURRENCY_RATES = { ...CURRENCY_RATES, ...rates };
-  return rates;
+  // Atomically update memory map for local synchronous conversions
+  CURRENCY_RATES = { ...CURRENCY_RATES, ...finalRates };
+  return finalRates;
 };
 
 // Legacy sync function export alias so anything importing it still works before being swapped
 export const syncLiveExchangeRates = async () => {
-  await getMarketRatesWithCache('TRY');
+  await getMarketRatesWithDynamicCache('TRY');
 };
 
 export const convertCurrency = (amount: number, from: string, to: string): number => {
@@ -77,4 +85,39 @@ export const convertCurrency = (amount: number, from: string, to: string): numbe
   
   // Cross-rate calculation based on 1 unit of base (TRY)
   return (amount / rateFromTRY) * rateToTRY;
+};
+
+export const SUPPORTED_CURRENCIES = [
+  { code: 'TRY', symbol: '₺', name: 'Türk Lirası' },
+  { code: 'USD', symbol: '$', name: 'Amerikan Doları' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'İngiliz Sterlini' },
+  { code: 'CAD', symbol: 'CA$', name: 'Kanada Doları' },
+  { code: 'AUD', symbol: 'A$', name: 'Avustralya Doları' },
+  { code: 'JPY', symbol: '¥', name: 'Japon Yeni' },
+  { code: 'CHF', symbol: 'CHF', name: 'İsviçre Frangı' },
+  { code: 'CNY', symbol: 'CN¥', name: 'Çin Yüanı' },
+  { code: 'SAR', symbol: 'SAR', name: 'Suudi Riyali' },
+  { code: 'AED', symbol: 'AED', name: 'BAE Dirhemi' },
+  { code: 'RUB', symbol: '₽', name: 'Rus Rublesi' },
+  { code: 'AZN', symbol: '₼', name: 'Azerbaycan Manatı' },
+  { code: 'SEK', symbol: 'kr', name: 'İsveç Kronu' },
+  { code: 'NOK', symbol: 'kr', name: 'Norveç Kronu' },
+  { code: 'DKK', symbol: 'kr', name: 'Danimarka Kronu' },
+  { code: 'PLN', symbol: 'zł', name: 'Polonya Zlotisi' },
+  { code: 'HUF', symbol: 'Ft', name: 'Macar Forinti' },
+  { code: 'ILS', symbol: '₪', name: 'İsrail Şekeli' },
+  { code: 'BRL', symbol: 'R$', name: 'Brezilya Reali' }
+] as const;
+
+export interface ExchangeRates {
+  EUR: number;
+  USD: number;
+  TRY: number;
+  [key: string]: number;
+}
+
+// 1. IEEE-754 Residual Drift Shield
+export const exactAdd = (a: number, b: number): number => {
+  return Math.round((a + b) * 100) / 100;
 };

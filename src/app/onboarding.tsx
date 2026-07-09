@@ -1,224 +1,185 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, FlatList, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, Animated, StyleSheet, Platform, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/context/ThemeContext';
-import { triggerHaptic } from '@/utils/haptics';
-import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
+import { t } from '@/locales/i18n';
 
 const { width, height } = Dimensions.get('window');
 
 const SLIDES = [
   {
     id: '1',
-    titleKey: 'onboarding.takeControl',
-    descKey: 'onboarding.takeControlDesc',
-    icon: 'list-circle-outline' as const,
+    title: 'FINANCIAL COMMAND',
+    subtitle: 'Track active subscriptions, renewal dates, and cross-rate currency impacts in one unified dashboard.',
+    icon: 'pulse',
+    color: '#3B82F6', 
   },
   {
     id: '2',
-    titleKey: 'onboarding.smartInsights',
-    descKey: 'onboarding.smartInsightsDesc',
-    icon: 'pie-chart-outline' as const,
+    title: 'HUNT ZOMBIE SUBS',
+    subtitle: 'Detect forgotten free trials and passive money drains. Deep-link directly to official cancellation portals.',
+    icon: 'skull',
+    color: '#8B5CF6', 
   },
   {
     id: '3',
-    titleKey: 'onboarding.alwaysUpdated',
-    descKey: 'onboarding.alwaysUpdatedDesc',
-    icon: 'grid-outline' as const,
+    title: 'SPLIT & COLLECT',
+    subtitle: 'Calculate shared costs automatically. Generate instant WhatsApp debt collection reminders with one tap.',
+    icon: 'share-social',
+    color: '#10B981', 
   },
 ];
 
 export default function OnboardingScreen() {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const flatListRef = useRef<FlatList>(null);
   const router = useRouter();
-  const { colors } = useTheme();
-  const { t } = useTranslation();
-  const completeOnboarding = useOnboardingStore(state => state.completeOnboarding);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const slidesRef = useRef<any>(null);
 
-  const handleNext = async () => {
-    triggerHaptic('medium');
-    if (currentIndex < SLIDES.length - 1) {
-      flatListRef.current?.scrollToIndex({ index: currentIndex + 1 });
-    } else {
+  const { completeOnboarding } = useOnboardingStore();
+
+  const handleLaunchApp = async () => {
+    try {
+      await AsyncStorage.setItem('@submate_launched_v1', 'true');
       completeOnboarding();
-      triggerHaptic('heavy');
-      router.replace('/(tabs)');
+    } catch (e) {}
+
+    if (Platform.OS === 'web') {
+      window.location.replace('/');
+    } else {
+      router.replace('/');
     }
   };
 
-  const handleSkip = async () => {
-    triggerHaptic('medium');
-    completeOnboarding();
-    router.replace('/(tabs)');
+  const handleNext = () => {
+    if (currentIndex < SLIDES.length - 1) {
+      const nextIndex = currentIndex + 1;
+      
+      // 1. STATE'I ZORLA GÜNCELLE: Tarayıcının momentum scroll insiyatifine bırakmıyoruz
+      setCurrentIndex(nextIndex);
+
+      // 2. ANIMASYONLU KAYDIRMA: Hem offset hem de index layout güvencesi
+      slidesRef.current?.scrollToOffset({
+        offset: nextIndex * width,
+        animated: true
+      });
+    } else {
+      handleLaunchApp();
+    }
   };
 
-  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
-
   return (
-    <SafeAreaView style={dynamicStyles.container}>
-      <TouchableOpacity style={dynamicStyles.skipButton} onPress={handleSkip} activeOpacity={0.7}>
-        <Text style={dynamicStyles.skipText}>{t('onboarding.skip')}</Text>
-      </TouchableOpacity>
+    <View style={styles.container}>
+      
+      {/* BACKGROUND GLOW */}
+      <View pointerEvents="none" style={[styles.glowOrb, { backgroundColor: SLIDES[currentIndex].color }]} />
 
-      <FlatList
-        ref={flatListRef}
-        data={SLIDES}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        bounces={false}
-        keyExtractor={(item) => item.id}
-        onMomentumScrollEnd={(e) => {
-          const index = Math.round(e.nativeEvent.contentOffset.x / width);
-          if (index !== currentIndex) {
-            setCurrentIndex(index);
-            triggerHaptic('light');
-          }
-        }}
-        renderItem={({ item }) => (
-          <View style={dynamicStyles.slide}>
-            <View style={dynamicStyles.iconContainer}>
-              <Ionicons name={item.icon} size={140} color={colors.primary} />
-            </View>
-            <View style={dynamicStyles.textContainer}>
-              <Text style={dynamicStyles.title}>{t(item.titleKey)}</Text>
-              <Text style={dynamicStyles.description}>{t(item.descKey)}</Text>
-            </View>
-          </View>
-        )}
-      />
+      {/* HEADER CONTROLS */}
+      <View style={styles.header}>
+        <View style={styles.brandContainer}>
+          <Ionicons name="hardware-chip" size={20} color="#38BDF8" />
+          <Text style={styles.brandText}>SUBMATE v2.0</Text>
+        </View>
+        <TouchableOpacity onPress={handleLaunchApp} style={styles.interactiveArea}>
+          <Text style={styles.skipText}>SKIP</Text>
+        </TouchableOpacity>
+      </View>
 
-      <View style={dynamicStyles.footer}>
-        <View style={dynamicStyles.pagination}>
-          {SLIDES.map((_, index) => (
+      {/* CAROUSEL BODY */}
+      <View style={styles.sliderContainer}>
+        <FlatList
+          ref={slidesRef}
+          data={SLIDES}
+          horizontal
+          pagingEnabled
+          scrollEnabled={Platform.OS !== 'web'} // Web'de mouse ile kaydırmanın çakışmasını önler
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
+          getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <View style={styles.slide}>
+              <View style={[styles.iconRing, { borderColor: item.color, shadowColor: item.color }]}>
+                <Ionicons name={item.icon as any} size={64} color={item.color} />
+              </View>
+              <Text style={styles.slideTitle}>{item.title}</Text>
+              <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
+            </View>
+          )}
+        />
+      </View>
+
+      {/* FOOTER CONTROLS */}
+      <View style={styles.footer}>
+        <View style={styles.pagination}>
+          {SLIDES.map((_, i) => (
             <View
-              key={index}
+              key={i}
               style={[
-                dynamicStyles.dot,
-                currentIndex === index && dynamicStyles.activeDot,
+                styles.dot, 
+                { 
+                  width: i === currentIndex ? 32 : 8, 
+                  opacity: i === currentIndex ? 1 : 0.3, 
+                  backgroundColor: SLIDES[currentIndex].color 
+                }
               ]}
             />
           ))}
         </View>
 
-        <TouchableOpacity style={dynamicStyles.button} onPress={handleNext} activeOpacity={0.8}>
-          <Text style={dynamicStyles.buttonText}>
-            {currentIndex === SLIDES.length - 1 ? t('onboarding.getStarted') : t('onboarding.next')}
+        <TouchableOpacity 
+          activeOpacity={0.8} 
+          onPress={handleNext}
+          style={[styles.button, { backgroundColor: SLIDES[currentIndex].color }]}
+        >
+          <Text style={styles.buttonText}>
+            {currentIndex === SLIDES.length - 1 ? 'LAUNCH SYSTEM 🚀' : 'INITIALIZE NEXT'}
           </Text>
-          <Ionicons 
-            name={currentIndex === SLIDES.length - 1 ? 'checkmark' : 'arrow-forward'} 
-            size={20} 
-            color={colors.background} 
-            style={dynamicStyles.buttonIcon} 
-          />
+          <Ionicons name="arrow-forward" size={20} color="#FFF" />
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+
+    </View>
   );
 }
 
-const getStyles = (colors: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background, // Match dark theme
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#030712' },
+  glowOrb: {
+    position: 'absolute', top: -100, alignSelf: 'center',
+    width: width * 1.2, height: width * 1.2, borderRadius: width * 0.6,
+    opacity: 0.12, transform: [{ scale: 1.2 }]
   },
-  skipButton: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 40,
-    right: 24,
-    zIndex: 10,
-    padding: 8,
+  header: {
+    position: 'absolute', top: 40, left: 0, right: 0,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 24, zIndex: 999999 
   },
-  skipText: {
-    color: colors.textSecondary,
-    fontSize: 16,
-    fontWeight: '600',
+  brandContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandText: { color: '#F8FAFC', fontWeight: '800', fontSize: 13, letterSpacing: 1 },
+  skipText: { color: '#64748B', fontWeight: '700', fontSize: 13 },
+  sliderContainer: { flex: 1, justifyContent: 'center' },
+  slide: { width, height: height * 0.65, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
+  iconRing: {
+    width: 140, height: 140, borderRadius: 70, backgroundColor: '#0B0F19',
+    borderWidth: 2, alignItems: 'center', justifyContent: 'center',
+    marginBottom: 40, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 30
   },
-  slide: {
-    width,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
+  slideTitle: { color: '#FFFFFF', fontSize: 28, fontWeight: '900', letterSpacing: 1, marginBottom: 16, textAlign: 'center' },
+  slideSubtitle: { color: '#94A3B8', fontSize: 15, textAlign: 'center', lineHeight: 24 },
+  footer: { 
+    position: 'absolute', bottom: 40, left: 0, right: 0,
+    paddingHorizontal: 24, zIndex: 999999 
   },
-  iconContainer: {
-    width: 280,
-    height: 280,
-    borderRadius: 140,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 48,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 30,
-    elevation: 10,
-  },
-  textContainer: {
-    alignItems: 'center',
-  },
-  title: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 16,
-    letterSpacing: -0.5,
-  },
-  description: {
-    color: colors.textSecondary,
-    fontSize: 18,
-    textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: 16,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 50 : 30,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 32,
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 40,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.border,
-    marginHorizontal: 4,
-  },
-  activeDot: {
-    width: 24,
-    backgroundColor: colors.primary,
-  },
+  pagination: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 28 },
+  dot: { height: 8, borderRadius: 4, transition: 'all 0.3s ease' } as any,
   button: {
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    borderRadius: 16,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    paddingVertical: 18, borderRadius: 16, shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3, shadowRadius: 15
   },
-  buttonText: {
-    color: colors.background,
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  buttonIcon: {
-    marginLeft: 8,
-  },
+  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
+  interactiveArea: { padding: 10 }
 });

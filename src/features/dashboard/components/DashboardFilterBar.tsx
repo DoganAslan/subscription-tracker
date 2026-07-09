@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, TextInput, ScrollView, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +29,7 @@ export function DashboardFilterBar({
         <Ionicons name="search" size={20} color="#94A3B8" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder={i18n.t('global.searchSubscriptions')}
+          placeholder={t.global.searchSubscriptions}
           placeholderTextColor="#94A3B8"
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -46,7 +46,7 @@ export function DashboardFilterBar({
           style={[styles.chip, selectedCategory === null && styles.activeChip]}
           onPress={() => setSelectedCategory(null)}
         >
-          <Text style={[styles.chipText, selectedCategory === null && styles.activeChipText]}>{i18n.t('global.allCategories')}</Text>
+          <Text style={[styles.chipText, selectedCategory === null && styles.activeChipText]}>{t.global.allCategories}</Text>
         </TouchableOpacity>
         {SUBSCRIPTION_CATEGORIES.map(category => (
           <TouchableOpacity
@@ -54,7 +54,9 @@ export function DashboardFilterBar({
             style={[styles.chip, selectedCategory === category && styles.activeChip]}
             onPress={() => setSelectedCategory(category)}
           >
-            <Text style={[styles.chipText, selectedCategory === category && styles.activeChipText]}>{category}</Text>
+            <Text style={[styles.chipText, selectedCategory === category && styles.activeChipText]}>
+              {category === 'All' ? t.global?.all || 'All' : (t.categories as any)?.[category] || category}
+            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -64,7 +66,7 @@ export function DashboardFilterBar({
           style={[styles.chip, selectedCurrency === null && styles.activeChip]}
           onPress={() => setSelectedCurrency(null)}
         >
-          <Text style={[styles.chipText, selectedCurrency === null && styles.activeChipText]}>{i18n.t('global.allCurrencies')}</Text>
+          <Text style={[styles.chipText, selectedCurrency === null && styles.activeChipText]}>{t.global.allCurrencies}</Text>
         </TouchableOpacity>
         {AVAILABLE_CURRENCIES.map(currency => (
           <TouchableOpacity

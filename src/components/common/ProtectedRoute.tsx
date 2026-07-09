@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { AppLoader } from './AppLoader';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
+import { t } from '@/locales/i18n';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;

@@ -1,20 +1,23 @@
 import React from 'react';
-import { View, SafeAreaView, TouchableOpacity, Text, useColorScheme } from 'react-native';
+import { View, SafeAreaView, TouchableOpacity, Text, useColorScheme, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SubscriptionList } from '@/features/subscriptions/components/SubscriptionList';
 import { Header } from '@/components/common/Header';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 
 export default function SubscriptionListScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const paddingTop = Math.max(insets.top, Platform.OS === 'web' ? 16 : 8);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>
-        <Header title={t('subs.subscriptions')} />
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop }}>
+      <View style={{ paddingHorizontal: 16 }}>
+        <Header title={t.subscriptionsPage?.title || 'My Subscriptions'} />
       </View>
 
       <SubscriptionList />
@@ -41,8 +44,8 @@ export default function SubscriptionListScreen() {
           zIndex: 50
         }}
       >
-        <Text style={{ color: '#ffffff', fontSize: 36, fontWeight: '300', marginBottom: 4 }}>{t('global.symbol911')}</Text>
+        <Text style={{ color: '#ffffff', fontSize: 36, fontWeight: '300', marginBottom: 4 }}>+</Text>
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }

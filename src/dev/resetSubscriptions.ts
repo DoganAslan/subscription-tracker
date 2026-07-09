@@ -1,5 +1,6 @@
 import { collection, getDocs, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase/config';
+import { t } from '@/locales/i18n';
 
 export const resetSubscriptions = async (userId: string) => {
   if (!__DEV__) {

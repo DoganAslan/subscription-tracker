@@ -5,7 +5,7 @@ import { Subscription } from '@/services/firebase/types';
 import { getMonthlyCost } from '../utils/calculations';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 
 interface Props {
   mostExpensive: Subscription | null;
@@ -26,13 +26,13 @@ export const SpendingInsightsCard = React.memo(function SpendingInsightsCard({ m
         <Ionicons name="sparkles" size={24} color={colors.primary} />
       </View>
       <View style={dynamicStyles.textContainer}>
-        <Text style={dynamicStyles.insightTitle}>{t('home.highestExpense')}</Text>
+        <Text style={dynamicStyles.insightTitle}>{t.dashboard?.highestExpense || 'Highest Expense'}</Text>
         {hasData === true ? (
           <Text style={dynamicStyles.insightValue}>
             {mostExpensive.name} <Text style={dynamicStyles.insightAmount}>— {monthlyCost.toFixed(2)} {baseCurrency}/mo</Text>
           </Text>
         ) : (
-          <Text style={dynamicStyles.insightValue}>{t('calendar.noPayments')}</Text>
+          <Text style={dynamicStyles.insightValue}>{t.calendar.noPayments}</Text>
         )}
       </View>
     </View>

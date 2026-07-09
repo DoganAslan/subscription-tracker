@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React, { useState, useCallback } from 'react';
 import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { CardForm } from '@/features/cards/components/CardForm';
@@ -45,7 +45,7 @@ export default function AddCardScreen() {
           <TouchableOpacity onPress={handleGoBack} style={{ padding: 4 }}>
              <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{i18n.t('global.addVirtualCard')}</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{t.global.addVirtualCard}</Text>
           <View style={{ width: 28 }} />
         </View>
 

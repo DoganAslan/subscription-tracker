@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, InputAccessoryView, Platform, Keyboard } from 'react-native';
 
@@ -11,7 +11,7 @@ export function KeyboardAccessory() {
     <InputAccessoryView nativeID={KEYBOARD_ACCESSORY_ID}>
       <View style={styles.container}>
         <TouchableOpacity onPress={() => Keyboard.dismiss()} style={styles.button}>
-          <Text style={styles.text}>{i18n.t('global.done')}</Text>
+          <Text style={styles.text}>{t.global.done}</Text>
         </TouchableOpacity>
       </View>
     </InputAccessoryView>

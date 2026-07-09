@@ -8,8 +8,9 @@ export const subscriptionSchema = z.object({
   billingCycle: z.enum(['weekly', 'monthly', 'quarterly', 'biannually', 'yearly', 'biennially']),
   renewalDate: z.date(),
   status: z.enum(['active', 'paused']).optional().default('active'),
+  pauseEndDate: z.date().optional().nullable(),
   reminderOffset: z.enum(['none', '1_day', '3_days', '1_week']).optional().default('1_day'),
-  isFreeTrial: z.boolean().default(false).optional().nullable(),
+  isTrial: z.boolean().default(false).optional().nullable(),
   trialEndDate: z.date().optional().nullable(),
   hasContract: z.boolean().default(false).optional().nullable(),
   contractEndDate: z.date().optional().nullable(),
@@ -17,16 +18,18 @@ export const subscriptionSchema = z.object({
   usageFrequency: z.enum(['high', 'medium', 'low', 'none']).optional(),
   lastUsedDate: z.string().optional(),
   usageScore: z.number().optional(),
-  isTrial: z.boolean().optional(),
-  trialEndDate: z.date().optional(),
   cardId: z.string().optional().nullable(),
   isSplit: z.boolean().default(false).optional(),
-  splitParticipants: z.array(z.object({
+  splitMembers: z.array(z.object({
     id: z.string().optional(),
     name: z.string().optional().or(z.literal('')),
-    percentage: z.coerce.number().min(0).max(100).optional().or(z.literal('')),
-    amount: z.union([z.string(), z.number()]).optional().or(z.literal('')),
-    hasPaid: z.boolean().default(false).optional()
+    phone: z.string().optional().or(z.literal('')),
+    shareAmount: z.coerce.number().min(0).optional().or(z.literal('')),
+    isPaid: z.boolean().default(false).optional()
+  })).optional().default([]),
+  priceHistory: z.array(z.object({
+    amount: z.number(),
+    date: z.string()
   })).optional().default([])
 });
 

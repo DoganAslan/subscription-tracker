@@ -6,6 +6,7 @@ import { auth } from '../firebase/config';
 import { SubscriptionService } from '../firebase/firestore';
 import React from 'react';
 import { SummaryWidget } from '../../widgets/SummaryWidget';
+import { t } from '@/locales/i18n';
 
 export const BACKGROUND_WIDGET_SYNC_TASK = 'BACKGROUND_WIDGET_SYNC_TASK';
 

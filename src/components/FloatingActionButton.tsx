@@ -3,6 +3,7 @@ import { StyleSheet, Animated, Pressable, View, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '@/context/ThemeContext';
+import { t } from '@/locales/i18n';
 
 interface FABProps {
   onPress: () => void;

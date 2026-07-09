@@ -4,7 +4,7 @@ import { useSubscriptions } from '../hooks/useSubscriptions';
 import { SubscriptionCard } from './SubscriptionCard';
 import { EmptyState } from '@/components/EmptyState';
 import { AppLoader } from '@/components/common/AppLoader';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 
 export function SubscriptionList() {
   const { t } = useTranslation();
@@ -18,10 +18,10 @@ export function SubscriptionList() {
     return (
       <View className="flex-1 items-center justify-center p-6 mt-12 bg-white dark:bg-slate-900 rounded-2xl border border-red-100 dark:border-red-900/30">
         <Text className="text-red-500 font-semibold text-lg text-center mb-2">
-          {t('common.error')}
+          {t.common.error}
         </Text>
         <Text className="text-slate-500 dark:text-slate-400 text-center">
-          {t('home.failedToLoad')}
+          {t.home.failedToLoad}
         </Text>
       </View>
     );

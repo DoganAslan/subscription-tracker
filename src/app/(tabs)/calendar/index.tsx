@@ -1,30 +1,32 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { SubscriptionCard } from '@/features/subscriptions/components/SubscriptionCard';
 import { getMonthlyCost } from '@/features/dashboard/utils/calculations';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { convertCurrency } from '@/utils/currency';
 import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from 'react-i18next';
-
-const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+import { useTranslation } from '@/context/LanguageContext';
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
-  
   const { data: subscriptions } = useSubscriptions();
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
 
-  const currentYear = selectedDate.getFullYear();
   const currentMonthIndex = selectedDate.getMonth();
+  const currentYear = selectedDate.getFullYear();
+
+  const localizedMonthName = 
+    (Array.isArray(t.months) && t.months[currentMonthIndex]) || 
+    selectedDate.toLocaleString(currentLanguage === 'tr' ? 'tr-TR' : 'en-US', { month: 'short' }).toUpperCase();
 
   // Helper to get number of days in month
   const getDaysInMonth = (year: number, month: number) => {
@@ -97,9 +99,12 @@ export default function CalendarScreen() {
     });
   }, [subscriptions, selectedDate]);
 
-  const handleMonthSelect = (index: number) => {
-    const newDate = new Date(currentYear, index, 1);
-    setSelectedDate(newDate);
+  const handlePrevMonth = () => {
+    setSelectedDate(new Date(currentYear, currentMonthIndex - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setSelectedDate(new Date(currentYear, currentMonthIndex + 1, 1));
   };
 
   const handleDaySelect = (day: number) => {
@@ -107,9 +112,12 @@ export default function CalendarScreen() {
     setSelectedDate(newDate);
   };
 
+  const paddingTop = Math.max(insets.top, Platform.OS === 'web' ? 16 : 8);
+
   return (
-    <SafeAreaView style={dynamicStyles.container}>
-      <ScrollView 
+    <View style={[dynamicStyles.safeArea, { paddingTop }]}>
+      <View style={dynamicStyles.container}>
+        <ScrollView 
         style={{ flex: 1 }} 
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 40) }}
         showsVerticalScrollIndicator={false}
@@ -117,36 +125,28 @@ export default function CalendarScreen() {
         <View style={{ width: '100%', paddingHorizontal: 10, marginBottom: 24 }}>
           
           {/* 1. Month Selector & Hero Header */}
-          <View style={{ marginBottom: 15 }}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 15 }}>
-              {MONTHS.map((month, index) => {
-                const isSelected = index === currentMonthIndex;
-                return (
-                  <TouchableOpacity 
-                    key={month}
-                    style={[dynamicStyles.monthPill, isSelected && dynamicStyles.monthPillSelected]}
-                    onPress={() => handleMonthSelect(index)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[dynamicStyles.monthText, isSelected && dynamicStyles.monthTextSelected]}>
-                      {month}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10 }}>
-              <View>
-                <Text style={dynamicStyles.heroMonth}>{MONTHS[currentMonthIndex]} {currentYear}</Text>
-                <View style={dynamicStyles.costRow}>
-                  <Text style={dynamicStyles.heroCost}>
-                    {baseCurrency} {monthlyTotal.toFixed(2)}
-                  </Text>
-                </View>
+          <View style={dynamicStyles.calendarHeader}>
+            <View style={dynamicStyles.titleContainer}>
+              <Text style={dynamicStyles.monthTitle}>
+                {`${localizedMonthName} ${currentYear}`}
+              </Text>
+              
+              <View style={dynamicStyles.chevronGroup}>
+                <TouchableOpacity onPress={handlePrevMonth} style={dynamicStyles.chevronBtn} activeOpacity={0.7}>
+                  <Ionicons name="chevron-back" size={20} color="#38BDF8" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleNextMonth} style={dynamicStyles.chevronBtn} activeOpacity={0.7}>
+                  <Ionicons name="chevron-forward" size={20} color="#38BDF8" />
+                </TouchableOpacity>
               </View>
+            </View>
+
+            <View style={{ alignItems: 'flex-end', gap: 4 }}>
+              <Text style={dynamicStyles.heroCost}>
+                {baseCurrency} {monthlyTotal.toFixed(2)}
+              </Text>
               <View style={dynamicStyles.paymentsPill}>
-                <Text style={dynamicStyles.paymentsText}>{activeCount} Payments</Text>
+                <Text style={dynamicStyles.paymentsText}>{activeCount} {t.calendarPage?.payments || 'Payments'}</Text>
               </View>
             </View>
           </View>
@@ -195,13 +195,13 @@ export default function CalendarScreen() {
         {/* Selected Date Header & Payment Section */}
         <View style={{ paddingHorizontal: 20 }}>
           <Text style={[dynamicStyles.dailyHeader, { marginTop: 24, marginBottom: 16 }]}>
-            {selectedDate.getDate()} {MONTHS[currentMonthIndex]} {DAYS[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]?.toUpperCase() || 'SUN'}
+            {selectedDate.getDate()} {localizedMonthName} {DAYS[selectedDate.getDay() === 0 ? 6 : selectedDate.getDay() - 1]?.toUpperCase() || 'SUN'}
           </Text>
 
           <View style={{ paddingBottom: 40 }}>
             {dailySubscriptions.length === 0 ? (
               <View style={dynamicStyles.emptyState}>
-                <Text style={dynamicStyles.emptyStateText}>{t('calendar.noPayments')}</Text>
+                <Text style={dynamicStyles.emptyStateText}>{t.calendar.noPayments}</Text>
               </View>
             ) : (
               dailySubscriptions.map(sub => (
@@ -221,43 +221,35 @@ export default function CalendarScreen() {
           </View>
         </View>
 
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </View>
+    </View>
   );
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   container: {
     flex: 1,
-    backgroundColor: colors.background, // Premium Dark background
+    paddingHorizontal: 0,
   },
   scrollContent: {
     paddingBottom: 100,
   },
-  monthSelectorContainer: {
-    marginTop: 16,
-    marginBottom: 24,
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 4
   },
-  monthPill: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginRight: 12,
-  },
-  monthPillSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  monthText: {
-    color: colors.textSecondary,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  monthTextSelected: {
-    color: '#FFFFFF',
-  },
+  titleContainer: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  monthTitle: { color: colors.text, fontSize: 22, fontWeight: '800', letterSpacing: 0.5 },
+  chevronGroup: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderRadius: 12, padding: 4, borderWidth: 1, borderColor: colors.border },
+  chevronBtn: { padding: 4, justifyContent: 'center', alignItems: 'center' },
   summaryContainer: {
     paddingHorizontal: 20,
     marginBottom: 32,
@@ -274,10 +266,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   heroCost: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
-    marginRight: 16,
   },
   paymentsPill: {
     backgroundColor: colors.surface,

@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React, { useState } from 'react';
 import { View, ScrollView, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Modal, FlatList, TextInput } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
@@ -11,12 +11,18 @@ import { cardSchema, CardFormData } from '../schemas/card.schema';
 import { Card } from '@/services/firebase/types';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { CardWidget } from './CardWidget';
 
 const CARD_TYPES = [
   { label: 'Visa', value: 'visa' },
   { label: 'Mastercard', value: 'mastercard' },
   { label: 'Troy', value: 'troy' },
-  { label: 'Amex', value: 'amex' },
+  { label: 'American Express (Amex)', value: 'amex' },
+  { label: 'UnionPay', value: 'unionpay' },
+  { label: 'JCB', value: 'jcb' },
+  { label: 'Discover', value: 'discover' },
+  { label: 'Diners Club', value: 'diners' },
+  { label: 'Maestro', value: 'maestro' },
   { label: 'Other', value: 'other' },
 ] as const;
 
@@ -60,7 +66,6 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
       name: initialData?.name || '',
       type: initialData?.type || 'visa',
       lastFourDigits: initialData?.lastFourDigits || '',
-      limit: initialData?.limit || 0,
       expiryMonth: initialData?.expiryMonth || new Date().getMonth() + 1,
       expiryYear: initialData?.expiryYear || currentYear + 3,
       color: initialData?.color || PREMIUM_COLORS[0],
@@ -68,72 +73,40 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
     }
   });
 
-  const renderCardLogo = (type: string) => {
-    const containerStyle = { width: 50, height: 30, justifyContent: 'center' as const, alignItems: 'flex-end' as const };
-    switch (type) {
-      case 'visa':
-        return (
-          <View style={containerStyle}>
-            <FontAwesome name="cc-visa" size={28} color="#FFFFFF" />
-          </View>
-        );
-      case 'mastercard':
-        return (
-          <View style={containerStyle}>
-            <FontAwesome name="cc-mastercard" size={28} color="#FFFFFF" />
-          </View>
-        );
-      case 'amex':
-        return (
-          <View style={containerStyle}>
-            <FontAwesome name="cc-amex" size={28} color="#FFFFFF" />
-          </View>
-        );
-      case 'troy':
-        return (
-          <View style={containerStyle}>
-            <View style={{ paddingHorizontal: 4, paddingVertical: 2, borderWidth: 1.5, borderColor: '#FFFFFF', borderRadius: 4, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ color: '#FFFFFF', fontWeight: '900', fontStyle: 'italic', fontSize: 12, letterSpacing: 1 }}>{i18n.t('global.troy')}</Text>
-            </View>
-          </View>
-        );
-      default:
-        return (
-          <View style={containerStyle}>
-            <Ionicons name="card" size={28} color="#FFFFFF" />
-          </View>
-        );
-    }
-  };
 
   return (
     <>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
         {/* Visual Preview */}
-        <View style={[styles.previewCard, { backgroundColor: watch('color') }]}>
-          <View style={styles.previewHeader}>
-            <Text style={styles.previewName} numberOfLines={1}>{watch('name') || 'Card Name'}</Text>
-            <Ionicons name="card" size={24} color="#FFF" />
-          </View>
-          <Text style={styles.previewNumber}>
-            •••• •••• •••• {watch('lastFourDigits') || '****'}
-          </Text>
-          <View style={styles.previewFooter}>
-            <Text style={styles.previewValue}>
-              {watch('expiryMonth').toString().padStart(2, '0')}/{watch('expiryYear').toString().slice(-2)}
-            </Text>
-            {renderCardLogo(watch('type') || 'visa')}
-          </View>
-        </View>
+        <CardWidget
+          card={{
+            id: 'preview',
+            userId: 'preview',
+            name: watch('name') || 'Card Name',
+            type: watch('type') || 'visa',
+            lastFourDigits: watch('lastFourDigits') || '****',
+            expiryMonth: watch('expiryMonth') || 12,
+            expiryYear: watch('expiryYear') || 2099,
+            color: watch('color') || PREMIUM_COLORS[0],
+            currency: watch('currency') || 'TRY',
+            limit: 0,
+            isPinned: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }}
+          subscriptions={[]}
+          style={{ marginBottom: 24, marginTop: 12, marginHorizontal: 20 }}
+        />
 
-        <Controller
+        <View style={styles.formContainer}>
+          <Controller
           control={control}
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
             <Input 
               label="Card Name" 
-              placeholder={i18n.t('global.egVirtualShoppingCar')} 
+              placeholder={t.global.egVirtualShoppingCar} 
               onBlur={onBlur} 
               onChangeText={onChange} 
               value={value} 
@@ -152,7 +125,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
                   <View pointerEvents="none">
                     <Input 
                       label="Card Type" 
-                      placeholder={i18n.t('global.selectType')} 
+                      placeholder={t.global.selectType} 
                       value={CARD_TYPES.find(t => t.value === value)?.label || value} 
                       error={errors.type?.message} 
                       editable={false}
@@ -169,7 +142,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input 
                   label="Last 4 Digits" 
-                  placeholder={i18n.t('global.eg4321')} 
+                  placeholder={t.global.eg4321} 
                   keyboardType="numeric"
                   maxLength={4}
                   onBlur={onBlur} 
@@ -184,28 +157,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
         </View>
 
         <View style={styles.row}>
-          <View style={styles.flexHalf}>
-            <Controller
-              control={control}
-              name="limit"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input 
-                  label="Monthly Limit" 
-                  placeholder={i18n.t('global.000')} 
-                  keyboardType="numeric"
-                  onBlur={onBlur} 
-                  onChangeText={(text) => {
-                    const parsed = parseFloat(text.replace(/,/g, '.'));
-                    onChange(isNaN(parsed) ? 0 : parsed);
-                  }} 
-                  value={value ? value.toString() : ''} 
-                  error={errors.limit?.message} 
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-                />
-              )}
-            />
-          </View>
-          <View style={styles.flexHalf}>
+          <View style={{ flex: 1 }}>
             <Controller
               control={control}
               name="currency"
@@ -214,7 +166,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
                   <View pointerEvents="none">
                     <Input 
                       label="Para Birimi / Currency" 
-                      placeholder={i18n.t('global.try')} 
+                      placeholder={t.global.try} 
                       value={CURRENCIES.find(c => c.value === value)?.label || value} 
                       error={errors.currency?.message} 
                       editable={false}
@@ -234,7 +186,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input 
                   label="Expiry Month (MM)" 
-                  placeholder={i18n.t('global.mm')} 
+                  placeholder={t.global.mm} 
                   keyboardType="numeric"
                   maxLength={2}
                   onBlur={onBlur} 
@@ -253,7 +205,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input 
                   label="Expiry Year (YYYY)" 
-                  placeholder={i18n.t('global.yyyy')} 
+                  placeholder={t.global.yyyy} 
                   keyboardType="numeric"
                   maxLength={4}
                   onBlur={onBlur} 
@@ -268,7 +220,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
         </View>
 
         <View style={styles.colorSection}>
-          <Text style={[styles.colorLabel, { color: colors.textSecondary }]}>{i18n.t('global.cardColor')}</Text>
+          <Text style={[styles.colorLabel, { color: colors.textSecondary }]}>{t.global.cardColor}</Text>
           <Controller
             control={control}
             name="color"
@@ -295,6 +247,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
               </View>
             )}
           />
+        </View>
         </View>
 
         <View style={styles.buttonGroup}>
@@ -325,9 +278,9 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>{i18n.t('global.selectCardType')}</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t.global.selectCardType}</Text>
               <TouchableOpacity onPress={() => setIsTypeModalVisible(false)}>
-                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{i18n.t('global.close')}</Text>
+                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{t.global.close}</Text>
               </TouchableOpacity>
             </View>
 
@@ -351,7 +304,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
                       <Text style={[styles.modalRowText, { color: value === item.value ? colors.primary : colors.text }]}>
                         {item.label}
                       </Text>
-                      {value === item.value && <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{i18n.t('global.symbol66')}</Text>}
+                      {value === item.value && <Text style={{ color: colors.primary, fontWeight: 'bold' }}>✓</Text>}
                     </TouchableOpacity>
                   )}
                 />
@@ -366,9 +319,9 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>{i18n.t('global.selectCurrency')}</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>{t.global.selectCurrency}</Text>
               <TouchableOpacity onPress={() => setIsCurrencyModalVisible(false)}>
-                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{i18n.t('global.close')}</Text>
+                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{t.global.close}</Text>
               </TouchableOpacity>
             </View>
 
@@ -392,7 +345,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
                       <Text style={[styles.modalRowText, { color: value === item.value ? colors.primary : colors.text }]}>
                         {item.label}
                       </Text>
-                      {value === item.value && <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{i18n.t('global.symbol66')}</Text>}
+                      {value === item.value && <Text style={{ color: colors.primary, fontWeight: 'bold' }}>✓</Text>}
                     </TouchableOpacity>
                   )}
                 />
@@ -476,9 +429,18 @@ const styles = StyleSheet.create({
   },
   colorLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#94A3B8',
     marginBottom: 12,
-    letterSpacing: 0.6,
+    letterSpacing: 1,
+  },
+  formContainer: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 24,
+    padding: 20,
+    marginHorizontal: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
   colorGrid: {
     flexDirection: 'row',

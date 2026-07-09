@@ -3,6 +3,7 @@
     "name": "SubMate",
     "slug": "submate",
     "version": "1.5.0",
+    "jsEngine": "hermes",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "submate",
@@ -81,7 +82,6 @@
         "projectId": "5e9ad797-f421-40c3-af7c-55cc66564254"
       }
     },
-    "owner": "doganaslan",
-    "jsEngine": "hermes"
+    "owner": "doganaslan"
   }
 }

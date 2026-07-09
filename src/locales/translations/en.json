@@ -93,9 +93,9 @@
     "noPayments": "No payments scheduled for this day."
   },
   "forms": {
-    "hasContract": "Annual Commitment Contract",
-    "contractReminderSubtext": "Remind 7 days before expiration",
-    "contractEndDateLabel": "CONTRACT END DATE"
+    "hasContract": "Annual Commitment Agreement Available",
+    "contractReminderSubtext": "Remind me 7 days before the due date",
+    "contractEndDateLabel": "COMMITMENT END DATE"
   },
   "global": {
     "welcomeBack": "Welcome back",
@@ -288,7 +288,13 @@
     "selectACard": "Select a card",
     "egNetflix": "e.g., Netflix",
     "selectACategory": "Select a category",
-    "egSharedWithFamily": "e.g., Shared with family"
+    "egSharedWithFamily": "e.g., Shared with family",
+    "subscriptionSaved": "Subscription Saved",
+    "subscriptionUpdated": "Subscription Updated",
+    "subscriptionDeleted": "Subscription Deleted",
+    "failedToAddSub": "Could not add subscription",
+    "failedToUpdateSub": "Subscription could not be updated",
+    "failedToDeleteSub": "Subscription could not be deleted"
   },
   "health": {
     "statusExcellent": "Ironclad Wallet",
@@ -298,5 +304,61 @@
     "adviceClash": "Multiple payment dates clash on the same day.",
     "adviceDoom": "Commitment contracts are expiring soon!",
     "meterTitle": "FINANCIAL HEALTH SCORE"
+  },
+  "features": {
+    "lastXHours": "FINAL {{hours}} HOURS",
+    "xHoursLeft": "{{hours}} HOURS LEFT",
+    "trialVersionTag": "Trial Version",
+    "sharedPaymentOverview": "💰 Shared Payment Overview",
+    "unnamed": "Unnamed",
+    "remind": "Remind",
+    "aiScannerAutoFill": "Auto-Fill with AI Scanner",
+    "smartTipsTitle": "Smart Tips",
+    "insteadOf": "Instead of: ",
+    "becauseYouPayFor": "Because you pay for {{subName}}.",
+    "deleteDoesNotCancel": "Deleting this subscription from SubMate does not cancel your actual subscription. If you wish to cancel the actual subscription, you can use the button below.",
+    "goToCancelPage": "Go to Cancel Page",
+    "doesNotCancelBold": "does not cancel",
+    "altReason_spotify": "Instead of ChatGPT Plus, you can often zero out your AI costs by using Claude 3.5 Sonnet or Google Gemini (free version) which offer generous free tiers.",
+    "altReason_midjourney": "Instead of a Midjourney subscription, you can meet your image generation needs for free by using Leonardo AI, which gives free daily tokens.",
+    "altReason_adobe": "Instead of Adobe Creative Cloud, consider Affinity Photo & Designer which are one-time purchases, or free alternatives like Photopea and Canva.",
+    "altReason_netflix": "Check if your mobile plan or internet provider includes Netflix for free. Also, consider Amazon Prime Video which might already be included in your Prime shipping plan.",
+    "cancelledToSave": "I canceled to save money!",
+    "justDelete": "Just delete from app",
+    "trackUsage": "Track Usage",
+    "usedXTimes": "Used {{count}} times.",
+    "lastUsed": "End: {{date}}",
+    "iUsedThisToday": "I used it today"
+  },
+  "legal": {
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "privacyPolicyContent": "At SubMate, we attach great importance to the privacy of your personal and financial data. This Comprehensive Privacy Policy explains in a clear manner which data is processed, stored and secured when using our Application and how. \n\n1. No Data Collection Policy and Sovereign Vault System \nSubMate was developed with a privacy-oriented approach (\"Privacy by Design\"). In this regard, our basic principle is as follows: \nWE DO NOT COLLECT YOUR DATA. ANY SUBSCRIPTION INFORMATION, PAYMENT AMOUNT OR WALLET LABEL THAT YOU ENTER INTO THE APPLICATION WILL NOT BE SENT TO OUR COMPANY'S SERVERS (CLOUD) OR SAVED. \nAll your data is stored only on your own smartphone's local memory using On-Device Encryption. Therefore, unauthorized access, sale or leakage of your data is technically impossible for us. \n\n2. Types and Scope of Data Processed \n2.1. Financial Data and Subscriptions \nThe subscription names (Netflix, Gym, Rent, etc.), spending categories, amounts and calendar notification dates you add to the application are completely stored in your device's memory. Our company does not create a profile of your spending habits. \n2.2. Credit Card and Wallet Information \nThe \"Wallet\" section of the app is simply a tagging system that helps you mentally separate your budget. The app never requests, receives or stores a valid 16-digit credit card number, expiration date (SKT) or security code (CVV/CVC). Only the \"Name\" (Ex: My Salary Card) and reminder 4-digit numbers that you determine to distinguish your cards are kept locally on the device. Therefore, the application is outside the scope of PCI-DSS (Payment Card Industry Data Security Standard) and cannot be legally represented in cases such as card copying/stealing. \n\n3. Device Permissions and Biometric Verification \nSome permissions may be requested from the operating system for the application to run: \n• Biometric Data (Face ID / Touch ID): If you want to put a password on the application login, the verification process takes place entirely in your device's own secure environment (Secure Enclave). SubMate never has access to your fingerprint or facial data, it only receives an \"Authenticated\" or \"Denied\" signal from the operating system. \n• Notifications: To notify about upcoming subscription payments. Sensitive amounts are not shown in notification contents. \n• Storage / File Access: Used to save the file on your device only when you want to export or import (Export/Import) your data in JSON format. \n\n4. Third Party Integrations and Data Sharing \nSubMate has limited contact with external sources to deliver its features: \n• Exchange Rates API: Pulls current exchange rates from an external source to perform exchange rate analysis. These queries are anonymous; Your portfolio size or subscriptions are not sent to the external API. \n• Analytics and Debugging (Crashlytics, etc.): In case the application crashes, fully anonymized technical error logs such as your operating system version and device model may be collected in order to resolve the problem. These logs do not contain any personal or financial data. \n\n5. Right to Delete and Transfer Data \nSince your data is not on our servers, you do not need to send us an \"account deletion\" or \"data deletion\" request. As soon as you uninstall the SubMate application from your device, your operating system will permanently and irreversibly delete all your data. Control and backup of your data is entirely the responsibility of the user. \n\n6. Age Limit \nSubMate is designed for use by individuals aged 18 and over. Since the application does not collect personal data, there is no violation of deliberately collecting children's data. \n\n7. Policy Updates and Communications \nThe Company reserves the right to update this Privacy Policy at any time. Since the application does not collect data, you can contact us through store (App Store / Play Store) communication channels for any questions and technical issues that may arise regarding your privacy.",
+    "termsOfUseContent": "Please read this Terms of Use agreement (\"Agreement\") carefully before downloading, installing or using the SubMate (\"Application\") mobile application. This Agreement is the only legally binding agreement between you (“User”) and the Application developers (“Company”, “We” or “Us”) regarding the use of the Application. \n\n1. Nature and Acceptance of Service \nSubMate is a standalone information organization tool designed to help you keep track of your personal digital subscriptions, manage budgets, and record renewal dates. By installing the Application on your device, you unconditionally agree to all terms, disclaimers and limitations of liability in this Agreement. If you do not accept the terms, you must immediately delete the App from your device. \n\n2. Disclaimers and Service Limitations (IMPORTANT) \nSubMate is not a financial institution, bank, payment gateway, portfolio management company or financial advisor. Use of the application is entirely at your own risk. \n\n2.1. Financial Transactions and Cancellations \nNo actual payment can be made, a subscription can be started, or an existing subscription can be canceled through the application. SubMate organizes only data that the user enters manually. You are entirely responsible for canceling your subscriptions on time, monitoring the amounts debited from your credit card or bank account, and your legal relationship with third-party service providers (Netflix, Spotify, etc.). \n\n2.2. Notifications and Reminders Guaranteed \nNO NOTIFICATION CANNOT BE GUARANTEED TO BE ARRIVED ON TIME. IN CASE THE APPLICATION NOTIFICATIONS ARE NOT DISPLAYED DUE TO BATTERY SAVING MODES OF OPERATING SYSTEMS (iOS/ANDROID), BACKGROUND RESTRICTIONS OR SOFTWARE ERRORS, THE COMPANY IS STRICTLY RESPONSIBLE FOR ANY FINANCIAL DAMAGES ARISING FROM SUBSCRIPTIONS FORGOT TO CANCEL. IT CANNOT BE HELD. \n\n2.3. Exchange Rate Risk and Currency Converter Accuracy \n\"Currency Risk Analysis\" (Currency Risk) and currency translation features offered within the application are based on instantaneous or delayed data provided from third-party APIs. Due to international transaction fees applied by your own bank, foreign exchange spreads and instant exchange rate fluctuations, there may be differences between the amount displayed on the screen and the amount reflected on your statement. The application does not guarantee 100% accuracy of these amounts. \n\n2.4. \"Vampire Subscription\" (Vampire Alert) and Financial Advice \nThe Vampire Subscription Detection feature only does a simple algorithmic classification and provides an estimate of whether the user is paying for similar or dormant services. This is not financial advice. The decision to cancel any subscription is at the user's sole discretion. \n\n3. Data Loss and Backup Responsibility \nSubMate stores all your data locally on your device (Sovereign Vault) to protect your privacy. The application does not have cloud backup infrastructure. The Company cannot be held responsible in any way for the loss of your financial tracking data as a result of deletion of the application, loss or damage to the device, or crashes that may occur during operating system updates. It is entirely the User's responsibility to back up the data regularly using the JSON export feature offered by the application. \n\n4. Application Usage Rights and Intellectual Property \nSubMate's entire code infrastructure (including React Native & Expo architecture), interface designs, logos, algorithms and texts belong to the Company. The user is granted a non-transferable, non-exclusive license to use the application solely for personal and non-commercial purposes. Reverse engineering, copying, or attempting to decipher the source code of the application is strictly prohibited. \n\n5. \"As Is\" Statement and Indemnification \nTHE APPLICATION IS PROVIDED \"AS IS\" AND \"AS AVAILABLE\" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESSED OR IMPLIED. COMPANY EXPRESSLY DISCLAIMS ANY WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR NON-INFRINGEMENT. The User irrevocably releases the Company, its managers, employees and business partners from any direct, indirect, incidental, special or punitive damages that may arise as a result of the use of the application. \n\n6. Dispute Resolution \nThe laws of the Republic of Türkiye will be applied in resolving any legal disputes arising from this Agreement. The invalidation of any clause of the contract by a competent court will not affect the validity of the other clauses.",
+    "close": "Close",
+    "consentText": "I have read, understood and accepted the Privacy Policy and Terms of Use."
+  },
+  "authLeaks": {
+    "emailAddress": "Email Address",
+    "password": "Password",
+    "forgotPasswordLabel": "Forgot my password?",
+    "logInBtn": "Login",
+    "fullName": "Name Surname",
+    "confirmPassword": "Confirm Password",
+    "createAccountBtn": "Create Account"
+  },
+  "categories": {
+    "Entertainment": "Entertainment",
+    "Music & Audio": "Music & Sound",
+    "Productivity": "Productivity",
+    "Utilities & Cloud": "Tools & Cloud",
+    "Health & Fitness": "Health & Sports",
+    "Finance & Insurance": "Finance & Insurance",
+    "Education & Learning": "Education & Training",
+    "Gaming": "Game",
+    "Shopping & E-commerce": "Shopping & E-commerce",
+    "News & Media": "News & Media",
+    "Food & Delivery": "Food & Delivery",
+    "Other": "Other"
   }
 }

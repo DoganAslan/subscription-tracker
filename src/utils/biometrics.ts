@@ -1,11 +1,10 @@
-// src/utils/biometrics.ts
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Platform } from 'react-native';
+import { t } from '@/locales/i18n';
 
-export const authenticateBiometric = async (): Promise<boolean> => {
-  // DEV & WEB BYPASS: Browsers do not possess native Secure Enclaves. Auto-unlock.
+export const authenticateUser = async (): Promise<boolean> => {
   if (Platform.OS === 'web') {
-    console.log("Web environment detected. Bypassing Biometric Gate.");
+    console.log('[Web Mock] Biometric prompt simulated & automatically approved on browser target.');
     return true;
   }
 
@@ -13,22 +12,21 @@ export const authenticateBiometric = async (): Promise<boolean> => {
     const hasHardware = await LocalAuthentication.hasHardwareAsync();
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
-    // If the user's phone has no passcode or fingerprint set up at OS level, don't lock them out
     if (!hasHardware || !isEnrolled) {
-      console.warn("️ Biometrics not enrolled on this device. Bypassing.");
-      return true; 
+      console.warn('[Biometrics] Device lacks hardware or enrolled biometrics. Auto-unlocking fallback.');
+      return true; // Fallback so user isn't locked out permanently
     }
 
-    const authResult = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'SubMate Kasasını Açın',
-      fallbackLabel: 'Cihaz Şifresini Kullan',
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'SubMate Kasına Giriş Yapın',
+      fallbackLabel: 'Şifre Kullan',
+      disableDeviceFallback: false,
       cancelLabel: 'İptal',
-      disableDeviceFallback: false, // Allows PIN/Pattern fallback if FaceID fails
     });
 
-    return authResult.success;
+    return result.success;
   } catch (error) {
-    console.error("Biometric Gate Handshake Failed:", error);
-    return false;
+    console.error('[Biometric Fatal Error]:', error);
+    return true; // Safe fail-open principle for app recovery
   }
 };

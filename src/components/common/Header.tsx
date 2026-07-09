@@ -1,9 +1,7 @@
-import i18n from '@/locales/i18n';
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Platform, Modal, KeyboardAvoidingView, TextInput, ActivityIndicator, Alert } from 'react-native';
-import { auth } from '@/services/firebase/config';
-import { updateProfile } from 'firebase/auth';
-import * as ImagePicker from 'expo-image-picker';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { router } from 'expo-router';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useProfileStore } from '@/store/useProfileStore';
 import { useTheme } from '@/context/ThemeContext';
 
@@ -12,284 +10,93 @@ interface HeaderProps {
 }
 
 export function Header({ title }: HeaderProps) {
-  const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
-  
-  const { profileImage, setProfileImage } = useProfileStore();
+  const { user } = useAuthStore();
+  const { profileImage } = useProfileStore();
   const { colors } = useTheme();
-  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
+  const [imageError, setImageError] = useState(false);
 
-  const openProfileModal = () => {
-    const nameParts = (auth.currentUser?.displayName || '').split(' ');
-    setFirstName(nameParts[0] || '');
-    setLastName(nameParts.slice(1).join(' ') || '');
-    setIsProfileModalVisible(true);
-  };
+  // Safe extraction of parameters to compute fallback initials
+  const userFullName = user?.displayName || 'Account Owner';
+  const remoteAvatarUrl = profileImage || user?.photoURL; // Synergized link across devices
 
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.2,
-      base64: true,
-    });
-
-    if (!result.canceled && result.assets?.[0]?.base64) {
-      const microAvatarString = `data:image/jpeg;base64,${result.assets[0].base64}`;
-      setProfileImage(microAvatarString);
-      
-      if (auth.currentUser) {
-        try {
-          await updateProfile(auth.currentUser, { photoURL: microAvatarString });
-        } catch (e) {
-          Alert.alert(i18n.t('global.error'), i18n.t('global.failedToSaveProfileP'));
-        }
-      }
+  const getInitials = (name: string) => {
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
     }
-  };
-
-  const handleUpdateProfile = async () => {
-    if (!auth.currentUser) return;
-    setIsUpdatingProfile(true);
-    try {
-      const displayName = [firstName.trim(), lastName.trim()].filter(Boolean).join(' ');
-      await updateProfile(auth.currentUser, {
-        displayName: displayName || null,
-        photoURL: profileImage || null
-      });
-      setIsProfileModalVisible(false);
-    } catch (e) {
-      Alert.alert(i18n.t('global.error'), i18n.t('global.failedToUpdateProfil'));
-    } finally {
-      setIsUpdatingProfile(false);
-    }
+    return name ? name[0].toUpperCase() : 'U';
   };
 
   return (
-    <View style={dynamicStyles.headerContainer}>
-      <View style={dynamicStyles.leftSection}>
-        <Text style={dynamicStyles.title}>{title}</Text>
-      </View>
-      
-      <TouchableOpacity style={dynamicStyles.profileTrigger} onPress={openProfileModal} activeOpacity={0.8}>
-        {(profileImage || auth.currentUser?.photoURL) ? (
-          <Image source={{ uri: profileImage || auth.currentUser?.photoURL || '' }} style={dynamicStyles.avatar} />
+    <View style={styles.topHeaderFix}>
+      <Text style={[styles.submateBrandText, { color: colors.text }]}>{title}</Text>
+
+      {/* CLOUD-SYNCED SMART AVATAR ACTION LINK */}
+      <TouchableOpacity 
+        onPress={() => router.push('/(tabs)/settings')}
+        style={styles.avatarCircleContainer}
+      >
+        {remoteAvatarUrl && !imageError ? (
+          <Image 
+            source={{ uri: remoteAvatarUrl }} 
+            style={[styles.avatarInnerCircle, { resizeMode: 'cover', borderWidth: 0 }]} 
+            onError={() => {
+              // Soft resilience: if url fails to load or device is offline, render fallback
+              console.log('Avatar URL loading failed, showing initials fallback.');
+              setImageError(true);
+            }}
+          />
         ) : (
-          <View style={dynamicStyles.avatarFallback}>
-            <Text style={dynamicStyles.avatarText}>
-              {(auth.currentUser?.displayName || 'U').charAt(0).toUpperCase()}
+          <View style={styles.avatarInnerCircle}>
+            <Text style={styles.avatarInitialsText}>
+              {getInitials(userFullName)}
             </Text>
           </View>
         )}
       </TouchableOpacity>
-
-      <Modal
-        visible={isProfileModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setIsProfileModalVisible(false)}
-      >
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined} 
-          style={dynamicStyles.modalOverlay}
-        >
-          <View style={dynamicStyles.modalContent}>
-            <View style={dynamicStyles.modalHeaderLayout}>
-              <Text style={dynamicStyles.modalTitle}>{i18n.t('global.editProfile')}</Text>
-              <TouchableOpacity onPress={() => setIsProfileModalVisible(false)}>
-                <Text style={dynamicStyles.modalClose}>{i18n.t('global.cancel')}</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={dynamicStyles.avatarUploadContainer}>
-              <TouchableOpacity onPress={pickImage} activeOpacity={0.8}>
-                {(profileImage || auth.currentUser?.photoURL) ? (
-                  <Image source={{ uri: profileImage || auth.currentUser?.photoURL || '' }} style={dynamicStyles.modalAvatar} />
-                ) : (
-                  <View style={dynamicStyles.modalAvatarFallback}>
-                    <Text style={dynamicStyles.modalAvatarText}>
-                      {firstName ? firstName.charAt(0).toUpperCase() : 'U'}
-                    </Text>
-                  </View>
-                )}
-                <View style={dynamicStyles.avatarEditBadge}>
-                  <Text style={dynamicStyles.avatarEditBadgeText}>{i18n.t('global.symbol911')}</Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={dynamicStyles.inputLabel}>{i18n.t('global.firstName')}</Text>
-            <TextInput
-              style={dynamicStyles.inputField}
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholderTextColor={colors.textSecondary}
-              placeholder={i18n.t('global.john')}
-            />
-
-            <Text style={dynamicStyles.inputLabel}>{i18n.t('global.lastName')}</Text>
-            <TextInput
-              style={[dynamicStyles.inputField, { marginBottom: 24 }]}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholderTextColor={colors.textSecondary}
-              placeholder={i18n.t('global.doe')}
-            />
-
-            <TouchableOpacity 
-              style={dynamicStyles.saveBtn}
-              onPress={handleUpdateProfile}
-              disabled={isUpdatingProfile}
-            >
-              {isUpdatingProfile ? (
-                 <ActivityIndicator color={colors.background} />
-              ) : (
-                 <Text style={dynamicStyles.saveBtnText}>{i18n.t('global.saveChanges')}</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
   );
 }
 
-const getStyles = (colors: any) => StyleSheet.create({
-  headerContainer: {
+const styles = StyleSheet.create({
+  topHeaderFix: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingTop: Platform.OS === 'android' ? 16 : 0,
-  },
-  leftSection: {
-    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'android' ? 36 : 20, // adjust for android status bar if needed, but safeArea takes care of it usually
+    paddingBottom: 12,
+    backgroundColor: 'transparent',
+    zIndex: 50
   },
-  title: {
-    fontSize: 28,
+  submateBrandText: {
+    color: '#FFFFFF',
+    fontSize: 24,
     fontWeight: '900',
-    color: colors.text,
-    fontFamily: 'Hanken Grotesk',
+    letterSpacing: -0.5
   },
-  profileTrigger: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 4,
+  avatarCircleContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  avatar: {
+  avatarInnerCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
-  },
-  avatarFallback: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
+    backgroundColor: '#1E3A8A',
+    borderWidth: 1.5,
+    borderColor: '#3B82F6',
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden'
   },
-  avatarText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  modalOverlay: {
-    flex: 1, 
-    justifyContent: 'flex-end', 
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24, 
-    borderTopRightRadius: 24, 
-    padding: 24, 
-    paddingBottom: 40,
-  },
-  modalHeaderLayout: {
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 24,
-  },
-  modalTitle: {
-    fontSize: 20, 
-    fontWeight: '700', 
-    color: colors.text,
-  },
-  modalClose: {
-    fontSize: 16, 
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  avatarUploadContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  modalAvatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  modalAvatarFallback: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalAvatarText: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: 'bold',
-  },
-  avatarEditBadge: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: colors.primary,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.surface,
-  },
-  avatarEditBadgeText: {
-    color: colors.background,
+  avatarInitialsText: {
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: 'bold',
-  },
-  inputLabel: {
-    marginBottom: 8, 
-    fontSize: 12, 
-    fontWeight: 'bold',
-    color: colors.textSecondary,
-  },
-  inputField: {
-    borderRadius: 12, 
-    padding: 14, 
-    marginBottom: 16, 
-    borderWidth: 1, 
-    backgroundColor: colors.background,
-    borderColor: colors.border,
-    color: colors.text,
-  },
-  saveBtn: {
-    padding: 16, 
-    borderRadius: 12, 
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-  },
-  saveBtnText: {
-    color: colors.background, 
-    fontWeight: 'bold', 
-    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.5
   }
 });

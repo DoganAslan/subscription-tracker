@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Text, TouchableOpacity, Modal, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Switch, TextInput, Image } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
+import { View, ScrollView, Text, TouchableOpacity, Modal, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Switch, TextInput, Image, Alert, ActivityIndicator } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { analyzeReceiptImage } from '@/services/ai/gemini';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { triggerHaptic } from '@/utils/haptics';
 import { Input } from '@/components/ui/Input';
@@ -10,10 +12,16 @@ import { subscriptionSchema, SubscriptionFormData } from '../schemas/subscriptio
 import { Subscription } from '@/services/firebase/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 import { useCards } from '@/features/cards/hooks/useCards';
 import { sanitizePriceInput, sanitizeTextInput } from '@/utils/sanitizers';
-
+import { dispatchWhatsAppReminder } from '@/utils/whatsapp';
+import { Ionicons } from '@expo/vector-icons';
+import { SUPPORTED_CURRENCIES } from '@/utils/currency';
+import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
+import { useBudgetStore } from '@/store/useBudgetStore';
+import { calculateMonthlyCosts } from '@/utils/calculations';
+import { useCurrencyStore } from '@/store/useCurrencyStore';
 export const CATEGORIES = [
   { name: 'Entertainment', hint: 'Netflix, Disney+, Cable' },
   { name: 'Music & Audio', hint: 'Spotify, Apple Music, Audible' },
@@ -41,28 +49,6 @@ const formatLocalizedDate = (date: Date, localeCode: string): string => {
   }
 };
 
-export const CURRENCIES = [
-  { code: 'TRY', label: 'TRY - Turkey' },
-  { code: 'USD', label: 'USD - United States' },
-  { code: 'EUR', label: 'EUR - Eurozone' },
-  { code: 'GBP', label: 'GBP - United Kingdom' },
-  { code: 'JPY', label: 'JPY - Japan' },
-  { code: 'CAD', label: 'CAD - Canada' },
-  { code: 'AUD', label: 'AUD - Australia' },
-  { code: 'CHF', label: 'CHF - Switzerland' },
-  { code: 'CNY', label: 'CNY - China' },
-  { code: 'SEK', label: 'SEK - Sweden' },
-  { code: 'NZD', label: 'NZD - New Zealand' },
-  { code: 'MXN', label: 'MXN - Mexico' },
-  { code: 'SGD', label: 'SGD - Singapore' },
-  { code: 'HKD', label: 'HKD - Hong Kong' },
-  { code: 'NOK', label: 'NOK - Norway' },
-  { code: 'KRW', label: 'KRW - South Korea' },
-  { code: 'DKK', label: 'DKK - Denmark' },
-  { code: 'INR', label: 'INR - India' },
-  { code: 'RUB', label: 'RUB - Russia' },
-  { code: 'ZAR', label: 'ZAR - South Africa' }
-];
 
 export const POPULAR_BRANDS = [
   { name: 'Netflix', category: 'Entertainment' },
@@ -107,9 +93,10 @@ interface Props {
   onDelete?: () => void;
   hideHero?: boolean;
   externalAmount?: number;
+  children?: React.ReactNode;
 }
 
-export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel, onDelete, hideHero, externalAmount }: Props) {
+export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel, onDelete, hideHero, externalAmount, children }: Props) {
   const [isCategoryModalVisible, setIsCategoryModalVisible] = useState(false);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const [showRenewalPicker, setShowRenewalPicker] = useState(false);
@@ -120,9 +107,13 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
   const { data: cards = [] } = useCards();
   
   const { colors } = useTheme();
-  const { t, i18n } = useTranslation();
-  const activeLang = i18n.language || 'en';
+  const { t, currentLanguage } = useTranslation();
+  const activeLang = currentLanguage || 'en';
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
+
+  const { data: existingSubscriptions } = useSubscriptions();
+  const { monthlyBudget } = useBudgetStore();
+  const baseCurrency = useCurrencyStore(state => state.baseCurrency);
 
   const isEdit = !!initialData;
 
@@ -159,7 +150,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
     }
   };
 
-  const { control, handleSubmit, formState: { errors }, watch } = useForm<SubscriptionFormData>({
+  const { control, handleSubmit, formState: { errors }, watch, setValue } = useForm<SubscriptionFormData>({
     resolver: zodResolver(subscriptionSchema) as any,
     defaultValues: {
       name: initialData?.name || '',
@@ -169,7 +160,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
       billingCycle: initialData?.billingCycle || 'monthly',
       renewalDate: initialData?.renewalDate?.toDate() || new Date(),
       reminderOffset: initialData?.reminderOffset || '1_day',
-      isFreeTrial: initialData?.isFreeTrial || false,
+      isTrial: initialData?.isTrial || false,
       trialEndDate: initialData?.trialEndDate?.toDate() || new Date(),
       hasContract: initialData?.hasContract || false,
       contractEndDate: initialData?.contractEndDate 
@@ -178,6 +169,8 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
       notes: initialData?.notes || '',
       status: initialData?.status || 'active',
       cardId: initialData?.cardId || null,
+      isSplit: initialData?.isSplit || false,
+      splitMembers: initialData?.splitMembers || [],
     }
   });
 
@@ -189,8 +182,62 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
   }, [externalAmount]);
 
   const isPaused = watch('status') === 'paused';
-  const isFreeTrial = watch('isFreeTrial');
+  const isTrial = watch('isTrial');
   const hasContract = watch('hasContract');
+  const isSplit = watch('isSplit');
+
+  const { fields: splitFields, append: appendSplit, remove: removeSplit } = useFieldArray({
+    control,
+    name: 'splitMembers'
+  });
+
+  const [isAiScanning, setIsAiScanning] = useState(false);
+
+  const handleAiScan = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert("Permission Refused", "You need to grant camera roll permissions to scan receipts.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        base64: true,
+        quality: 0.5,
+      });
+
+      if (result.canceled || !result.assets || !result.assets[0].base64) {
+        return;
+      }
+
+      setIsAiScanning(true);
+      triggerHaptic('medium');
+      
+      const base64Img = result.assets[0].base64;
+      const mimeType = result.assets[0].mimeType || 'image/jpeg';
+      
+      const parsedData = await analyzeReceiptImage(base64Img, mimeType);
+      
+      if (parsedData) {
+        triggerHaptic('success');
+        if (parsedData.name) setValue('name', parsedData.name);
+        if (parsedData.amount) setValue('amount', parsedData.amount);
+        if (parsedData.currency) setValue('currency', parsedData.currency);
+        if (parsedData.billingCycle) setValue('billingCycle', parsedData.billingCycle);
+      } else {
+        triggerHaptic('error');
+        Alert.alert("Analysis Failed", "Could not extract subscription details from this image.");
+      }
+      
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "An unexpected error occurred during analysis.");
+    } finally {
+      setIsAiScanning(false);
+    }
+  };
 
   return (
     <>
@@ -198,11 +245,31 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         contentContainerStyle={dynamicStyles.scrollContent} 
         showsVerticalScrollIndicator={false}
       >
+        {children}
+        
+        {!isEdit && (
+          <TouchableOpacity 
+            onPress={handleAiScan}
+            disabled={isAiScanning}
+            style={dynamicStyles.aiScanButton}
+          >
+            {isAiScanning ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="scan-outline" size={20} color="#FFFFFF" />
+                  <Text style={dynamicStyles.aiScanText}>{t.features?.aiScannerAutoFill || 'Auto-Fill with AI Scanner'}</Text>
+                  <Ionicons name="sparkles" size={16} color="#FBBF24" />
+                </View>
+            )}
+          </TouchableOpacity>
+        )}
+
         {/* HERO AMOUNT ELEMENT (REDESIGNED) */}
         {!hideHero && (
           <View style={dynamicStyles.heroContainerRedesigned}>
-            {isFreeTrial && (
-              <Text style={dynamicStyles.postTrialLabel}>{t('global.posttrialPrice')}</Text>
+            {isTrial && (
+              <Text style={dynamicStyles.postTrialLabel}>{t.global.posttrialPrice}</Text>
             )}
             <View style={dynamicStyles.heroInputWrapper}>
               <Controller
@@ -215,7 +282,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                     onBlur={onBlur}
                     onChangeText={(text) => onChange(sanitizePriceInput(text))}
                     value={value ? value.toString() : ''}
-                    placeholder={t('global.000')}
+                    placeholder={t.global['000']}
                     placeholderTextColor={colors.textSecondary}
                     numberOfLines={1}
                     returnKeyType="done"
@@ -233,7 +300,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                     style={dynamicStyles.currencySelector}
                   >
                     <Text style={dynamicStyles.currencyText}>{value || 'USD'}</Text>
-                    <Text style={dynamicStyles.currencyChevron}>{t('global.symbol533')}</Text>
+                    <Text style={dynamicStyles.currencyChevron}>▼</Text>
                   </TouchableOpacity>
                 )}
               />
@@ -258,7 +325,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                 <View pointerEvents="none">
                   <Input 
                     label="Payment Method / Link Card" 
-                    placeholder={t('global.selectACard')} 
+                    placeholder={t.global.selectACard} 
                     value={selectedCard ? `💳 ${selectedCard.type.toUpperCase()} - ${selectedCard.name} (•••• ${selectedCard.lastFourDigits || '****'})` : 'None / No Card'} 
                     error={errors.cardId?.message} 
                     editable={false}
@@ -275,8 +342,8 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           render={({ field: { onChange, onBlur, value } }) => (
             <View>
               <Input 
-                label={t('subs.name')} 
-                placeholder={t('global.egNetflix')} 
+                label={t.subs.name} 
+                placeholder={t.global.egNetflix} 
                 onBlur={onBlur} 
                 onChangeText={(text) => onChange(sanitizeTextInput(text, 30))} 
                 value={value} 
@@ -291,10 +358,15 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                 contentContainerStyle={{ paddingBottom: 8 }}
               >
                 <View style={dynamicStyles.brandsContainer}>
-                  {POPULAR_BRANDS.map((brand) => (
+                  {POPULAR_BRANDS.map((brand) => {
+                    const isSelected = value?.toLowerCase() === brand.name.toLowerCase();
+                    return (
                     <TouchableOpacity
                       key={brand.name}
-                      style={dynamicStyles.brandTextChip}
+                      style={[
+                        dynamicStyles.brandTextChip,
+                        isSelected && { backgroundColor: '#1E3A8A', borderColor: '#3B82F6', borderWidth: 1.5 }
+                      ]}
                       onPress={() => {
                         onChange(brand.name);
                         if (!watch('category')) {
@@ -302,9 +374,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                         }
                       }}
                     >
-                      <Text style={dynamicStyles.brandTextChipText}>{brand.name}</Text>
+                      <Text style={[dynamicStyles.brandTextChipText, isSelected && { color: '#FFF', fontWeight: 'bold' }]}>{brand.name}</Text>
                     </TouchableOpacity>
-                  ))}
+                  )})}
                 </View>
               </ScrollView>
             </View>
@@ -321,9 +393,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             >
               <View pointerEvents="none">
                 <Input 
-                  label={t('subs.category')} 
-                  placeholder={t('global.selectACategory')} 
-                  value={value} 
+                  label={t.subs.category} 
+                  placeholder={t.global.selectACategory} 
+                  value={(t.categories as any)?.[value] || value} 
                   error={errors.category?.message} 
                   editable={false}
                 />
@@ -333,7 +405,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         />
         
         <View style={dynamicStyles.reminderSection}>
-          <Text style={dynamicStyles.reminderLabel}>{t('subs.billingCycle').toUpperCase()}</Text>
+          <Text style={dynamicStyles.reminderLabel}>{t.subs.billingCycle.toUpperCase()}</Text>
           <Controller
             control={control}
             name="billingCycle"
@@ -362,12 +434,13 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           />
         </View>
           
-          <Controller
-            control={control}
-            name="renewalDate"
-            render={({ field: { onChange, value } }) => (
-                <View style={{ width: '100%', marginBottom: 16 }}>
-                  <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>{t('global.renewalDate')}</Text>
+          {!isTrial && (
+            <Controller
+              control={control}
+              name="renewalDate"
+              render={({ field: { onChange, value } }) => (
+                  <View style={{ width: '100%', marginBottom: 16 }}>
+                  <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>{t.global.renewalDate}</Text>
                   <TouchableOpacity
                     activeOpacity={0.7}
                     onPress={() => {
@@ -416,7 +489,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowRenewalPicker(false)}>
-                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t('global.done')}</Text>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t.global.done}</Text>
                           </TouchableOpacity>
                         </View>
                         <DateTimePicker
@@ -447,8 +520,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
               </View>
             )}
           />
+        )}
         <View style={dynamicStyles.reminderSection}>
-          <Text style={dynamicStyles.reminderLabel}>{t('global.reminderOffset')}</Text>
+          <Text style={dynamicStyles.reminderLabel}>{t.global.reminderOffset}</Text>
           <Controller
             control={control}
             name="reminderOffset"
@@ -483,8 +557,8 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           name="notes"
           render={({ field: { onChange, onBlur, value } }) => (
             <Input 
-              label={t('subs.notes')} 
-              placeholder={t('global.egSharedWithFamily')} 
+              label={t.subs.notes} 
+              placeholder={t.global.egSharedWithFamily} 
               onBlur={onBlur} 
               onChangeText={onChange} 
               value={value} 
@@ -496,13 +570,13 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         />
         
         <View style={dynamicStyles.switchContainer}>
-          <View>
-            <Text style={dynamicStyles.switchTitle}>{t('global.thisIsAFreeTrial')}</Text>
-            <Text style={dynamicStyles.switchDesc}>{t('global.trackExpirationAndAv')}</Text>
+          <View style={{ flex: 1, marginRight: 16 }}>
+            <Text style={dynamicStyles.switchTitle}>{t.form?.trialTitle || 'Trial Version'}</Text>
+            <Text style={dynamicStyles.switchDesc}>{t.form?.trialSubtitle || t.global.trackExpirationAndAv}</Text>
           </View>
           <Controller
             control={control}
-            name="isFreeTrial"
+            name="isTrial"
             render={({ field: { onChange, value } }) => (
               <Switch
                 trackColor={{ false: colors.border, true: colors.primary }}
@@ -518,13 +592,13 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           />
         </View>
 
-        {isFreeTrial && (
+        {isTrial && (
           <Controller
             control={control}
             name="trialEndDate"
             render={({ field: { onChange, value } }) => (
               <View style={{ width: '100%', marginBottom: 16 }}>
-                <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>{t('global.trialEndDate')}</Text>
+                <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>İlk Para Çekilme Tarihi</Text>
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={() => {
@@ -573,7 +647,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowTrialPicker(false)}>
-                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t('global.done')}</Text>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t.global.done}</Text>
                           </TouchableOpacity>
                         </View>
                         <DateTimePicker
@@ -607,9 +681,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         )}
 
         <View style={dynamicStyles.switchContainer}>
-          <View>
-            <Text style={dynamicStyles.switchTitle}>{t('forms.hasContract')}</Text>
-            <Text style={dynamicStyles.switchDesc}>{t('forms.contractReminderSubtext')}</Text>
+          <View style={{ flex: 1, marginRight: 16 }}>
+            <Text style={dynamicStyles.switchTitle}>{(t.forms as any)?.hasContract || 'Annual Commitment Contract'}</Text>
+            <Text style={dynamicStyles.switchDesc}>{(t.forms as any)?.contractReminderSubtext || 'Remind 7 days before expiration'}</Text>
           </View>
           <Controller
             control={control}
@@ -636,7 +710,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             render={({ field: { onChange, value } }) => (
               <View style={{ width: '100%', marginBottom: 16 }}>
                 <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>
-                  {t('forms.contractEndDateLabel')}
+                  {t.global?.renewalDate || 'CONTRACT END DATE'}
                 </Text>
                 <TouchableOpacity
                   activeOpacity={0.7}
@@ -686,7 +760,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowContractPicker(false)}>
-                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t('global.done')}</Text>
+                            <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t.global.done}</Text>
                           </TouchableOpacity>
                         </View>
                         <DateTimePicker
@@ -719,44 +793,145 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           />
         )}
 
-        
-        {isEdit && (
+        {/* Split Engine UI */}
+        <View style={{ marginTop: 16, marginBottom: 16 }}>
           <View style={dynamicStyles.switchContainer}>
             <View>
-              <Text style={dynamicStyles.switchTitle}>{t('global.pauseSubscription')}</Text>
-              <Text style={dynamicStyles.switchDesc}>{t('global.temporarilyStopTrack')}</Text>
+              <Text style={dynamicStyles.switchTitle}>{t.form.splitTitle}</Text>
+              <Text style={dynamicStyles.switchDesc}>{t.form.splitSubtitle}</Text>
             </View>
             <Controller
               control={control}
-              name="status"
+              name="isSplit"
               render={({ field: { onChange, value } }) => (
                 <Switch
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  thumbColor={value === 'paused' ? '#FFFFFF' : colors.textSecondary}
+                  trackColor={{ false: colors.border, true: '#10B981' }}
+                  thumbColor={value ? '#FFFFFF' : colors.textSecondary}
                   ios_backgroundColor={colors.border}
                   onValueChange={(val) => {
-                    triggerHaptic('medium');
-                    onChange(val ? 'paused' : 'active');
+                    triggerHaptic('selection');
+                    onChange(val);
+                    if (val && splitFields.length === 0) {
+                      appendSplit({ id: Date.now().toString(), name: '', phone: '', shareAmount: 0, isPaid: false });
+                    }
                   }}
-                  value={value === 'paused'}
+                  value={value}
                 />
               )}
             />
           </View>
-        )}
-        
+
+          {isSplit && (
+            <View style={{ marginTop: 12, backgroundColor: colors.surface, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}>
+              {splitFields.map((field, index) => (
+                <View key={field.id} style={{ marginBottom: 16, paddingBottom: 16, borderBottomWidth: index === splitFields.length - 1 ? 0 : 1, borderBottomColor: colors.border }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <Text style={{ color: colors.text, fontWeight: 'bold' }}>{t.form.partner} {index + 1}</Text>
+                    <TouchableOpacity onPress={() => removeSplit(index)}>
+                      <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+
+                  <Controller
+                    control={control}
+                    name={`splitMembers.${index}.name`}
+                    render={({ field: { onChange, value } }) => (
+                      <Input label={t.form.name} placeholder={t.form.name} value={value} onChangeText={onChange} />
+                    )}
+                  />
+
+                  <Controller
+                    control={control}
+                    name={`splitMembers.${index}.phone`}
+                    render={({ field: { onChange, value } }) => (
+                      <Input label={t.form.phone} placeholder="90532..." keyboardType="phone-pad" value={value} onChangeText={onChange} />
+                    )}
+                  />
+
+                  <Controller
+                    control={control}
+                    name={`splitMembers.${index}.shareAmount`}
+                    render={({ field: { onChange, value } }) => (
+                      <Input label={t.form.amount} placeholder="0.00" keyboardType="numeric" value={value ? String(value) : ''} onChangeText={onChange} />
+                    )}
+                  />
+
+                  <TouchableOpacity 
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#10B98120', padding: 12, borderRadius: 8, marginTop: 8 }}
+                    onPress={() => {
+                      const member = watch(`splitMembers.${index}`);
+                      const subName = watch('name');
+                      const currency = watch('currency');
+                      dispatchWhatsAppReminder(member as any, subName, currency);
+                    }}
+                  >
+                    <Ionicons name="logo-whatsapp" size={20} color="#10B981" style={{ marginRight: 8 }} />
+                    <Text style={{ color: '#10B981', fontWeight: 'bold' }}>{t.form.sendReminder}</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, borderWidth: 1, borderColor: colors.primary, borderRadius: 8, borderStyle: 'dashed' }}
+                onPress={() => appendSplit({ id: Date.now().toString(), name: '', phone: '', shareAmount: 0, isPaid: false })}
+              >
+                <Ionicons name="add" size={20} color={colors.primary} style={{ marginRight: 4 }} />
+                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{t.form.addPartner}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         <View style={dynamicStyles.buttonGroup}>
           <Button 
             title={submitLabel} 
             onPress={handleSubmit((data) => {
               triggerHaptic('heavy');
+
+              if (monthlyBudget) {
+                // Calculate current total
+                let currentTotal = 0;
+                if (existingSubscriptions) {
+                  existingSubscriptions.forEach(sub => {
+                    if (isEdit && sub.id === initialData?.id) return; // exclude current if editing
+                    if (sub.status === 'paused') return;
+                    currentTotal += calculateMonthlyCosts(sub, baseCurrency || 'USD').gross;
+                  });
+                }
+
+                // Add new amount
+                const newCosts = calculateMonthlyCosts(data as any, baseCurrency || 'USD');
+                const projectedTotal = currentTotal + newCosts.gross;
+
+                if (projectedTotal > monthlyBudget) {
+                  const title = "Budget Warning";
+                  const msg = `This subscription will put you over your monthly budget of ${monthlyBudget} ${baseCurrency}. Save anyway?`;
+                  
+                  if (Platform.OS === 'web') {
+                    if (window.confirm(`${title}\n\n${msg}`)) {
+                      onSubmit(data);
+                    }
+                  } else {
+                    Alert.alert(
+                      title,
+                      msg,
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Save Anyway", style: "destructive", onPress: () => onSubmit(data) }
+                      ]
+                    );
+                  }
+                  return; // Stop here, wait for user confirmation
+                }
+              }
+
               onSubmit(data);
             })} 
             isLoading={isLoading} 
           />
           {isEdit && onDelete && (
             <Button 
-              title="Delete Subscription" 
+              title={t.global?.deleteSubscription || "Delete Subscription"} 
               variant="destructive"
               onPress={() => {
                 triggerHaptic('heavy');
@@ -778,9 +953,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         <View style={dynamicStyles.modalOverlay}>
           <View style={dynamicStyles.modalContent}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>{t('global.selectCategory')}</Text>
+              <Text style={dynamicStyles.modalTitle}>{t.global.selectCategory}</Text>
               <TouchableOpacity onPress={() => setIsCategoryModalVisible(false)}>
-                <Text style={dynamicStyles.modalClose}>{t('global.close')}</Text>
+                <Text style={dynamicStyles.modalClose}>{t.global.close}</Text>
               </TouchableOpacity>
             </View>
 
@@ -806,7 +981,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                     >
                       <View style={{ flex: 1, paddingRight: 16 }}>
                         <Text style={[dynamicStyles.modalRowText, value === item.name && dynamicStyles.modalRowTextSelected]}>
-                          {item.name}
+                          {(t.categories as any)?.[item.name] || item.name}
                         </Text>
                         {!!item.hint && (
                           <Text style={dynamicStyles.modalRowHint}>
@@ -815,7 +990,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                         )}
                       </View>
                       {value === item.name && (
-                        <Text style={dynamicStyles.checkIcon}>{t('global.symbol66')}</Text>
+                        <Text style={dynamicStyles.checkIcon}>✓</Text>
                       )}
                     </TouchableOpacity>
                   )}
@@ -836,9 +1011,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         <View style={dynamicStyles.modalOverlay}>
           <View style={[dynamicStyles.modalContent, { height: '50%' }]}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>{t('global.selectPaymentMethod')}</Text>
+              <Text style={dynamicStyles.modalTitle}>{t.global.selectPaymentMethod}</Text>
               <TouchableOpacity onPress={() => setIsCardModalVisible(false)}>
-                <Text style={dynamicStyles.modalClose}>{t('global.close')}</Text>
+                <Text style={dynamicStyles.modalClose}>{t.global.close}</Text>
               </TouchableOpacity>
             </View>
 
@@ -866,7 +1041,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                         {item.id ? `💳 ${item.type?.toUpperCase()} - ${item.name} (•••• ${item.lastFourDigits || '****'})` : item.name}
                       </Text>
                       {value === item.id && (
-                        <Text style={dynamicStyles.checkIcon}>{t('global.symbol66')}</Text>
+                        <Text style={dynamicStyles.checkIcon}>✓</Text>
                       )}
                     </TouchableOpacity>
                   )}
@@ -887,9 +1062,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         <View style={dynamicStyles.modalOverlay}>
           <View style={[dynamicStyles.modalContent, { height: '60%' }]}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>{t('global.selectCurrency')}</Text>
+              <Text style={dynamicStyles.modalTitle}>{t.global.selectCurrency}</Text>
               <TouchableOpacity onPress={() => setIsCurrencyModalVisible(false)}>
-                <Text style={dynamicStyles.modalClose}>{t('global.close')}</Text>
+                <Text style={dynamicStyles.modalClose}>{t.global.close}</Text>
               </TouchableOpacity>
             </View>
 
@@ -898,7 +1073,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
               name="currency"
               render={({ field: { onChange, value } }) => (
                 <FlatList
-                  data={CURRENCIES}
+                  data={SUPPORTED_CURRENCIES as unknown as any[]}
                   keyExtractor={item => item.code}
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={{ paddingBottom: 40 }}
@@ -914,10 +1089,10 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       ]}
                     >
                       <Text style={[dynamicStyles.modalRowText, value === item.code && dynamicStyles.modalRowTextSelected]}>
-                        {item.label}
+                        {item.code} ({item.symbol})
                       </Text>
                       {value === item.code && (
-                        <Text style={dynamicStyles.checkIcon}>{t('global.symbol66')}</Text>
+                        <Text style={dynamicStyles.checkIcon}>✓</Text>
                       )}
                     </TouchableOpacity>
                   )}
@@ -938,6 +1113,25 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 24,
     paddingBottom: 80,
+  },
+  aiScanButton: {
+    backgroundColor: '#6366F1',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#6366F1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  aiScanText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   heroContainerRedesigned: {
     backgroundColor: colors.surface,

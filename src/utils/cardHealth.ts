@@ -1,4 +1,5 @@
 import { Card, Subscription } from '@/services/firebase/types';
+import { t } from '@/locales/i18n';
 
 /**
  * Calculates the total cost of all active subscriptions linked to a specific card for the current month.

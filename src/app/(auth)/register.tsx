@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
@@ -17,16 +17,16 @@ export default function RegisterScreen() {
     >
       <ScrollView contentContainerStyle={dynamicStyles.scrollContent}>
         <View style={dynamicStyles.headerContainer}>
-          <Text style={dynamicStyles.title}>{i18n.t('global.createAccount')}</Text>
-          <Text style={dynamicStyles.subtitle}>{i18n.t('global.startTrackingYourSub')}</Text>
+          <Text style={dynamicStyles.title}>{t.global.createAccount}</Text>
+          <Text style={dynamicStyles.subtitle}>{t.global.startTrackingYourSub}</Text>
         </View>
 
         <RegisterForm />
 
         <View style={dynamicStyles.footerContainer}>
-          <Text style={dynamicStyles.footerText}>{i18n.t('global.alreadyHaveAnAccount')}</Text>
+          <Text style={dynamicStyles.footerText}>{t.global.alreadyHaveAnAccount}</Text>
           <Link href="/(auth)" style={dynamicStyles.footerLink}>
-            Log in
+            {t.authLeaks?.logInBtn || 'Log In'}
           </Link>
         </View>
       </ScrollView>

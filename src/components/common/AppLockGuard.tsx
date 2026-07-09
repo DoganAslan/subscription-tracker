@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useSecurityStore } from '@/store/useSecurityStore';
@@ -57,8 +57,8 @@ export function AppLockGuard({ children }: Props) {
           <Ionicons name="shield-checkmark-outline" size={44} color="#3B82F6" />
         </View>
         
-        <Text style={{ color: '#F8FAFC', fontSize: 24, fontWeight: '800', letterSpacing: 0.5 }}>{i18n.t('global.submateKilitli')}</Text>
-        <Text style={{ color: '#64748B', fontSize: 14, textAlign: 'center', marginTop: 8, maxWidth: 260 }}>{i18n.t('global.finansalVerilerinizB')}</Text>
+        <Text style={{ color: '#F8FAFC', fontSize: 24, fontWeight: '800', letterSpacing: 0.5 }}>{t.global.submateKilitli}</Text>
+        <Text style={{ color: '#64748B', fontSize: 14, textAlign: 'center', marginTop: 8, maxWidth: 260 }}>{t.global.finansalVerilerinizB}</Text>
 
         <TouchableOpacity 
           onPress={triggerGate}
@@ -68,7 +68,7 @@ export function AppLockGuard({ children }: Props) {
           }}
           style={{ marginTop: 32, backgroundColor: '#2563EB', paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12, width: '100%', alignItems: 'center' }}
         >
-          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{i18n.t('global.kilidiA')}</Text>
+          <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>{t.global.kilidiA}</Text>
         </TouchableOpacity>
       </View>
     );

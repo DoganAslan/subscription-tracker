@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert, Modal, Pressable, Image, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { ThemeMode } from '@/theme/colors';
@@ -15,10 +16,10 @@ import { useSecurityStore } from '@/store/useSecurityStore';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { triggerHaptic } from '@/utils/haptics';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
-import { exportData, importData } from '@/services/backupService';
+import { exportVaultBackup, importVaultBackup } from '@/utils/vault';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 
 const PROFILE_NAME_KEY = '@profile_name';
 
@@ -41,13 +42,11 @@ export const GLOBAL_CURRENCY_LIST = [
 ];
 
 const getMenuOptions = (t: any) => [
-  { id: 'account', label: t('settings.accountSettings') },
-  { id: 'theme', label: t('settings.theme') },
-  { id: 'backup', label: t('settings.backupData') },
-  { id: 'restore', label: t('settings.restoreData') },
-  { id: 'currency', label: t('settings.currencyPref') },
-  { id: 'security', label: t('settings.security') },
-  { id: 'about', label: t('settings.about') },
+  { id: 'account', label: t.settingsPage?.profile || t.settings?.accountSettings || 'Profile' },
+  { id: 'theme', label: t.settingsPage?.theme || t.settings?.theme || 'Theme' },
+  { id: 'currency', label: t.settingsPage?.currencyPref || t.settings?.currencyPref || 'Currency' },
+  { id: 'security', label: t.settingsPage?.security || t.settings?.security || 'Security' },
+  { id: 'about', label: t.settingsPage?.about || t.settings?.about || 'About SubMate' },
 ];
 
 export default function SettingsScreen() {
@@ -58,14 +57,18 @@ export default function SettingsScreen() {
   
   const [isCurrencyModalVisible, setCurrencyModalVisible] = useState(false);
   const [isThemeModalVisible, setThemeModalVisible] = useState(false);
+  const [isAboutModalVisible, setAboutModalVisible] = useState(false);
+  const [isPrivacyModalVisible, setPrivacyModalVisible] = useState(false);
+  const [isTermsModalVisible, setTermsModalVisible] = useState(false);
   
   const { baseCurrency, setBaseCurrency } = useCurrencyStore();
   const { profileImage, setProfileImage } = useProfileStore();
+  const { user } = useAuthStore();
   const { isBiometricsEnabled, setBiometricsEnabled } = useSecurityStore();
   const { data: subscriptions } = useSubscriptions();
   const { themeMode, setThemeMode, colors } = useTheme();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { currentLanguage, t, changeLanguage } = useTranslation();
 
   const dynamicStyles = useMemo(() => getStyles(colors), [colors]);
 
@@ -91,7 +94,7 @@ export default function SettingsScreen() {
   const handleAvatarPress = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('global.permissionRequired'), t('global.weNeedAccessToYourCa'));
+      Alert.alert(t.global.permissionRequired, t.global.weNeedAccessToYourCa);
       return;
     }
 
@@ -110,7 +113,10 @@ export default function SettingsScreen() {
         
         if (auth.currentUser) {
           try {
-            await updateProfile(auth.currentUser, { photoURL: microAvatarString });
+            // NOTE: We do NOT use updateProfile({ photoURL: microAvatarString }) here 
+            // because Firebase restricts photoURL length and base64 strings are too long,
+            // resulting in 'auth/invalid-profile-attribute'. 
+            // We rely entirely on useProfileStore for local persistence.
           } catch (e) {
             console.error('Failed to update avatar in auth profile', e);
           }
@@ -118,7 +124,7 @@ export default function SettingsScreen() {
       }
     } catch (e) {
       console.error('Failed to pick image', e);
-      Alert.alert(t('global.error'), t('global.anErrorOccurredWhile'));
+      Alert.alert(t.global.error, t.global.anErrorOccurredWhile);
     }
   };
 
@@ -132,7 +138,7 @@ export default function SettingsScreen() {
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
 
     if (!hasHardware || !isEnrolled) {
-      Alert.alert(t('global.unavailable'), t('global.yourDeviceDoesNotSup'));
+      Alert.alert(t.global.unavailable, t.global.yourDeviceDoesNotSup);
     }
 
     const result = await LocalAuthentication.authenticateAsync({
@@ -142,7 +148,9 @@ export default function SettingsScreen() {
 
     if (result.success) {
       triggerHaptic('medium');
-      setBiometricsEnabled(!isBiometricsEnabled);
+      const newValue = !isBiometricsEnabled;
+      setBiometricsEnabled(newValue);
+      await AsyncStorage.setItem('@submate_biometric_enabled', newValue ? 'true' : 'false');
     }
   };
 
@@ -170,80 +178,19 @@ export default function SettingsScreen() {
   const handleMenuPress = (id: string) => {
     triggerHaptic('medium');
     if (id === 'account') {
-      router.push('/(tabs)/settings/account');
+      try {
+        router.push('/(tabs)/settings/account');
+      } catch {
+        Alert.alert(t.settingsPage?.profile || 'Profile', `User: dogan aslan\nBase Currency: ${baseCurrency}`);
+      }
     } else if (id === 'theme') {
       setThemeModalVisible(true);
-    } else if (id === 'backup') {
-      handleBackup();
-    } else if (id === 'restore') {
-      handleRestore();
     } else if (id === 'security') {
       toggleBiometrics();
     } else if (id === 'currency') {
       setCurrencyModalVisible(true);
     } else if (id === 'about') {
-      router.push('/(tabs)/settings/about');
-    }
-  };
-
-  const handleBackup = async () => {
-    try {
-      const success = await exportData();
-      if (!success && Platform.OS !== 'web') {
-        Alert.alert(t('global.hata'), t('global.yedeklemeSrasndaBirH'));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const executeImport = async (fileContent: string) => {
-    const success = await importData(fileContent);
-    if (success) {
-      Alert.alert(t('global.baarl'), t('global.verilerinizGeriYklen'));
-    } else {
-      Alert.alert(t('global.hata'), t('global.geersizVeyaBozukYede'));
-    }
-  };
-
-  const handleRestore = () => {
-    if (Platform.OS === 'web') {
-      const promptConfirm = window.confirm("Bu işlem mevcut tüm abonelik verilerinizi silecektir. Emin misiniz?");
-      if (!promptConfirm) return;
-
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.json';
-      input.onchange = async (e: any) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (event: any) => {
-          await executeImport(event.target.result);
-        };
-        reader.readAsText(file);
-      };
-      input.click();
-    } else {
-      Alert.alert(t('global.veriGeriYkle'), t('global.buIlemMevcutTmAbonel'),
-        [
-          { text: "İptal", style: "cancel" },
-          { text: "Eminim, Yükle", style: "destructive", onPress: async () => {
-              try {
-                const result = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
-                if (result.canceled || !result.assets || result.assets.length === 0) return;
-                
-                const fileUri = result.assets[0].uri;
-                const fileContent = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
-                await executeImport(fileContent);
-              } catch (e) {
-                console.error(e);
-                Alert.alert(t('global.hata'), t('global.dosyaOkunurkenBirHat'));
-              }
-            } 
-          }
-        ]
-      );
+      setAboutModalVisible(true);
     }
   };
 
@@ -255,7 +202,7 @@ export default function SettingsScreen() {
       router.replace('/(auth)');
     } catch (error) {
       console.error('Sign out error:', error);
-      Alert.alert(t('global.error'), t('global.failedToSignOutSecur'));
+      Alert.alert(t.global.error, t.global.failedToSignOutSecur);
     }
   };
 
@@ -264,13 +211,15 @@ export default function SettingsScreen() {
     return name.charAt(0).toUpperCase();
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <ScrollView style={dynamicStyles.container} contentContainerStyle={dynamicStyles.contentContainer}>
+    <ScrollView style={dynamicStyles.container} contentContainerStyle={[dynamicStyles.contentContainer, { paddingTop: Math.max(32, insets.top + 16) }]}>
       
       <View style={dynamicStyles.profileHeader}>
         <TouchableOpacity style={dynamicStyles.avatarWrapper} activeOpacity={0.8} onPress={handleAvatarPress}>
-          {(profileImage || auth.currentUser?.photoURL) ? (
-            <Image source={{ uri: profileImage || auth.currentUser?.photoURL || '' }} style={dynamicStyles.avatarImage} />
+          {profileImage || user?.photoURL || auth.currentUser?.photoURL ? (
+            <Image source={{ uri: profileImage || user?.photoURL || auth.currentUser?.photoURL || '' }} style={dynamicStyles.avatarImage} />
           ) : (
             <Text style={dynamicStyles.avatarInitials}>{getInitials(userName)}</Text>
           )}
@@ -309,7 +258,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={dynamicStyles.currencyBadge}>
-          <Text style={dynamicStyles.currencyBadgeText}>{t('settings.homeBaseCurrency')}: {baseCurrency}</Text>
+          <Text style={dynamicStyles.currencyBadgeText}>{t.settingsPage?.homeBaseCurrency || t.settings?.homeBaseCurrency || 'Base Currency'}: {baseCurrency}</Text>
         </View>
       </View>
 
@@ -336,8 +285,39 @@ export default function SettingsScreen() {
         ))}
       </View>
 
+      <View style={{ marginBottom: 24 }}>
+        {/* SOVEREIGN VAULT CARD SECTION */}
+        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, marginBottom: 8, marginLeft: 8, textTransform: 'uppercase', marginTop: 24 }}>
+          {t.vault?.title || 'DATA SOVEREIGNTY (SOVEREIGN VAULT)'}
+        </Text>
+
+        <View style={{ flexDirection: 'column', gap: 16, backgroundColor: '#1E293B', padding: 16, borderRadius: 12, marginVertical: 8 }}>
+          {/* Left Action: Download */}
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+            onPress={() => exportVaultBackup()}
+          >
+            <Ionicons name="cloud-download-outline" size={20} color="#3B82F6" />
+            <Text style={{ color: '#E2E8F0', fontSize: 14, fontWeight: '500' }}>
+              {t.vault?.download || 'Download Vault Backup (.json)'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Right Action: Restore */}
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+            onPress={() => importVaultBackup(() => router.replace('/(tabs)'))}
+          >
+            <Ionicons name="cloud-upload-outline" size={20} color="#10B981" />
+            <Text style={{ color: '#E2E8F0', fontSize: 14, fontWeight: '500' }}>
+              {t.vault?.restore || 'Restore Backup'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <TouchableOpacity style={dynamicStyles.signOutRow} activeOpacity={0.8} onPress={handleSignOut}>
-        <Text style={dynamicStyles.signOutText}>{t('settings.logout')}</Text>
+        <Text style={dynamicStyles.signOutText}>{t.settingsPage?.logout || t.settings?.logout || 'Log Out'}</Text>
       </TouchableOpacity>
 
       <Modal
@@ -350,7 +330,7 @@ export default function SettingsScreen() {
           <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setCurrencyModalVisible(false)} />
           <View style={dynamicStyles.modalContent}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>{t('global.selectBaseCurrency')}</Text>
+              <Text style={dynamicStyles.modalTitle}>{t.global.selectBaseCurrency}</Text>
               <TouchableOpacity onPress={() => setCurrencyModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -414,7 +394,7 @@ export default function SettingsScreen() {
           <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setThemeModalVisible(false)} />
           <View style={dynamicStyles.modalContent}>
             <View style={dynamicStyles.modalHeader}>
-              <Text style={dynamicStyles.modalTitle}>{t('global.selectTheme')}</Text>
+              <Text style={dynamicStyles.modalTitle}>{t.global.selectTheme}</Text>
               <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -444,6 +424,102 @@ export default function SettingsScreen() {
                 )}
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+      </Modal>
+
+      {/* ABOUT MODAL */}
+      <Modal
+        visible={isAboutModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAboutModalVisible(false)}
+      >
+        <View style={dynamicStyles.modalOverlay}>
+          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setAboutModalVisible(false)} />
+          <View style={dynamicStyles.modalContent}>
+            <View style={dynamicStyles.modalHeader}>
+              <Text style={dynamicStyles.modalTitle}>{t.settingsPage?.about || t.settings?.about || 'About SubMate'}</Text>
+              <TouchableOpacity onPress={() => setAboutModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ paddingVertical: 16 }}>
+              <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                <Text style={{ color: colors.text, fontSize: 20, fontWeight: 'bold', marginBottom: 4 }}>SubMate v1.0.0</Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: 'center', paddingHorizontal: 16 }}>
+                  Your ultimate, secure dynamic subscription architecture shield.
+                </Text>
+              </View>
+              
+              <TouchableOpacity 
+                style={[dynamicStyles.menuCard, { marginBottom: 12, borderWidth: 0, backgroundColor: 'rgba(59, 130, 246, 0.05)' }]} 
+                activeOpacity={0.7}
+                onPress={() => setPrivacyModalVisible(true)}
+              >
+                <Text style={dynamicStyles.menuLabel}>{t.settingsPage?.privacyPolicy || 'Privacy Policy'}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[dynamicStyles.menuCard, { marginBottom: 12, borderWidth: 0, backgroundColor: 'rgba(59, 130, 246, 0.05)' }]} 
+                activeOpacity={0.7}
+                onPress={() => setTermsModalVisible(true)}
+              >
+                <Text style={dynamicStyles.menuLabel}>{t.settingsPage?.termsOfUse || 'Terms of Use'}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* PRIVACY POLICY MODAL */}
+      <Modal
+        visible={isPrivacyModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setPrivacyModalVisible(false)}
+      >
+        <View style={dynamicStyles.modalOverlay}>
+          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setPrivacyModalVisible(false)} />
+          <View style={dynamicStyles.modalContent}>
+            <View style={dynamicStyles.modalHeader}>
+              <Text style={dynamicStyles.modalTitle}>{t.legal?.privacyPolicy || t.settingsPage?.privacyPolicy || 'Privacy Policy'}</Text>
+              <TouchableOpacity onPress={() => setPrivacyModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ paddingVertical: 16, maxHeight: 400 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22 }}>
+                {t.legal?.privacyPolicyContent || 'Privacy policy content is loading...'}
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* TERMS OF USE MODAL */}
+      <Modal
+        visible={isTermsModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTermsModalVisible(false)}
+      >
+        <View style={dynamicStyles.modalOverlay}>
+          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setTermsModalVisible(false)} />
+          <View style={dynamicStyles.modalContent}>
+            <View style={dynamicStyles.modalHeader}>
+              <Text style={dynamicStyles.modalTitle}>{t.legal?.termsOfUse || t.settingsPage?.termsOfUse || 'Terms of Use'}</Text>
+              <TouchableOpacity onPress={() => setTermsModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ paddingVertical: 16, maxHeight: 400 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 22 }}>
+                {t.legal?.termsOfUseContent || 'Terms of use content is loading...'}
+              </Text>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -645,4 +721,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.primary,
     fontWeight: 'bold',
   },
+  langBtn: { flex: 1, padding: 14, backgroundColor: colors.surface, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  activeBtn: { backgroundColor: '#1E3A8A', borderColor: '#3B82F6' },
+  btnText: { color: colors.textSecondary, fontWeight: '600' },
+  activeBtnText: { color: '#FFFFFF' },
 });

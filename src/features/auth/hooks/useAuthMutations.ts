@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import { useMutation } from '@tanstack/react-query';
 import { AuthService } from '@/services/firebase/auth';
 import { LoginFormData, RegisterFormData } from '../schemas/auth.schema';
@@ -20,7 +20,7 @@ export const useAuthMutations = () => {
     },
     onError: (error: any) => {
       console.error("DEBUG [Firebase Auth Error]:", error.code, error.message);
-      Alert.alert(i18n.t('global.giriHatas'), i18n.t('global.kodErrorcodenmesajEr')
+      Alert.alert(t.global.giriHatas, t.global.kodErrorcodenmesajEr
       );
       const message = error?.code === 'auth/invalid-credential' 
         ? 'Invalid email or password' 

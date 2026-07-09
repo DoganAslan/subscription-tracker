@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { parseSafeDate, addMonthsClamped } from '@/utils/dateHelpers';
+import { t } from '@/locales/i18n';
 
 // Set up the default notification handler to display notifications even when the app is in the foreground
 Notifications.setNotificationHandler({

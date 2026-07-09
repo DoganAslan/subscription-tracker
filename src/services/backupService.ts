@@ -6,6 +6,7 @@ import { SubscriptionService } from '@/services/firebase/firestore';
 import { resyncAllReminders } from '@/services/notificationService';
 import { sanitizeTextInput, sanitizePriceInput } from '@/utils/sanitizers';
 import { Timestamp } from 'firebase/firestore';
+import { t } from '@/locales/i18n';
 
 export const exportData = async (): Promise<boolean> => {
   const user = useAuthStore.getState().user;

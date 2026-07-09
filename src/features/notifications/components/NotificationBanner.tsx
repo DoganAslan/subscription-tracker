@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Share } from 'react-native';
 import { Alert } from '../utils/notificationEngine';
@@ -42,7 +42,7 @@ export function NotificationBanner({ alerts }: Props) {
               onPress={() => handleShare(alert)}
             >
               <Ionicons name="share-social-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text style={styles.shareButtonText}>{i18n.t('global.remindFriends')}</Text>
+              <Text style={styles.shareButtonText}>{t.global.remindFriends}</Text>
             </TouchableOpacity>
           )}
         </View>

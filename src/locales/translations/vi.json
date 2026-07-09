@@ -93,9 +93,9 @@
     "noPayments": "Không có khoản thanh toán nào được lên lịch cho ngày này."
   },
   "forms": {
-    "hasContract": "Hợp đồng Cam kết Hàng năm",
-    "contractReminderSubtext": "Nhắc nhở 7 ngày trước khi hết hạn",
-    "contractEndDateLabel": "NGÀY KẾT THÚC HỢP ĐỒNG"
+    "hasContract": "Thỏa thuận cam kết hàng năm có sẵn",
+    "contractReminderSubtext": "Nhắc tôi 7 ngày trước ngày đáo hạn",
+    "contractEndDateLabel": "NGÀY KẾT THÚC CAM KẾT"
   },
   "global": {
     "welcomeBack": "Welcome back",
@@ -186,9 +186,9 @@
     "noRenewalsInTheNext3": "No renewals in the next 30 days",
     "remindFriends": "Remind Friends",
     "symbol721": "💡",
-    "deleteSubscription": "Delete Subscription?",
+    "deleteSubscription": "Xóa đăng ký?",
     "areYouSureYouWantToD": "Are you sure you want to delete this subscription? This action cannot be undone and will be removed from your tracking immediately.",
-    "delete": "Delete",
+    "delete": "Xóa bỏ",
     "posttrialPrice": "POST-TRIAL PRICE",
     "renewalDate": "RENEWAL DATE",
     "reminderOffset": "REMINDER OFFSET",
@@ -288,7 +288,13 @@
     "selectACard": "Select a card",
     "egNetflix": "e.g., Netflix",
     "selectACategory": "Select a category",
-    "egSharedWithFamily": "e.g., Shared with family"
+    "egSharedWithFamily": "e.g., Shared with family",
+    "subscriptionSaved": "Đã lưu đăng ký",
+    "subscriptionUpdated": "Đã cập nhật đăng ký",
+    "subscriptionDeleted": "Đã xóa đăng ký",
+    "failedToAddSub": "Không thể thêm đăng ký",
+    "failedToUpdateSub": "Không thể cập nhật đăng ký",
+    "failedToDeleteSub": "Không thể xóa đăng ký"
   },
   "health": {
     "statusExcellent": "Ironclad Wallet",
@@ -298,5 +304,61 @@
     "adviceClash": "Multiple payment dates clash on the same day.",
     "adviceDoom": "Commitment contracts are expiring soon!",
     "meterTitle": "FINANCIAL HEALTH SCORE"
+  },
+  "features": {
+    "lastXHours": "FINAL {{hours}} HOURS",
+    "xHoursLeft": "{{hours}} HOURS LEFT",
+    "trialVersionTag": "Trial Version",
+    "sharedPaymentOverview": "💰 Shared Payment Overview",
+    "unnamed": "Unnamed",
+    "remind": "Remind",
+    "aiScannerAutoFill": "Auto-Fill with AI Scanner",
+    "smartTipsTitle": "Smart Tips",
+    "insteadOf": "Instead of: ",
+    "becauseYouPayFor": "Because you pay for {{subName}}.",
+    "deleteDoesNotCancel": "Deleting this subscription from SubMate does not cancel your actual subscription. If you wish to cancel the actual subscription, you can use the button below.",
+    "goToCancelPage": "Go to Cancel Page",
+    "doesNotCancelBold": "does not cancel",
+    "altReason_spotify": "Instead of ChatGPT Plus, you can often zero out your AI costs by using Claude 3.5 Sonnet or Google Gemini (free version) which offer generous free tiers.",
+    "altReason_midjourney": "Instead of a Midjourney subscription, you can meet your image generation needs for free by using Leonardo AI, which gives free daily tokens.",
+    "altReason_adobe": "Instead of Adobe Creative Cloud, consider Affinity Photo & Designer which are one-time purchases, or free alternatives like Photopea and Canva.",
+    "altReason_netflix": "Check if your mobile plan or internet provider includes Netflix for free. Also, consider Amazon Prime Video which might already be included in your Prime shipping plan.",
+    "cancelledToSave": "Tôi đã hủy để tiết kiệm tiền!",
+    "justDelete": "Chỉ cần xóa khỏi ứng dụng",
+    "trackUsage": "Theo dõi việc sử dụng",
+    "usedXTimes": "Đã sử dụng {{count}} lần.",
+    "lastUsed": "Kết thúc: {{date}}",
+    "iUsedThisToday": "Tôi đã sử dụng nó ngày hôm nay"
+  },
+  "legal": {
+    "privacyPolicy": "Chính sách bảo mật",
+    "termsOfUse": "Điều khoản sử dụng",
+    "privacyPolicyContent": "Tại SubMate, chúng tôi rất coi trọng quyền riêng tư của dữ liệu cá nhân và tài chính của bạn. Chính sách quyền riêng tư toàn diện này giải thích rõ ràng dữ liệu nào được xử lý, lưu trữ và bảo mật khi sử dụng Ứng dụng của chúng tôi và cách thức xử lý. \n\n1. Không có chính sách thu thập dữ liệu và hệ thống Sovereign Vault\nSubMate được phát triển với cách tiếp cận hướng tới quyền riêng tư (\"Quyền riêng tư theo thiết kế\"). Về vấn đề này, nguyên tắc cơ bản của chúng tôi là như sau:\nCHÚNG TÔI KHÔNG THU THẬP DỮ LIỆU CỦA BẠN. BẤT KỲ THÔNG TIN ĐĂNG KÝ, SỐ TIỀN THANH TOÁN HOẶC NHÃN VÍ MÀ BẠN NHẬP VÀO ĐƠN SẼ KHÔNG ĐƯỢC GỬI ĐẾN MÁY CHỦ (ĐÁM MÂY) CỦA CÔNG TY CHÚNG TÔI HOẶC ĐƯỢC LƯU. \nTất cả dữ liệu của bạn chỉ được lưu trữ trên bộ nhớ cục bộ của điện thoại thông minh của bạn bằng Mã hóa trên thiết bị. Do đó, về mặt kỹ thuật, chúng tôi không thể truy cập trái phép, bán hoặc rò rỉ dữ liệu của bạn. \n\n2. Loại và phạm vi dữ liệu được xử lý\n2.1. Dữ liệu tài chính và đăng ký\nTên đăng ký (Netflix, Phòng tập thể dục, Thuê, v.v.), danh mục chi tiêu, số tiền và ngày thông báo lịch bạn thêm vào ứng dụng đều được lưu trữ hoàn toàn trong bộ nhớ thiết bị của bạn. Công ty chúng tôi không tạo hồ sơ về thói quen chi tiêu của bạn. \n2.2. Thông tin thẻ tín dụng và ví\nPhần \"Ví\" của ứng dụng chỉ đơn giản là một hệ thống gắn thẻ giúp bạn phân chia ngân sách của mình một cách tinh thần. Ứng dụng không bao giờ yêu cầu, nhận hoặc lưu trữ số thẻ tín dụng hợp lệ gồm 16 chữ số, ngày hết hạn (SKT) hoặc mã bảo mật (CVV/CVC). Chỉ có \"Tên\" (Ví dụ: Thẻ lương của tôi) và các số có 4 chữ số nhắc nhở mà bạn xác định để phân biệt thẻ của mình được lưu cục bộ trên thiết bị. Do đó, ứng dụng nằm ngoài phạm vi của PCI-DSS (Tiêu chuẩn bảo mật dữ liệu ngành thẻ thanh toán) và không thể được đại diện hợp pháp trong các trường hợp như sao chép/đánh cắp thẻ. \n\n3. Quyền của thiết bị và xác minh sinh trắc học\nMột số quyền có thể được yêu cầu từ hệ điều hành để ứng dụng chạy:\n• Dữ liệu sinh trắc học (Face ID / Touch ID): Nếu bạn muốn đặt mật khẩu khi đăng nhập ứng dụng, quá trình xác minh diễn ra hoàn toàn trong môi trường bảo mật của chính thiết bị của bạn (Secure Enclave). SubMate không bao giờ có quyền truy cập vào dữ liệu vân tay hoặc khuôn mặt của bạn, nó chỉ nhận được tín hiệu \"Đã xác thực\" hoặc \"Bị từ chối\" từ hệ điều hành. \n• Thông báo: Để thông báo về các khoản thanh toán thuê bao sắp tới. Số tiền nhạy cảm không được hiển thị trong nội dung thông báo. \n• Lưu trữ / Truy cập tệp: Được sử dụng để chỉ lưu tệp trên thiết bị của bạn khi bạn muốn xuất hoặc nhập (Xuất/Nhập) dữ liệu của mình ở định dạng JSON. \n\n4. Tích hợp và chia sẻ dữ liệu của bên thứ ba\nSubMate có liên hệ hạn chế với các nguồn bên ngoài để cung cấp các tính năng của nó:\n• API tỷ giá hối đoái: Lấy tỷ giá hối đoái hiện tại từ nguồn bên ngoài để thực hiện phân tích tỷ giá hối đoái. Những truy vấn này là ẩn danh; Quy mô danh mục đầu tư hoặc đăng ký của bạn không được gửi tới API bên ngoài. \n• Phân tích và gỡ lỗi (Crashlytics, v.v.): Trong trường hợp ứng dụng gặp sự cố, nhật ký lỗi kỹ thuật ẩn danh hoàn toàn như phiên bản hệ điều hành và kiểu thiết bị của bạn có thể được thu thập để giải quyết sự cố. Những nhật ký này không chứa bất kỳ dữ liệu cá nhân hoặc tài chính nào. \n\n5. Quyền xóa và chuyển dữ liệu\nVì dữ liệu của bạn không có trên máy chủ của chúng tôi nên bạn không cần gửi cho chúng tôi yêu cầu \"xóa tài khoản\" hoặc \"xóa dữ liệu\". Ngay sau khi bạn gỡ cài đặt ứng dụng SubMate khỏi thiết bị của mình, hệ điều hành sẽ xóa tất cả dữ liệu của bạn vĩnh viễn và không thể đảo ngược. Việc kiểm soát và sao lưu dữ liệu của bạn hoàn toàn là trách nhiệm của người dùng. \n\n6. Giới hạn độ tuổi\nSubMate được thiết kế để sử dụng cho các cá nhân từ 18 tuổi trở lên. Vì ứng dụng không thu thập dữ liệu cá nhân nên không có hành vi cố ý thu thập dữ liệu của trẻ em. \n\n7. Cập nhật chính sách và truyền thông\nCông ty có quyền cập nhật Chính sách quyền riêng tư này bất cứ lúc nào. Vì ứng dụng không thu thập dữ liệu nên bạn có thể liên hệ với chúng tôi qua các kênh liên lạc của cửa hàng (App Store / Play Store) nếu có bất kỳ câu hỏi và vấn đề kỹ thuật nào có thể phát sinh liên quan đến quyền riêng tư của bạn.",
+    "termsOfUseContent": "Vui lòng đọc kỹ thỏa thuận Điều khoản sử dụng này (\"Thỏa thuận\") trước khi tải xuống, cài đặt hoặc sử dụng ứng dụng di động SubMate (\"Ứng dụng\"). Thỏa thuận này là thỏa thuận ràng buộc về mặt pháp lý duy nhất giữa bạn (“Người dùng”) và nhà phát triển Ứng dụng (“Công ty”, “Chúng tôi” hoặc “Chúng tôi”) liên quan đến việc sử dụng Ứng dụng. \n\n1. Bản chất và việc chấp nhận dịch vụ\nSubMate là một công cụ tổ chức thông tin độc lập được thiết kế để giúp bạn theo dõi các đăng ký kỹ thuật số cá nhân của mình, quản lý ngân sách và ghi lại ngày gia hạn. Bằng cách cài đặt Ứng dụng trên thiết bị của mình, bạn đồng ý vô điều kiện với tất cả các điều khoản, tuyên bố từ chối trách nhiệm và giới hạn trách nhiệm pháp lý trong Thỏa thuận này. Nếu bạn không chấp nhận các điều khoản, bạn phải xóa Ứng dụng ngay lập tức khỏi thiết bị của mình. \n\n2. Tuyên bố miễn trừ trách nhiệm và giới hạn dịch vụ (QUAN TRỌNG)\nSubMate không phải là tổ chức tài chính, ngân hàng, cổng thanh toán, công ty quản lý danh mục đầu tư hoặc cố vấn tài chính. Việc sử dụng ứng dụng hoàn toàn do bạn tự chịu rủi ro. \n\n2.1. Giao dịch tài chính và hủy bỏ\nKhông thể thực hiện thanh toán thực tế, có thể bắt đầu đăng ký hoặc có thể hủy đăng ký hiện có thông qua ứng dụng. SubMate chỉ sắp xếp dữ liệu mà người dùng nhập thủ công. Bạn hoàn toàn chịu trách nhiệm hủy đăng ký của mình đúng hạn, theo dõi số tiền được ghi nợ từ thẻ tín dụng hoặc tài khoản ngân hàng của bạn cũng như mối quan hệ pháp lý của bạn với các nhà cung cấp dịch vụ bên thứ ba (Netflix, Spotify, v.v.). \n\n2.2. Thông báo và nhắc nhở được đảm bảo\nKHÔNG CÓ THÔNG BÁO KHÔNG THỂ ĐẢM BẢO ĐẾN ĐÚNG THỜI GIAN. TRONG TRƯỜNG HỢP THÔNG BÁO ỨNG DỤNG KHÔNG HIỂN THỊ DO CHẾ ĐỘ TIẾT KIỆM PIN CỦA HỆ THỐNG VẬN HÀNH (iOS/ANDROID), HẠN CHẾ NỀN TẢNG HOẶC LỖI PHẦN MỀM, CÔNG TY CHỊU TRÁCH NHIỆM NGHIÊM TÚC VỀ BẤT KỲ THIỆT HẠI TÀI CHÍNH NÀO PHÁT SINH TỪ ĐĂNG KÝ QUÊN HỦY. KHÔNG THỂ GIỮ NÓ. \n\n2.3. Rủi ro tỷ giá hối đoái và độ chính xác của chuyển đổi tiền tệ\n\"Phân tích rủi ro tiền tệ\" (Rủi ro tiền tệ) và các tính năng dịch thuật tiền tệ được cung cấp trong ứng dụng dựa trên dữ liệu tức thời hoặc bị trì hoãn được cung cấp từ API của bên thứ ba. Do phí giao dịch quốc tế do ngân hàng của bạn áp dụng, chênh lệch tỷ giá hối đoái và biến động tỷ giá hối đoái tức thời, có thể có sự khác biệt giữa số tiền hiển thị trên màn hình và số tiền được phản ánh trên bảng sao kê của bạn. Ứng dụng không đảm bảo độ chính xác 100% của số tiền này. \n\n2.4. \"Đăng ký ma cà rồng\" (Cảnh báo về ma cà rồng) và Tư vấn tài chính\nTính năng Phát hiện đăng ký ma cà rồng chỉ thực hiện phân loại thuật toán đơn giản và đưa ra ước tính về việc người dùng đang trả tiền cho các dịch vụ tương tự hay không hoạt động. Đây không phải là lời khuyên tài chính. Quyết định hủy bất kỳ đăng ký nào là tùy theo quyết định của người dùng. \n\n3. Trách nhiệm mất dữ liệu và sao lưu\nSubMate lưu trữ cục bộ tất cả dữ liệu của bạn trên thiết bị của bạn (Sovereign Vault) để bảo vệ quyền riêng tư của bạn. Ứng dụng này không có cơ sở hạ tầng sao lưu đám mây. Công ty không chịu trách nhiệm dưới bất kỳ hình thức nào về việc mất dữ liệu theo dõi tài chính của bạn do xóa ứng dụng, mất hoặc hư hỏng thiết bị hoặc sự cố có thể xảy ra trong quá trình cập nhật hệ điều hành. Người dùng hoàn toàn có trách nhiệm sao lưu dữ liệu thường xuyên bằng tính năng xuất JSON do ứng dụng cung cấp. \n\n4. Quyền sử dụng ứng dụng và sở hữu trí tuệ\nToàn bộ cơ sở hạ tầng mã của SubMate (bao gồm kiến trúc React Native & Expo), thiết kế giao diện, logo, thuật toán và văn bản đều thuộc về Công ty. Người dùng được cấp giấy phép không thể chuyển nhượng, không độc quyền để sử dụng ứng dụng chỉ cho mục đích cá nhân và phi thương mại. Nghiêm cấm kỹ thuật đảo ngược, sao chép hoặc cố gắng giải mã mã nguồn của ứng dụng. \n\n5. Tuyên bố và bồi thường \"nguyên trạng\"\nỨNG DỤNG ĐƯỢC CUNG CẤP \"NGUYÊN TRẠNG\" VÀ \"SẴN CÓ\" MÀ KHÔNG CÓ BẤT KỲ HÌNH THỨC BẢO ĐẢM NÀO, DÙ RÕ RÀNG HAY NGỤ Ý. CÔNG TY TỪ CHỐI RÕ RÀNG MỌI ĐẢM BẢO VỀ KHẢ NĂNG BÁN, SỰ PHÙ HỢP CHO MỘT MỤC ĐÍCH CỤ THỂ HOẶC KHÔNG VI PHẠM. Người dùng sẽ miễn trừ không hủy ngang cho Công ty, người quản lý, nhân viên và đối tác kinh doanh của Công ty mọi thiệt hại trực tiếp, gián tiếp, ngẫu nhiên, đặc biệt hoặc mang tính trừng phạt có thể phát sinh do việc sử dụng ứng dụng. \n\n6. Giải quyết tranh chấp\nLuật pháp của Cộng hòa Türkiye sẽ được áp dụng để giải quyết mọi tranh chấp pháp lý phát sinh từ Thỏa thuận này. Việc tòa án có thẩm quyền vô hiệu hóa bất kỳ điều khoản nào của hợp đồng sẽ không ảnh hưởng đến hiệu lực của các điều khoản khác.",
+    "close": "Đóng",
+    "consentText": "Tôi đã đọc, hiểu và chấp nhận Chính sách quyền riêng tư và Điều khoản sử dụng."
+  },
+  "authLeaks": {
+    "emailAddress": "Địa chỉ email",
+    "password": "Mật khẩu",
+    "forgotPasswordLabel": "Quên mật khẩu của tôi?",
+    "logInBtn": "Đăng nhập",
+    "fullName": "Tên Họ",
+    "confirmPassword": "Xác nhận mật khẩu",
+    "createAccountBtn": "Tạo tài khoản"
+  },
+  "categories": {
+    "Entertainment": "Sự giải trí",
+    "Music & Audio": "Âm nhạc & Âm thanh",
+    "Productivity": "Năng suất",
+    "Utilities & Cloud": "Công cụ & Đám mây",
+    "Health & Fitness": "Sức khỏe & Thể thao",
+    "Finance & Insurance": "Tài chính & Bảo hiểm",
+    "Education & Learning": "Giáo dục & Đào tạo",
+    "Gaming": "Trò chơi",
+    "Shopping & E-commerce": "Mua sắm & thương mại điện tử",
+    "News & Media": "Tin tức & Truyền thông",
+    "Food & Delivery": "Đồ ăn & Giao hàng",
+    "Other": "Khác"
   }
 }

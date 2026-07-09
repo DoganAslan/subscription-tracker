@@ -93,9 +93,9 @@
     "noPayments": "この日は支払いが予定されていません。"
   },
   "forms": {
-    "hasContract": "年間契約（縛りあり）",
-    "contractReminderSubtext": "終了7日前に通知",
-    "contractEndDateLabel": "契約終了日"
+    "hasContract": "年間コミットメント契約が利用可能",
+    "contractReminderSubtext": "期限の 7 日前に通知する",
+    "contractEndDateLabel": "コミットメント終了日"
   },
   "global": {
     "welcomeBack": "Welcome back",
@@ -186,9 +186,9 @@
     "noRenewalsInTheNext3": "No renewals in the next 30 days",
     "remindFriends": "Remind Friends",
     "symbol721": "💡",
-    "deleteSubscription": "Delete Subscription?",
+    "deleteSubscription": "サブスクリプションを削除しますか?",
     "areYouSureYouWantToD": "Are you sure you want to delete this subscription? This action cannot be undone and will be removed from your tracking immediately.",
-    "delete": "Delete",
+    "delete": "消去",
     "posttrialPrice": "POST-TRIAL PRICE",
     "renewalDate": "RENEWAL DATE",
     "reminderOffset": "REMINDER OFFSET",
@@ -288,7 +288,13 @@
     "selectACard": "Select a card",
     "egNetflix": "e.g., Netflix",
     "selectACategory": "Select a category",
-    "egSharedWithFamily": "e.g., Shared with family"
+    "egSharedWithFamily": "e.g., Shared with family",
+    "subscriptionSaved": "サブスクリプションが保存されました",
+    "subscriptionUpdated": "サブスクリプションが更新されました",
+    "subscriptionDeleted": "サブスクリプションが削除されました",
+    "failedToAddSub": "サブスクリプションを追加できませんでした",
+    "failedToUpdateSub": "サブスクリプションを更新できませんでした",
+    "failedToDeleteSub": "サブスクリプションを削除できませんでした"
   },
   "health": {
     "statusExcellent": "鉄壁の財布",
@@ -298,5 +304,61 @@
     "adviceClash": "複数の支払い日が同じ日に重なっています。",
     "adviceDoom": "縛り契約がまもなく終了します！",
     "meterTitle": "財政健全度スコア"
+  },
+  "features": {
+    "lastXHours": "FINAL {{hours}} HOURS",
+    "xHoursLeft": "{{hours}} HOURS LEFT",
+    "trialVersionTag": "Trial Version",
+    "sharedPaymentOverview": "💰 Shared Payment Overview",
+    "unnamed": "Unnamed",
+    "remind": "Remind",
+    "aiScannerAutoFill": "Auto-Fill with AI Scanner",
+    "smartTipsTitle": "Smart Tips",
+    "insteadOf": "Instead of: ",
+    "becauseYouPayFor": "Because you pay for {{subName}}.",
+    "deleteDoesNotCancel": "Deleting this subscription from SubMate does not cancel your actual subscription. If you wish to cancel the actual subscription, you can use the button below.",
+    "goToCancelPage": "Go to Cancel Page",
+    "doesNotCancelBold": "does not cancel",
+    "altReason_spotify": "Instead of ChatGPT Plus, you can often zero out your AI costs by using Claude 3.5 Sonnet or Google Gemini (free version) which offer generous free tiers.",
+    "altReason_midjourney": "Instead of a Midjourney subscription, you can meet your image generation needs for free by using Leonardo AI, which gives free daily tokens.",
+    "altReason_adobe": "Instead of Adobe Creative Cloud, consider Affinity Photo & Designer which are one-time purchases, or free alternatives like Photopea and Canva.",
+    "altReason_netflix": "Check if your mobile plan or internet provider includes Netflix for free. Also, consider Amazon Prime Video which might already be included in your Prime shipping plan.",
+    "cancelledToSave": "節約のためキャンセルしました！",
+    "justDelete": "アプリから削除するだけ",
+    "trackUsage": "使用状況を追跡する",
+    "usedXTimes": "{{count}} 回使用されました。",
+    "lastUsed": "終了: {{date}}",
+    "iUsedThisToday": "今日使いました"
+  },
+  "legal": {
+    "privacyPolicy": "プライバシーポリシー",
+    "termsOfUse": "利用規約",
+    "privacyPolicyContent": "SubMate では、お客様の個人データと財務データのプライバシーを非常に重視しています。 この包括的なプライバシー ポリシーでは、アプリケーションを使用する際にどのデータがどのように処理、保存、保護されるかについて明確に説明しています。 \n\n1. データ収集ポリシーなしと主権保管システム\nSubMate は、プライバシー指向のアプローチ (「プライバシー バイ デザイン」) で開発されました。 この点に関して、当社の基本原則は次のとおりです。\n当社はあなたのデータを収集しません。 アプリケーションに入力した購読情報、支払い金額、またはウォレット ラベルは、当社のサーバー (クラウド) に送信されたり、保存されたりすることはありません。 \nすべてのデータは、オンデバイス暗号化を使用して、自分のスマートフォンのローカル メモリにのみ保存されます。 したがって、お客様のデータの不正アクセス、販売、漏洩は技術的に不可能です。 \n\n2. 処理されるデータの種類と範囲\n2.1.財務データとサブスクリプション\nアプリケーションに追加したサブスクリプション名 (Netflix、ジム、家賃など)、支出カテゴリ、金額、カレンダー通知日は、デバイスのメモリに完全に保存されます。 当社は、お客様の支出習慣に関するプロファイルを作成しません。 \n2.2.クレジットカードと財布の情報\nアプリの「ウォレット」セクションは、予算を精神的に区別するのに役立つ単なるタグ付けシステムです。 アプリは、有効な 16 桁のクレジット カード番号、有効期限 (SKT)、またはセキュリティ コード (CVV/CVC) を要求、受信、保存することはありません。 カードを区別するために決定した「名前」 (例: 私の給与カード) とリマインダーの 4 桁の番号のみがデバイス上にローカルに保存されます。 したがって、このアプリケーションは PCI-DSS (Payment Card Industry Data Security Standard) の範囲外であり、カードのコピー/盗難などの場合に法的に代理することはできません。 \n\n3. デバイスの許可と生体認証\nアプリケーションを実行するには、オペレーティング システムから一部の権限が要求される場合があります。\n• 生体認証データ (Face ID / Touch ID): アプリケーションのログインにパスワードを設定する場合、検証プロセスはすべてデバイス独自の安全な環境 (Secure Enclave) で行われます。 SubMate は指紋や顔のデータにアクセスすることはなく、オペレーティング システムから「認証済み」または「拒否」信号を受信するだけです。 \n• 通知: 今後のサブスクリプションの支払いについて通知します。 通知内容にはセンシティブな金額は表示されません。 \n• ストレージ / ファイル アクセス: データを JSON 形式でエクスポートまたはインポート (エクスポート/インポート) する場合にのみ、デバイスにファイルを保存するために使用されます。 \n\n4. サードパーティの統合とデータ共有\nSubMate は、その機能を提供するために外部ソースとの接触を制限しています。\n• 為替レート API: 外部ソースから現在の為替レートを取得し、為替レート分析を実行します。 これらのクエリは匿名です。 ポートフォリオのサイズやサブスクリプションは外部 API に送信されません。 \n• 分析とデバッグ (Crashlytics など): アプリケーションがクラッシュした場合、問題を解決するためにオペレーティング システムのバージョンやデバイス モデルなどの完全に匿名化された技術エラー ログが収集されることがあります。 これらのログには個人データや財務データは含まれません。 \n\n5. データを削除および転送する権利\nあなたのデータは当社のサーバー上にないため、「アカウント削除」または「データ削除」リクエストを当社に送信する必要はありません。 デバイスから SubMate アプリケーションをアンインストールするとすぐに、オペレーティング システムによってすべてのデータが永久的かつ不可逆的に削除されます。 データの管理とバックアップはすべてユーザーの責任となります。 \n\n6. 年齢制限\nSubMate は 18 歳以上の個人が使用できるように設計されています。 このアプリケーションは個人データを収集しないため、子供のデータを意図的に収集しても違反にはなりません。 \n\n7. ポリシーの更新とコミュニケーション\n当社は、このプライバシーポリシーをいつでも更新する権利を留保します。 アプリケーションはデータを収集しないため、プライバシーに関して発生する可能性のある質問や技術的な問題については、ストア (App Store / Play ストア) の通信チャネルを通じて当社にお問い合わせください。",
+    "termsOfUseContent": "SubMate (「アプリケーション」) モバイル アプリケーションをダウンロード、インストール、または使用する前に、この利用規約契約 (「契約」) をよくお読みください。 本契約は、アプリケーションの使用に関して、お客様 (「ユーザー」) とアプリケーション開発者 (「会社」、「当社」、または「当社」) との間で締結される唯一の法的拘束力のある契約です。 \n\n1. サービスの性質と受け入れ\nSubMate は、個人のデジタル サブスクリプションを追跡し、予算を管理し、更新日を記録できるように設計されたスタンドアロンの情報整理ツールです。 アプリケーションをデバイスにインストールすると、本契約のすべての条項、免責事項、責任制限に無条件で同意したことになります。 規約に同意しない場合は、デバイスからアプリを直ちに削除する必要があります。 \n\n2. 免責事項とサービス制限（重要）\nSubMate は、金融機関、銀行、決済ゲートウェイ、ポートフォリオ管理会社、または財務アドバイザーではありません。 アプリケーションの使用は完全に自己責任で行ってください。 \n\n2.1.金融取引とキャンセル\nアプリケーションを通じて実際に支払いを行ったり、サブスクリプションを開始したり、既存のサブスクリプションをキャンセルしたりすることはできません。 SubMate は、ユーザーが手動で入力したデータのみを整理します。 予定通りにサブスクリプションをキャンセルし、クレジット カードまたは銀行口座から引き落とされる金額を監視し、サードパーティ サービス プロバイダー (Netflix、Spotify など) との法的関係を監視することは、お客様の全責任です。 \n\n2.2.通知とリマインダーを保証\n通知が時間どおりに到着することは保証できません。 オペレーティングシステム（iOS/Android）のバッテリー節約モード、バックグラウンド制限、またはソフトウェアエラーによりアプリケーション通知が表示されない場合、当社は、サブスクリプションの忘れから生じるあらゆる経済的損害について厳格に責任を負います。キャンセルします。 開催できません。 \n\n2.3.為替レートのリスクと通貨換算の精度\nアプリケーション内で提供される「通貨リスク分析」（通貨リスク）および通貨換算機能は、サードパーティ API から提供される即時または遅延データに基づいています。 ご利用の銀行によって適用される国際取引手数料、外国為替スプレッド、および為替レートの瞬間的な変動により、画面に表示される金額と明細書に反映される金額に差異が生じる場合があります。 アプリケーションはこれらの金額の 100% の正確性を保証するものではありません。 \n\n2.4. 「ヴァンパイア サブスクリプション」（ヴァンパイア アラート）と財務上のアドバイス\nヴァンパイア サブスクリプション検出機能は、単純なアルゴリズムによる分類のみを行い、ユーザーが同様のサービスまたは休止中のサービスに料金を支払っているかどうかの推定を提供します。 これは経済的なアドバイスではありません。 サブスクリプションをキャンセルするかどうかは、ユーザーの独自の裁量で決定されます。 \n\n3. データ損失とバックアップの責任\nSubMate は、プライバシーを保護するために、すべてのデータをデバイス (Sovereign Vault) にローカルに保存します。 アプリケーションにはクラウド バックアップ インフラストラクチャがありません。 当社は、アプリケーションの削除、デバイスの紛失または損傷、またはオペレーティング システムの更新中に発生する可能性のあるクラッシュの結果として発生する財務追跡データの損失について、いかなる形でも責任を負いません。 アプリケーションが提供する JSON エクスポート機能を使用してデータを定期的にバックアップすることは、完全にユーザーの責任です。 \n\n4. アプリケーションの使用権と知的財産\nSubMate のコード インフラストラクチャ全体 (React Native および Expo アーキテクチャを含む)、インターフェイス デザイン、ロゴ、アルゴリズム、テキストは当社に属します。 ユーザーには、個人的かつ非商業的な目的のみでアプリケーションを使用するための譲渡不可、非独占的なライセンスが付与されます。 アプリケーションのソース コードのリバース エンジニアリング、コピー、または解読の試みは固く禁止されています。 \n\n5.「現状有姿」の表明と補償\nアプリケーションは「現状のまま」および「利用可能な状態」で提供され、明示または黙示を問わず、いかなる種類の保証もありません。 当社は、商品性、特定目的への適合性、または非侵害についてのいかなる保証も明示的に否認します。 ユーザーは、アプリケーションの使用の結果生じる可能性のある直接的、間接的、偶発的、特別または懲罰的損害から当社、その経営者、従業員およびビジネスパートナーを取り消し不能の形で免除します。 \n\n6. 紛争の解決\n本契約から生じる法的紛争の解決には、トゥルキエ共和国の法律が適用されます。 管轄裁判所による契約のいずれかの条項の無効化は、他の条項の有効性には影響しません。",
+    "close": "近い",
+    "consentText": "私はプライバシー ポリシーと利用規約を読み、理解し、同意しました。"
+  },
+  "authLeaks": {
+    "emailAddress": "電子メールアドレス",
+    "password": "パスワード",
+    "forgotPasswordLabel": "パスワードを忘れましたか?",
+    "logInBtn": "ログイン",
+    "fullName": "名前 姓",
+    "confirmPassword": "パスワードを認証する",
+    "createAccountBtn": "アカウントを作成する"
+  },
+  "categories": {
+    "Entertainment": "エンターテインメント",
+    "Music & Audio": "音楽とサウンド",
+    "Productivity": "生産性",
+    "Utilities & Cloud": "ツールとクラウド",
+    "Health & Fitness": "健康とスポーツ",
+    "Finance & Insurance": "金融と保険",
+    "Education & Learning": "教育とトレーニング",
+    "Gaming": "ゲーム",
+    "Shopping & E-commerce": "ショッピングと電子商取引",
+    "News & Media": "ニュースとメディア",
+    "Food & Delivery": "フード＆デリバリー",
+    "Other": "他の"
   }
 }

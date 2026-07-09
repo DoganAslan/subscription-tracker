@@ -7,7 +7,7 @@ const safeFinancialRound = (num: number): number => {
 
 export const calculateMonthlyCosts = (sub: any, activeCurrency: string) => {
   // 1. If paused, it contributes 0 to active cashflow
-  if (sub.isPaused) return { gross: 0, net: 0 };
+  if (sub.isPaused || sub.status === 'paused') return { gross: 0, net: 0 };
 
   // 2. Base Conversion (with strict fallback)
   const rawPrice = parseFloat(String(sub.price || sub.amount)) || 0;
@@ -31,13 +31,15 @@ export const calculateMonthlyCosts = (sub: any, activeCurrency: string) => {
   // 4. Split Deductions
   let netMonthly = grossMonthly;
   if (sub.isSplit) {
-    const participants = Array.isArray(sub.splitParticipants) ? sub.splitParticipants : [];
+    const participants = Array.isArray(sub.splitMembers) && sub.splitMembers.length > 0 
+      ? sub.splitMembers 
+      : Array.isArray(sub.splitParticipants) ? sub.splitParticipants : [];
     // Guard against isSplit === true division errors mathematically
     const validParticipantCount = Math.max(1, participants.length); 
     
     if (validParticipantCount > 0) {
       participants.forEach((p: any) => {
-        const friendShare = parseFloat(String(p.amount).replace(/[^0-9.]/g, '')) || 0;
+        const friendShare = parseFloat(String(p.shareAmount || p.amount || 0).replace(/[^0-9.]/g, '')) || 0;
         let convertedShare = convertCurrency(friendShare, sub.currency || 'TRY', activeCurrency);
         
         if (isNaN(convertedShare) || !isFinite(convertedShare)) {

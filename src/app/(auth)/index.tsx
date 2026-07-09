@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
@@ -38,16 +38,16 @@ export default function LoginScreen() {
             style={[dynamicStyles.logo, animatedLogoStyle]}
             resizeMode="cover"
           />
-          <Text style={dynamicStyles.title}>{i18n.t('global.welcomeBack')}</Text>
-          <Text style={dynamicStyles.subtitle}>{i18n.t('global.signInToManageYourSu')}</Text>
+          <Text style={dynamicStyles.title}>{t.global.welcomeBack}</Text>
+          <Text style={dynamicStyles.subtitle}>{t.global.signInToManageYourSu}</Text>
         </View>
 
         <LoginForm />
 
         <View style={dynamicStyles.footerContainer}>
-          <Text style={dynamicStyles.footerText}>{i18n.t('global.dontHaveAnAccount')}</Text>
+          <Text style={dynamicStyles.footerText}>{t.global.dontHaveAnAccount}</Text>
           <Link href="/(auth)/register" style={dynamicStyles.footerLink}>
-            Sign up
+            {t.authLeaks?.createAccountBtn || 'Sign up'}
           </Link>
         </View>
       </ScrollView>

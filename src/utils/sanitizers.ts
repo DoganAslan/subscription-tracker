@@ -1,3 +1,4 @@
+import { t } from '@/locales/i18n';
 export const sanitizePriceInput = (value: string): string => {
   if (!value) return '';
 

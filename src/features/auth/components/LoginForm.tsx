@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, Modal, TextInput, Alert } from 'react-native';
+import Checkbox from 'expo-checkbox';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
@@ -8,7 +9,7 @@ import { loginSchema, LoginFormData } from '../schemas/auth.schema';
 import { useAuthMutations } from '../hooks/useAuthMutations';
 import { AuthService } from '@/services/firebase/auth';
 import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 
 export function LoginForm() {
   const { loginMutation } = useAuthMutations();
@@ -16,6 +17,7 @@ export function LoginForm() {
   
   const [isResetModalVisible, setResetModalVisible] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [isConsentGiven, setIsConsentGiven] = useState(false);
   
   const { t } = useTranslation();
 
@@ -66,7 +68,7 @@ export function LoginForm() {
         name="email"
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
-            label="Email Address"
+            label={t.authLeaks?.emailAddress || 'Email Address'}
             placeholder="you@example.com"
             keyboardType="email-address"
             autoCapitalize="none"
@@ -82,7 +84,7 @@ export function LoginForm() {
         name="password"
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
-            label="Password"
+            label={t.authLeaks?.password || 'Password'}
             placeholder="••••••••"
             secureTextEntry
             onBlur={onBlur}
@@ -99,13 +101,28 @@ export function LoginForm() {
           setResetModalVisible(true);
         }}
       >
-        <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>Forgot Password?</Text>
+        <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>{t.authLeaks?.forgotPasswordLabel || 'Forgot Password?'}</Text>
       </TouchableOpacity>
 
+      <View style={styles.checkboxContainer}>
+        <Checkbox
+          value={isConsentGiven}
+          onValueChange={setIsConsentGiven}
+          color={isConsentGiven ? colors.primary : undefined}
+          style={styles.checkbox}
+        />
+        <TouchableOpacity style={styles.checkboxLabel} onPress={() => setIsConsentGiven(!isConsentGiven)} activeOpacity={0.8}>
+          <Text style={[styles.consentText, { color: colors.textSecondary }]}>
+            {t.legal?.consentText || 'I have read and agree to the Privacy Policy and Terms of Use.'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <Button 
-        title="Log In" 
+        title={t.authLeaks?.logInBtn || 'Log In'} 
         onPress={handleSubmit(onSubmit)} 
         isLoading={loginMutation.isPending}
+        disabled={!isConsentGiven}
         style={styles.button}
       />
 
@@ -119,7 +136,7 @@ export function LoginForm() {
             
             <TextInput
               style={[styles.input, { backgroundColor: '#111827', borderColor: colors.border, color: '#FFFFFF' }]}
-              placeholder="Email Address"
+              placeholder={t.authLeaks?.emailAddress || 'Email Address'}
               placeholderTextColor="#6B7280"
               value={resetEmail}
               onChangeText={setResetEmail}
@@ -195,5 +212,21 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  checkbox: {
+    marginRight: 12,
+  },
+  checkboxLabel: {
+    flex: 1,
+  },
+  consentText: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

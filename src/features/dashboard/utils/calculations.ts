@@ -81,6 +81,7 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
   let monthlyTotal = 0;
   let yearlyTotal = 0;
   let monthlyRecoverable = 0;
+  let monthlyTrialSavings = 0;
   let mostExpensive: Subscription | null = null;
   let maxMonthlyCost = -1;
   const categoryMap: Record<string, number> = {};
@@ -109,10 +110,17 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
 
     const hasActiveSplit = sub.isSplit === true || String(sub.isSplit).toLowerCase() === 'true';
 
-    if (hasActiveSplit && Array.isArray(sub.splitParticipants)) {
-      sub.splitParticipants.forEach(p => {
+    if (sub.isTrial && sub.trialEndDate) {
+      const parsedTrialEnd = typeof sub.trialEndDate === 'string' ? new Date(sub.trialEndDate) : (sub.trialEndDate as any).toDate();
+      if (parsedTrialEnd.getTime() > today.getTime()) {
+        monthlyTrialSavings += monthlyCost;
+      }
+    }
+
+    if (hasActiveSplit && Array.isArray(sub.splitMembers)) {
+      sub.splitMembers.forEach(p => {
         // 3. Absolute sanitation: strip any accidental letters/symbols and force to float
-        const cleanAmountString = String(p.amount).replace(/[^0-9.]/g, '');
+        const cleanAmountString = String(p.shareAmount).replace(/[^0-9.]/g, '');
         const rawNum = parseFloat(cleanAmountString) || 0;
         const friendAmountConverted = convertCurrency(rawNum, sub.currency || 'USD', baseCurrency);
         const friendMonthlyCost = getMonthlyCost(friendAmountConverted, sub.billingCycle);
@@ -157,7 +165,7 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
     monthlyTotal,
     yearlyTotal,
     monthlyRecoverable,
-    monthlyNetTotal: Math.max(0, monthlyTotal - monthlyRecoverable),
+    monthlyNetTotal: Math.max(0, monthlyTotal - monthlyRecoverable - monthlyTrialSavings),
     activeCount: subscriptions.length,
     mostExpensive,
     upcomingRenewals,
@@ -195,28 +203,27 @@ export const calculateVampireScore = (subscriptions: any[], totalMonthlyCostTL: 
   const triggeredAdvice: string[] = [];
 
   // RULE 1: Contract Doom (Stage 4.1 check)
-  const doomedCount = subscriptions.filter(s => !s.isPaused && getContractDoomStatus(s.contractEndDate).isDoomed).length;
-  if (doomedCount > 0) {
-    currentScore -= (doomedCount * 15);
-    triggeredAdvice.push('health.adviceDoom');
-  }
-
-  // RULE 2: Date Clash (3 or more active subs renewing on the exact same day of the month)
-  const dayCounts: { [key: number]: number } = {};
-  subscriptions.filter(s => !s.isPaused).forEach(s => {
-    const day = new Date(s.startDate).getDate();
-    dayCounts[day] = (dayCounts[day] || 0) + 1;
-  });
-  const hasClash = Object.values(dayCounts).some(count => count >= 3);
-  if (hasClash) {
-    currentScore -= 20;
-    triggeredAdvice.push('health.adviceClash');
-  }
-
-  // RULE 3: Duplicate Category Overkill (if category field exists and has >1 sub)
-  if (subscriptions[0]?.category) {
-    const catCounts: { [key: string]: number } = {};
-    subscriptions.filter(s => !s.isPaused).forEach(s => {
+  const doomedCount = subscriptions.filter(s => s.status !== 'paused' && getContractDoomStatus(s.contractEndDate).isDoomed).length;
+    if (doomedCount > 0) {
+      currentScore -= (doomedCount * 15);
+      triggeredAdvice.push('health.adviceDoom');
+    }
+  
+    // RULE 2: Date Clash (3 or more active subs renewing on the exact same day of the month)
+    const dayCounts: { [key: number]: number } = {};
+    subscriptions.filter(s => s.status !== 'paused').forEach(s => {
+      const day = new Date(s.startDate).getDate();
+      dayCounts[day] = (dayCounts[day] || 0) + 1;
+    });
+    if (Object.values(dayCounts).some(c => c >= 3)) {
+      currentScore -= 10;
+      triggeredAdvice.push('health.adviceDateClash');
+    }
+  
+    // RULE 3: Duplicate Category Overkill (if category field exists and has >1 sub)
+    if (subscriptions[0]?.category) {
+      const catCounts: { [key: string]: number } = {};
+      subscriptions.filter(s => s.status !== 'paused').forEach(s => {
       catCounts[s.category] = (catCounts[s.category] || 0) + 1;
     });
     if (Object.values(catCounts).some(c => c > 1)) {

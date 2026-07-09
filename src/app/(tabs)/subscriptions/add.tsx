@@ -9,7 +9,7 @@ import { requestNotificationPermissions, scheduleRenewalReminder } from '@/utils
 import { useTheme } from '@/context/ThemeContext';
 import { HeroInput } from '@/components/HeroInput';
 import { Ionicons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 
 export default function AddSubscriptionScreen() {
   const router = useRouter();
@@ -44,7 +44,7 @@ export default function AddSubscriptionScreen() {
           <TouchableOpacity onPress={handleGoBack} style={{ padding: 4 }}>
              <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{t('subs.addSubscription')}</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{t.subscriptionsPage?.addSubscription || t.subscriptionsPage?.addSub || 'Add Subscription'}</Text>
           <View style={{ width: 28 }} />
         </View>
 
@@ -52,7 +52,7 @@ export default function AddSubscriptionScreen() {
           <SubscriptionForm 
             onSubmit={handleSubmit} 
             isLoading={isPending} 
-            submitLabel={t('common.save')} 
+            submitLabel={t.global?.saveChanges || 'Save'} 
             hideHero={false}
           />
         </View>

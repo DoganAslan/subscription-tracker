@@ -4,12 +4,13 @@ import { Subscription } from '@/services/firebase/types';
 import { SubscriptionFormData } from '../schemas/subscription.schema';
 import { Timestamp } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
-import { Alert } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { useAuthStore } from '@/store/useAuthStore';
 import { triggerHaptic } from '@/utils/haptics';
 import { scheduleSubReminder, cancelSubReminder, scheduleContractDoomReminder } from '@/services/notificationService';
 import { getNextRenewalDate } from '@/features/dashboard/utils/calculations';
 import * as Notifications from 'expo-notifications';
+import { useTranslation } from '@/context/LanguageContext';
 
 // React Query Keys
 export const subscriptionKeys = {
@@ -32,6 +33,7 @@ export function useSubscriptions() {
 export function useAddSubscription() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
+  const { t } = useTranslation();
 
 
   return useMutation({
@@ -69,11 +71,11 @@ export function useAddSubscription() {
       } catch (err) {
         // silent fail
       }
-      Toast.show({ type: 'success', text1: 'Subscription Saved', position: 'top' });
+      Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionSaved || 'Subscription Saved', position: 'top' });
     },
     onError: (error) => {
       triggerHaptic('error');
-      Toast.show({ type: 'error', text1: 'Failed to add subscription', position: 'top' });
+      Toast.show({ type: 'error', text1: (t.global as any)?.failedToAddSub || 'Failed to add subscription', position: 'top' });
       console.error(error);
     }
   });
@@ -82,6 +84,7 @@ export function useAddSubscription() {
 export function useUpdateSubscription() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
+  const { t } = useTranslation();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: SubscriptionFormData }) => {
@@ -98,8 +101,19 @@ export function useUpdateSubscription() {
       };
       
       delete (payload as any).paymentDetails;
+      delete (payload as any).status;
+      delete (payload as any).pauseEndDate;
       // Clean undefined keys before Firestore
       Object.keys(payload).forEach(key => payload[key as keyof typeof payload] === undefined && delete payload[key as keyof typeof payload]);
+      
+      const cachedSubs = queryClient.getQueryData<Subscription[]>(subscriptionKeys.list(user.uid));
+      const oldSub = cachedSubs?.find(s => s.id === id);
+      
+      let newPriceHistory = oldSub?.priceHistory || [];
+      if (oldSub && oldSub.amount !== payload.amount) {
+        newPriceHistory = [...newPriceHistory, { amount: payload.amount, date: new Date().toISOString() }];
+        (payload as any).priceHistory = newPriceHistory;
+      }
       
       await SubscriptionService.updateSubscription(user.uid, id, payload);
       return { id, payload };
@@ -117,17 +131,19 @@ export function useUpdateSubscription() {
           scheduleContractDoomReminder({ id: result.id, ...result.payload }).catch(() => {});
         } else {
           try {
-            Notifications.cancelScheduledNotificationAsync('sub_contract_doom_' + result.id);
+            if (Platform.OS !== 'web') {
+              Notifications.cancelScheduledNotificationAsync('sub_contract_doom_' + result.id);
+            }
           } catch(e) {}
         }
       } catch (err) {
         // silent fail
       }
-      Toast.show({ type: 'success', text1: 'Subscription Updated', position: 'top' });
+      Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionUpdated || 'Subscription Updated', position: 'top' });
     },
     onError: (error) => {
       triggerHaptic('error');
-      Toast.show({ type: 'error', text1: 'Failed to update subscription', position: 'top' });
+      Toast.show({ type: 'error', text1: (t.global as any)?.failedToUpdateSub || 'Failed to update subscription', position: 'top' });
       console.error(error);
     }
   });
@@ -136,6 +152,7 @@ export function useUpdateSubscription() {
 export function useDeleteSubscription() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
+  const { t } = useTranslation();
 
 
   return useMutation({
@@ -154,12 +171,34 @@ export function useDeleteSubscription() {
       } catch (err) {
         // silent fail
       }
-      Toast.show({ type: 'success', text1: 'Subscription Removed', position: 'top' });
+      Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionDeleted || 'Subscription Removed', position: 'top' });
     },
     onError: (error) => {
       triggerHaptic('error');
-      Toast.show({ type: 'error', text1: 'Failed to delete subscription', position: 'top' });
+      Toast.show({ type: 'error', text1: (t.global as any)?.failedToDeleteSub || 'Failed to delete subscription', position: 'top' });
       console.error(error);
+    }
+  });
+}
+
+export function useTogglePauseSubscription() {
+  const queryClient = useQueryClient();
+  const user = useAuthStore(state => state.user);
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Subscription> }) => {
+      if (!user) throw new Error("Not authenticated");
+      await SubscriptionService.updateSubscription(user.uid, id, data);
+      return { id, data };
+    },
+    onSuccess: () => {
+      triggerHaptic('success');
+      if (user) {
+        queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
+      }
+    },
+    onError: () => {
+      triggerHaptic('error');
     }
   });
 }

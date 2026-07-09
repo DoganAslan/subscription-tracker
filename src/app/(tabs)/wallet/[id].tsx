@@ -1,8 +1,10 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { CardForm } from '@/features/cards/components/CardForm';
-import { useCards, useUpdateCard, useDeleteCard } from '@/features/cards/hooks/useCards';
+import { useCards, useUpdateCard, useDeleteCard, cardKeys } from '@/features/cards/hooks/useCards';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { CardFormData } from '@/features/cards/schemas/card.schema';
 import { useTheme } from '@/context/ThemeContext';
@@ -38,26 +40,51 @@ export default function EditCardScreen() {
     });
   };
 
-  const handleDelete = () => {
-    triggerHaptic('warning');
-    Alert.alert(i18n.t('global.deleteCard'), i18n.t('global.areYouSureYouWantToD1'),
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Delete", 
-          style: "destructive", 
-          onPress: () => {
-            deleteCard(id, {
-              onSuccess: () => {
-                handleGoBack();
-              }
-            });
-          }
-        }
-      ]
-    );
+  const queryClient = useQueryClient();
+  const user = useAuthStore(state => state.user);
+
+  const executePurge = async (targetCardId: string) => {
+    try {
+      if (!user) return;
+      
+      // A. Fetch current truth from Cache
+      const currentList = queryClient.getQueryData<any[]>(cardKeys.list(user.uid)) || [];
+
+      // B. Filter out the dead entity
+      const updatedList = currentList.filter((item: any) => item.id !== targetCardId);
+
+      // C. Write back strictly BEFORE updating UI
+      queryClient.setQueryData(cardKeys.list(user.uid), updatedList);
+
+      // D. Update backend and sync
+      deleteCard(targetCardId);
+
+      console.log(`[Wallet Purge] Card ${targetCardId} annihilated successfully.`);
+      handleGoBack();
+    } catch (error) {
+      console.error('[Wallet Purge Fatal Error]:', error);
+    }
   };
 
+  const handleDeleteTrigger = (cardId: string, cardName: string) => {
+    triggerHaptic('warning');
+    if (Platform.OS === 'web') {
+      // Web Browser Safe Confirm
+      if (window.confirm(`${cardName} kartını cüzdandan kalıcı olarak silmek istediğinize emin misiniz?`)) {
+        executePurge(cardId);
+      }
+    } else {
+      // Native iOS / Android Alert
+      Alert.alert(
+        'Kartı İmha Et',
+        `${cardName} cüzdanınızdan kaldırılacak. Bu işlem geri alınamaz.`,
+        [
+          { text: 'Vazgeç', style: 'cancel' },
+          { text: 'Sil', style: 'destructive', onPress: () => executePurge(cardId) }
+        ]
+      );
+    }
+  };
   if (isLoadingCard) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
@@ -69,9 +96,9 @@ export default function EditCardScreen() {
   if (!card) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ color: colors.text }}>{i18n.t('global.cardNotFound')}</Text>
+        <Text style={{ color: colors.text }}>{t.global.cardNotFound}</Text>
         <TouchableOpacity onPress={handleGoBack} style={{ marginTop: 20 }}>
-          <Text style={{ color: colors.primary }}>{i18n.t('global.goBack')}</Text>
+          <Text style={{ color: colors.primary }}>{t.global.goBack}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -84,7 +111,7 @@ export default function EditCardScreen() {
           <TouchableOpacity onPress={handleGoBack} style={{ padding: 4 }}>
              <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{i18n.t('global.editCard')}</Text>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{t.global.editCard}</Text>
           <View style={{ width: 28 }} />
         </View>
 
@@ -94,7 +121,7 @@ export default function EditCardScreen() {
             onSubmit={handleSubmit} 
             isLoading={isUpdating || isDeleting} 
             submitLabel="Update Card"
-            onDelete={handleDelete}
+            onDelete={() => handleDeleteTrigger(id, card.name)}
           />
         </View>
       </KeyboardAvoidingView>

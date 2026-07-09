@@ -3,6 +3,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { Subscription } from '@/services/firebase/types';
 import { useNotificationStore } from '../store/useNotificationStore';
+import { t } from '@/locales/i18n';
 
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({

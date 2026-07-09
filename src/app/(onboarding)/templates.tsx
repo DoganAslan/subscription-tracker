@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React, { useState, useMemo } from 'react';
 import { 
   View, Text, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, 
@@ -179,9 +179,9 @@ export default function TemplatesScreen() {
       >
         <View style={{ backgroundColor: bgHeader, borderTopLeftRadius: 24, borderTopRightRadius: 24, height: '80%', padding: 24 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <Text style={{ fontSize: 20, fontWeight: '700', color: textPrimary }}>{i18n.t('global.selectCurrency')}</Text>
+            <Text style={{ fontSize: 20, fontWeight: '700', color: textPrimary }}>{t.global.selectCurrency}</Text>
             <TouchableOpacity onPress={() => setActiveCurrencyTemplateId(null)}>
-              <Text style={{ color: primaryBrand, fontSize: 16, fontWeight: '600' }}>{i18n.t('global.close')}</Text>
+              <Text style={{ color: primaryBrand, fontSize: 16, fontWeight: '600' }}>{t.global.close}</Text>
             </TouchableOpacity>
           </View>
           
@@ -196,7 +196,7 @@ export default function TemplatesScreen() {
               borderWidth: 1,
               borderColor: borderColor
             }}
-            placeholder={i18n.t('global.searchCurrency')}
+            placeholder={t.global.searchCurrency}
             placeholderTextColor={textSecondary}
             value={currencySearch}
             onChangeText={setCurrencySearch}
@@ -221,12 +221,12 @@ export default function TemplatesScreen() {
               >
                 <Text style={{ fontSize: 16, color: textPrimary, fontWeight: '500' }}>{item.label}</Text>
                 {activeCurrencyTemplateId && pricingConfig[activeCurrencyTemplateId]?.currency === item.code && (
-                  <Text style={{ color: primaryBrand, fontSize: 16, fontWeight: 'bold' }}>{i18n.t('global.symbol66')}</Text>
+                  <Text style={{ color: primaryBrand, fontSize: 16, fontWeight: 'bold' }}>✓</Text>
                 )}
               </TouchableOpacity>
             )}
             ListEmptyComponent={
-              <Text style={{ textAlign: 'center', color: textSecondary, marginTop: 24 }}>{i18n.t('global.noCurrenciesFound')}</Text>
+              <Text style={{ textAlign: 'center', color: textSecondary, marginTop: 24 }}>{t.global.noCurrenciesFound}</Text>
             }
           />
         </View>
@@ -247,10 +247,10 @@ export default function TemplatesScreen() {
           {/* Header Area */}
           <View style={{ padding: 24, borderBottomWidth: 1, borderColor: borderColor, backgroundColor: bgHeader }}>
             <TouchableOpacity onPress={() => setStep('selection')} style={{ marginBottom: 16 }}>
-              <Text style={{ color: primaryBrand, fontSize: 16, fontWeight: '500' }}>{i18n.t('global.BackToSelection')}</Text>
+              <Text style={{ color: primaryBrand, fontSize: 16, fontWeight: '500' }}>{t.global.BackToSelection}</Text>
             </TouchableOpacity>
-            <Text style={{ fontSize: 24, fontWeight: '700', color: textPrimary, marginBottom: 8, lineHeight: 32 }}>{i18n.t('global.configurePrices')}</Text>
-            <Text style={{ fontSize: 16, color: textSecondary, lineHeight: 24 }}>{i18n.t('global.enterTheExactAmountA')}</Text>
+            <Text style={{ fontSize: 24, fontWeight: '700', color: textPrimary, marginBottom: 8, lineHeight: 32 }}>{t.global.configurePrices}</Text>
+            <Text style={{ fontSize: 16, color: textSecondary, lineHeight: 24 }}>{t.global.enterTheExactAmountA}</Text>
           </View>
 
           {/* Configuration List */}
@@ -274,7 +274,7 @@ export default function TemplatesScreen() {
                 
                 <View style={{ flexDirection: 'row', gap: 16 }}>
                   <View style={{ flex: 2 }}>
-                    <Text style={{ fontSize: 14, color: textLabel, marginBottom: 8, fontWeight: '600' }}>{i18n.t('global.amount')}</Text>
+                    <Text style={{ fontSize: 14, color: textLabel, marginBottom: 8, fontWeight: '600' }}>{t.global.amount}</Text>
                     <TextInput
                       style={{
                         borderWidth: 1,
@@ -286,7 +286,7 @@ export default function TemplatesScreen() {
                         backgroundColor: inputBg,
                         color: textPrimary
                       }}
-                      placeholder={i18n.t('global.000')}
+                      placeholder={t.global['000']}
                       placeholderTextColor={textSecondary}
                       keyboardType="decimal-pad"
                       value={pricingConfig[tmpl.id]?.amount || ''}
@@ -295,7 +295,7 @@ export default function TemplatesScreen() {
                   </View>
 
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, color: textLabel, marginBottom: 8, fontWeight: '600' }}>{i18n.t('global.currency')}</Text>
+                    <Text style={{ fontSize: 14, color: textLabel, marginBottom: 8, fontWeight: '600' }}>{t.global.currency}</Text>
                     <TouchableOpacity
                       onPress={() => openCurrencyModal(tmpl.id)}
                       style={{
@@ -313,7 +313,7 @@ export default function TemplatesScreen() {
                       <Text style={{ fontSize: 16, color: textPrimary, fontWeight: '600', marginRight: 4 }}>
                         {pricingConfig[tmpl.id]?.currency || 'TRY'}
                       </Text>
-                      <Text style={{ fontSize: 12, color: textSecondary }}>{i18n.t('global.symbol533')}</Text>
+                      <Text style={{ fontSize: 12, color: textSecondary }}>▼</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -338,7 +338,7 @@ export default function TemplatesScreen() {
               {isImporting ? (
                 <ActivityIndicator color={colors.background} />
               ) : (
-                <Text style={{ color: colors.background, fontSize: 18, fontWeight: 'bold' }}>{i18n.t('global.saveAndContinue')}</Text>
+                <Text style={{ color: colors.background, fontSize: 18, fontWeight: 'bold' }}>{t.global.saveAndContinue}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -354,8 +354,8 @@ export default function TemplatesScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: bgMain }}>
       {/* Header Area */}
       <View style={{ padding: 24, borderBottomWidth: 1, borderColor: borderColor, backgroundColor: bgHeader }}>
-        <Text style={{ fontSize: 24, fontWeight: '700', color: textPrimary, marginBottom: 8, lineHeight: 32 }}>{i18n.t('global.selectServices')}</Text>
-        <Text style={{ fontSize: 16, color: textSecondary, lineHeight: 24 }}>{i18n.t('global.selectTheSubscriptio')}</Text>
+        <Text style={{ fontSize: 24, fontWeight: '700', color: textPrimary, marginBottom: 8, lineHeight: 32 }}>{t.global.selectServices}</Text>
+        <Text style={{ fontSize: 16, color: textSecondary, lineHeight: 24 }}>{t.global.selectTheSubscriptio}</Text>
       </View>
 
       {/* Scrollable Content Area */}

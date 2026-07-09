@@ -1,4 +1,4 @@
-import i18n from '@/locales/i18n';
+import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
@@ -9,9 +9,9 @@ export const AboutSignature = () => {
 
   return (
     <View style={dynamicStyles.container}>
-      <Text style={dynamicStyles.version}>{i18n.t('global.submateV130')}</Text>
+      <Text style={dynamicStyles.version}>{t.global.submateV130}</Text>
       <View style={dynamicStyles.signatureBox}>
-        <Text style={dynamicStyles.signatureText}>{i18n.t('global.craftedWithPassionBy')}</Text>
+        <Text style={dynamicStyles.signatureText}>{t.global.craftedWithPassionBy}</Text>
       </View>
     </View>
   );

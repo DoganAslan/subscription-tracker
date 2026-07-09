@@ -4,7 +4,7 @@ import Svg, { G, Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from '@/context/LanguageContext';
 import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 interface Props {
@@ -59,11 +59,11 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
   return (
     <Animated.View entering={FadeInUp.duration(600).springify()} style={dynamicStyles.cardContainer}>
       <View style={dynamicStyles.headerRow}>
-        <Text style={dynamicStyles.cardTitle}>{t('home.categoryBreakdown')}</Text>
+        <Text style={dynamicStyles.cardTitle}>{t.dashboard?.categoryBreakdown || 'Category Breakdown'}</Text>
       </View>
       
       {hasData === false ? (
-        <Text style={dynamicStyles.emptyText}>{t('common.error') /* or appropriate empty text */}</Text>
+        <Text style={dynamicStyles.emptyText}>{t.common.error /* or appropriate empty text */}</Text>
       ) : (
         <View style={dynamicStyles.contentColumn}>
           
@@ -73,7 +73,7 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
               <View style={[dynamicStyles.chartSquareWrapper, { width: chartSize, height: chartSize }]}>
                 {Platform.OS === 'web' && typeof window === 'undefined' ? (
                   <View style={dynamicStyles.ssrFallback}>
-                    <Text style={{ color: colors.text }}>{t('global.loading')}</Text>
+                    <Text style={{ color: colors.text }}>{t.global.loading}</Text>
                   </View>
                 ) : (
                   <View pointerEvents={Platform.OS === 'web' ? 'none' : 'auto'}>
@@ -100,7 +100,7 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
                   {/* Info Row */}
                   <View style={dynamicStyles.catInfoRow}>
                     <View style={dynamicStyles.catLeft}>
-                      <Text style={dynamicStyles.catName} numberOfLines={1}>{item.category}</Text>
+                      <Text style={dynamicStyles.catName} numberOfLines={1}>{(t.categories as any)?.[item.category] || item.category}</Text>
                       <View style={[dynamicStyles.pillBadge, { backgroundColor: color + '20' }]}>
                         <Text style={[dynamicStyles.pillText, { color: color }]}>%{pct}</Text>
                       </View>

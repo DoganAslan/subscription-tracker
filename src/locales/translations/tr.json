@@ -186,9 +186,9 @@
     "noRenewalsInTheNext3": "No renewals in the next 30 days",
     "remindFriends": "Remind Friends",
     "symbol721": "💡",
-    "deleteSubscription": "Delete Subscription?",
+    "deleteSubscription": "Aboneliği Sil?",
     "areYouSureYouWantToD": "Are you sure you want to delete this subscription? This action cannot be undone and will be removed from your tracking immediately.",
-    "delete": "Delete",
+    "delete": "Sil",
     "posttrialPrice": "POST-TRIAL PRICE",
     "renewalDate": "RENEWAL DATE",
     "reminderOffset": "REMINDER OFFSET",
@@ -288,7 +288,13 @@
     "selectACard": "Select a card",
     "egNetflix": "e.g., Netflix",
     "selectACategory": "Select a category",
-    "egSharedWithFamily": "e.g., Shared with family"
+    "egSharedWithFamily": "e.g., Shared with family",
+    "subscriptionSaved": "Abonelik Kaydedildi",
+    "subscriptionUpdated": "Abonelik Güncellendi",
+    "subscriptionDeleted": "Abonelik Silindi",
+    "failedToAddSub": "Abonelik eklenemedi",
+    "failedToUpdateSub": "Abonelik güncellenemedi",
+    "failedToDeleteSub": "Abonelik silinemedi"
   },
   "health": {
     "statusExcellent": "Zırhlı Bütçe",
@@ -298,5 +304,61 @@
     "adviceClash": "Birden fazla ödeme günü aynı tarihte çakışıyor.",
     "adviceDoom": "Yakında bitecek taahhüt sözleşmelerin var!",
     "meterTitle": "FİNANSAL SAĞLIK SKORU"
+  },
+  "features": {
+    "lastXHours": "🚨 SON {{hours}} SAAT",
+    "xHoursLeft": "{{hours}} SAAT KALDI",
+    "trialVersionTag": "Deneme Sürümü",
+    "sharedPaymentOverview": "💰 Ortak Ödeme Özeti",
+    "unnamed": "İsimsiz",
+    "remind": "Hatırlat",
+    "aiScannerAutoFill": "AI Scanner ile Otomatik Doldur",
+    "smartTipsTitle": "Tasarruf İpucu (Smart Tips)",
+    "insteadOf": "Yerine: ",
+    "becauseYouPayFor": "Çünkü {{subName}} için ödeme yapıyorsunuz.",
+    "deleteDoesNotCancel": "Bu aboneliği SubMate'ten silmek, gerçek aboneliğinizi iptal etmez. Eğer gerçek aboneliğinizi de iptal etmek istiyorsanız aşağıdaki butonu kullanabilirsiniz.",
+    "goToCancelPage": "İptal Sayfasına Git",
+    "doesNotCancelBold": "iptal etmez",
+    "altReason_spotify": "ChatGPT Plus yerine, genellikle daha geniş ücretsiz kullanım sunan Claude 3.5 Sonnet veya Google Gemini (ücretsiz sürüm) kullanarak AI masraflarınızı sıfırlayabilirsiniz.",
+    "altReason_midjourney": "Midjourney aboneliği yerine, her gün ücretsiz jeton veren Leonardo AI kullanarak görsel üretim ihtiyaçlarınızı ücretsiz olarak karşılayabilirsiniz.",
+    "altReason_adobe": "Adobe Creative Cloud yerine tek seferlik ödeme alan Affinity Photo & Designer'a geçebilir veya tamamen ücretsiz Photopea ve Canva kullanabilirsiniz.",
+    "altReason_netflix": "Netflix'i iptal edip Amazon Prime'a geçerseniz hem çok daha uygun fiyata film/dizi izler, hem de Amazon kargolarınızı bedavaya getirebilirsiniz.",
+    "cancelledToSave": "Tasarruf etmek için iptal ettim!",
+    "justDelete": "Sadece uygulamadan sil",
+    "trackUsage": "Kullanımı Takip Et",
+    "usedXTimes": "{{count}} kez kullanıldı.",
+    "lastUsed": "Son: {{date}}",
+    "iUsedThisToday": "Bugün kullandım"
+  },
+  "legal": {
+    "privacyPolicy": "Gizlilik Politikası",
+    "termsOfUse": "Kullanım Koşulları",
+    "privacyPolicyContent": "SubMate olarak kişisel ve finansal verilerinizin mahremiyetine büyük önem veriyoruz. Bu Kapsamlı Gizlilik Politikası, Uygulamamızı kullanırken hangi verilerin nasıl işlendiğini, saklandığını ve güvence altına alındığını hiçbir açık bırakmayacak şekilde açıklamaktadır.\n\n1. Veri Toplamama İlkesi ve Sovereign Vault Sistemi\nSubMate, mahremiyet odaklı bir yaklaşımla (\"Privacy by Design\") geliştirilmiştir. Bu doğrultuda temel prensibimiz şudur:\nBİZ SİZİN VERİLERİNİZİ TOPLAMIYORUZ. UYGULAMAYA GİRDİĞİNİZ HİÇBİR ABONELİK BİLGİSİ, ÖDEME TUTARI VEYA CÜZDAN ETİKETİ ŞİRKETİMİZE AİT SUNUCULARA (CLOUD) GÖNDERİLMEZ VE KAYDEDİLMEZ.\nTüm verileriniz Cihaz İçi Şifreleme (On-Device Encryption) kullanılarak yalnızca kendi akıllı telefonunuzun yerel hafızasında saklanır. Bu nedenle, verilerinizin yetkisiz erişime uğraması, satılması veya sızdırılması tarafımızca teknik olarak imkansızdır.\n\n2. İşlenen Veri Türleri ve Kapsamı\n2.1. Finansal Veriler ve Abonelikler\nUygulamaya eklediğiniz abonelik isimleri (Netflix, Gym, Kira vb.), harcama kategorileri, tutarlar ve takvim bildirim tarihleri tamamen cihazınızın hafızasındadır. Şirketimiz, harcama alışkanlıklarınızla ilgili bir profil oluşturmaz.\n2.2. Kredi Kartı ve Cüzdan Bilgileri\nUygulamanın \"Cüzdan\" bölümü, sadece bütçenizi zihninizde ayırmanıza yardımcı olan bir etiketleme sistemidir. Uygulama, geçerli bir 16 haneli kredi kartı numarasını, son kullanma tarihini (SKT) veya güvenlik kodunu (CVV/CVC) asla talep etmez, almaz ve saklamaz. Yalnızca kartlarınızı ayırt etmek için kendinizin belirlediği \"İsim\" (Örn: Maaş Kartım) ve hatırlatıcı 4 haneli rakamlar cihazda lokal olarak tutulur. Dolayısıyla uygulama, PCI-DSS (Ödeme Kartı Sektörü Veri Güvenliği Standardı) kapsamı dışındadır ve kart kopyalanması/çalınması gibi durumlarda hukuken taraf gösterilemez.\n\n3. Cihaz İzinleri ve Biyometrik Doğrulama\nUygulamanın çalışabilmesi için işletim sisteminden bazı izinler talep edilebilir:\n• Biyometrik Veriler (Face ID / Touch ID): Uygulama girişine şifre koymak isterseniz, doğrulama işlemi tamamen cihazınızın kendi güvenli ortamında (Secure Enclave) gerçekleşir. SubMate sizin parmak izinize veya yüz verinize asla erişemez, sadece işletim sisteminden \"Doğrulandı\" veya \"Reddedildi\" sinyalini alır.\n• Bildirimler: Yaklaşan abonelik ödemelerini haber vermek içindir. Bildirim içeriklerinde hassas tutarlar gösterilmez.\n• Depolama / Dosya Erişimi: Yalnızca verilerinizi JSON formatında dışa veya içe aktarmak (Export/Import) istediğinizde, dosyayı cihazınıza kaydetmek için kullanılır.\n\n4. Üçüncü Taraf Entegrasyonları ve Veri Paylaşımı\nSubMate, özelliklerini sunabilmek için dış kaynaklarla sınırlı iletişim kurar:\n• Döviz Kurları API'si: Kur analizi yapmak için güncel kurları dış bir kaynaktan çeker. Bu sorgular anonimdir; sizin portföy büyüklüğünüz veya abonelikleriniz dış API'ye gönderilmez.\n• Analitik ve Hata Ayıklama (Crashlytics vb.): Uygulamanın çökmesi durumunda, sorunu çözebilmek adına işletim sistemi sürümünüz ve cihaz modeliniz gibi tamamen anonimleştirilmiş teknik hata logları toplanabilir. Bu loglar hiçbir kişisel veya finansal veri içermez.\n\n5. Veri Silme ve Taşıma Hakkı\nVerileriniz sunucularımızda olmadığı için bize bir \"hesap silme\" veya \"veri silme\" talebi göndermenize gerek yoktur. SubMate uygulamasını cihazınızdan kaldırdığınız (Uninstall) anda, işletim sisteminiz tüm verilerinizi kalıcı ve geri döndürülemez biçimde silecektir. Verilerinizin kontrolü ve yedeği tamamen kullanıcının mesuliyetindedir.\n\n6. Yaş Sınırı\nSubMate, 18 yaş ve üzeri bireylerin kullanımı için tasarlanmıştır. Uygulama kişisel veri toplamadığı için çocukların verilerini kasıtlı olarak toplama gibi bir ihlal söz konusu olamaz.\n\n7. Politika Güncellemeleri ve İletişim\nŞirket, bu Gizlilik Politikasını herhangi bir zamanda güncelleme hakkını saklı tutar. Uygulama veri toplamadığı için, gizliliğinizle ilgili oluşabilecek her türlü soru ve teknik konu için mağaza (App Store / Play Store) iletişim kanalları üzerinden bize ulaşabilirsiniz.",
+    "termsOfUseContent": "Lütfen SubMate (\"Uygulama\") mobil uygulamasını indirmeden, kurmadan veya kullanmadan önce bu Kullanım Koşulları sözleşmesini (\"Sözleşme\") dikkatlice okuyunuz. Bu Sözleşme, Uygulama'nın kullanımı ile ilgili olarak sizinle (\"Kullanıcı\") Uygulama geliştiricileri (\"Şirket\", \"Biz\" veya \"Tarafımız\") arasındaki hukuki olarak bağlayıcı tek anlaşmadır.\n\n1. Hizmetin Doğası ve Kabulü\nSubMate, kişisel dijital aboneliklerinizi takip etmeniz, bütçe yönetimi yapmanız ve yenileme tarihlerini kaydetmeniz için tasarlanmış bağımsız bir bilgi organizasyon aracıdır. Uygulamayı cihazınıza yükleyerek, bu Sözleşme'deki tüm şartları, feragatnameleri ve sorumluluk sınırlandırmalarını kayıtsız şartsız kabul etmiş olursunuz. Şartları kabul etmiyorsanız, Uygulamayı derhal cihazınızdan silmelisiniz.\n\n2. Sorumluluk Reddi ve Hizmet Sınırlandırmaları (ÖNEMLİ)\nSubMate bir finans kuruluşu, banka, ödeme geçidi, portföy yönetim şirketi veya mali danışman değildir. Uygulamanın kullanımı tamamen kendi riskiniz altındadır.\n\n2.1. Finansal İşlemler ve İptaller\nUygulama üzerinden hiçbir şekilde gerçek bir ödeme işlemi yapılamaz, abonelik başlatılamaz veya mevcut bir abonelik iptal edilemez. SubMate, yalnızca kullanıcının manuel olarak girdiği verileri organize eder. Aboneliklerinizin zamanında iptal edilmesi, kredi kartı veya banka hesabınızdan çekilecek tutarların takibi ve üçüncü taraf hizmet sağlayıcılarla (Netflix, Spotify vb.) olan hukuki ilişkiniz tamamen sizin sorumluluğunuzdadır.\n\n2.2. Bildirimler ve Anımsatıcılar Garantisi\nHİÇBİR BİLDİRİMİN ZAMANINDA ULAŞACAĞI GARANTİ EDİLEMEZ. İŞLETİM SİSTEMLERİNİN (iOS/ANDROID) PİL TASARRUF MODLARI, ARKA PLAN KISITLAMALARI VEYA YAZILIMSAL HATALAR SEBEBİYLE UYGULAMA BİLDİRİMLERİNİN GÖSTERİLMEMESİ DURUMUNDA, İPTAL EDİLMEYİ UNUTULAN ABONELİKLERDEN DOĞACAK MADDİ ZARARLARDAN ŞİRKET KESİNLİKLE SORUMLU TUTULAMAZ.\n\n2.3. Kur Riski ve Döviz Çevirici Doğruluğu\nUygulama içinde sunulan \"Kur Riski Analizi\" (Currency Risk) ve döviz çeviri özellikleri, üçüncü taraf API'lerden sağlanan anlık veya gecikmeli verilere dayanmaktadır. Kendi bankanızın uygulayacağı uluslararası işlem ücretleri, döviz makas aralıkları ve anlık kur dalgalanmaları nedeniyle ekranda görünen tutar ile ekstrenize yansıyan tutar arasında farklar oluşabilir. Uygulama bu tutarların %100 doğruluğunu taahhüt etmez.\n\n2.4. \"Vampir Abonelik\" (Vampire Alert) ve Finansal Tavsiye\nVampir Abonelik Tespiti özelliği yalnızca basit bir algoritmik sınıflandırma yapar ve kullanıcının birbirine benzer veya atıl hizmetlere para ödediği konusunda bir tahmin sunar. Bu bir finansal tavsiye değildir. Herhangi bir aboneliği iptal etme kararı tamamen kullanıcının takdirindedir.\n\n3. Veri Kaybı ve Yedekleme Sorumluluğu\nSubMate, mahremiyetinizi korumak adına tüm verilerinizi cihazınızda yerel olarak saklar (Sovereign Vault). Uygulamanın bulut yedekleme altyapısı yoktur. Uygulamanın silinmesi, cihazın kaybolması, hasar görmesi veya işletim sistemi güncellemeleri sırasında oluşabilecek çökmeler sonucunda finansal takip verilerinizin kaybolmasından Şirket hiçbir şekilde sorumlu tutulamaz. Verilerin uygulamanın sunduğu dışa aktarma (JSON export) özelliği ile düzenli olarak yedeklenmesi tamamen Kullanıcının sorumluluğundadır.\n\n4. Uygulamanın Kullanım Hakları ve Fikri Mülkiyet\nSubMate'in tüm kod altyapısı (React Native & Expo mimarisi dâhil), arayüz tasarımları, logoları, algoritmaları ve metinleri Şirket'e aittir. Kullanıcıya yalnızca uygulamayı kişisel ve ticari olmayan amaçlarla kullanması için devredilemez, münhasır olmayan bir lisans verilir. Uygulamanın tersine mühendisliğe tabi tutulması, kopyalanması veya kaynak kodunun deşifre edilmeye çalışılması kesinlikle yasaktır.\n\n5. \"Olduğu Gibi\" (As Is) Beyanı ve Tazminat\nUYGULAMA, AÇIK VEYA ZIMNİ HİÇBİR GARANTİ OLMAKSIZIN \"OLDUĞU GİBİ\" VE \"MEVCUT OLDUĞU ŞEKİLDE\" SUNULMAKTADIR. ŞİRKET, TİCARİ ELVERİŞLİLİK, BELİRLİ BİR AMACA UYGUNLUK VEYA İHLAL ETMEME GARANTİLERİNİ AÇIKÇA REDDEDER. Kullanıcı, uygulamanın kullanımı sonucunda doğabilecek her türlü doğrudan, dolaylı, tesadüfi, özel veya cezai zararlardan Şirket'i, yöneticilerini, çalışanlarını ve iş ortaklarını gayrikabili rücu olarak ibra eder.\n\n6. Uyuşmazlıkların Çözümü\nBu Sözleşme'den doğacak her türlü hukuki uyuşmazlığın çözümünde Türkiye Cumhuriyeti kanunları uygulanacaktır. Sözleşmenin herhangi bir maddesinin yetkili bir mahkeme tarafından geçersiz kılınması, diğer maddelerin geçerliliğini etkilemeyecektir.",
+    "close": "Kapat",
+    "consentText": "Gizlilik Politikası ve Kullanım Koşullarını okudum, anladım ve kabul ediyorum."
+  },
+  "authLeaks": {
+    "emailAddress": "E-posta Adresi",
+    "password": "Şifre",
+    "forgotPasswordLabel": "Şifremi Unuttum?",
+    "logInBtn": "Giriş Yap",
+    "fullName": "Ad Soyad",
+    "confirmPassword": "Şifreyi Onayla",
+    "createAccountBtn": "Hesap Oluştur"
+  },
+  "categories": {
+    "Entertainment": "Eğlence",
+    "Music & Audio": "Müzik & Ses",
+    "Productivity": "Üretkenlik",
+    "Utilities & Cloud": "Araçlar & Bulut",
+    "Health & Fitness": "Sağlık & Spor",
+    "Finance & Insurance": "Finans & Sigorta",
+    "Education & Learning": "Eğitim & Öğrenim",
+    "Gaming": "Oyun",
+    "Shopping & E-commerce": "Alışveriş & E-ticaret",
+    "News & Media": "Haberler & Medya",
+    "Food & Delivery": "Yemek & Teslimat",
+    "Other": "Diğer"
   }
 }

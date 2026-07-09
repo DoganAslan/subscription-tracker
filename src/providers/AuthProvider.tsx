@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { AuthService } from '@/services/firebase/auth';
 import { useAuthStore } from '@/store/useAuthStore';
+import { t } from '@/locales/i18n';
 
 interface AuthProviderProps {
   children: React.ReactNode;
