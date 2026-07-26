@@ -222,3 +222,4 @@ export const LANGUAGES: Record<string, TranslationType> = {
     }
   }
 };
+

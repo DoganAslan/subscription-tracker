@@ -42,3 +42,4 @@ Uygulamanın ana ekranı, finansal durumunuzun anlık bir özetini sunar.
 
 SubMate, finansal özgürlüğe giden yolda gereksiz harcamalarınızı budayan ve paranızın kontrolünü tamamen size veren en iyi dijital asistanınızdır.
 
+

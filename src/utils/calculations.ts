@@ -76,3 +76,4 @@ export const calculateMonthlyCosts = (sub: any, activeCurrency: string) => {
     net: Math.max(0, safeFinancialRound(netMonthly)) 
   };
 };
+

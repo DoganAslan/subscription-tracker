@@ -83,3 +83,4 @@ export function SummaryWidget({ monthlyTotal, nextPaymentName, nextPaymentDate }
     </FlexWidget>
   );
 }
+

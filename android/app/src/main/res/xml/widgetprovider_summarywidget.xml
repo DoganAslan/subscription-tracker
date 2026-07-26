@@ -19,3 +19,4 @@
     android:updatePeriodMillis="0"
     android:widgetCategory="home_screen">
 </appwidget-provider>
+

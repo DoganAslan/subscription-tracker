@@ -196,3 +196,4 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
 });
 
 
+

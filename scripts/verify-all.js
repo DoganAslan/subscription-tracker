@@ -217,3 +217,4 @@ runTest('Donanım ve kaydı tam cihazda biyometrik kilit doğrulama istemelidir'
 console.log('\n--------------------------------------------------');
 console.log(`📊 Test Sonucu: ${passedTests} / ${totalTests} test başarıyla tamamlandı! (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('--------------------------------------------------');
+

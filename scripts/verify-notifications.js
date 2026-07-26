@@ -400,3 +400,4 @@ if (passed === total) {
   console.log(`⚠️  ${total - passed} test başarısız!`);
 }
 console.log('═══════════════════════════════════════════════════');
+

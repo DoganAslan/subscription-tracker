@@ -28,3 +28,4 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   return <>{children}</>;
 }
+

@@ -78,3 +78,4 @@ export const analyzeFinancialHealth = (subs: Subscription[] = []): HealthReport 
 
   return { score: finalScore, statusTitle, colorTheme, insights: warnings.slice(0, 3), vampireStats };
 };
+

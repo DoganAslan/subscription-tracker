@@ -251,3 +251,4 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
     </Swipeable>
   );
 });
+

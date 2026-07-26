@@ -303,3 +303,4 @@ export const resyncAllReminders = async (subscriptions: any[]): Promise<void> =>
     console.error('Failed to resync reminders:', error);
   }
 };
+

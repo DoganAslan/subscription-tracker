@@ -47,3 +47,4 @@ export const darkColors: ThemeColors = {
   heroGradient: ['#3B82F6', '#1D4ED8', '#1E40AF'] as const,
   cardBg: '#1E293B',
 };
+

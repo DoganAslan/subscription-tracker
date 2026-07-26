@@ -187,3 +187,4 @@ export default function LoginScreen() {
 fs.writeFileSync('src/app/(auth)/index.tsx', indexCode, 'utf8');
 console.log('Login screen overwritten.');
 
+
