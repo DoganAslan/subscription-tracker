@@ -823,6 +823,36 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
 
           {isSplit && (
             <View style={{ marginTop: 12, backgroundColor: colors.surface, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}>
+              {/* Auto-Divide Button */}
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic('medium');
+                  const currentAmount = watch('amount') || 0;
+                  const count = splitFields.length;
+                  if (currentAmount > 0 && count > 0) {
+                    const equalShare = Number((currentAmount / (count + 1)).toFixed(2));
+                    splitFields.forEach((_, idx) => {
+                      setValue(`splitMembers.${idx}.shareAmount` as any, equalShare);
+                    });
+                  }
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
+                  padding: 12,
+                  borderRadius: 12,
+                  marginBottom: 16,
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="calculator-outline" size={18} color={colors.primary} style={{ marginRight: 6 }} />
+                <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 13 }}>
+                  ⚡ Auto-Divide Equally ({splitFields.length + 1} People)
+                </Text>
+              </TouchableOpacity>
+
               {splitFields.map((field, index) => (
                 <View key={field.id} style={{ marginBottom: 16, paddingBottom: 16, borderBottomWidth: index === splitFields.length - 1 ? 0 : 1, borderBottomColor: colors.border }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -1112,7 +1142,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingVertical: 24,
-    paddingBottom: 80,
+    paddingBottom: 160,
   },
   aiScanButton: {
     backgroundColor: '#6366F1',

@@ -12,9 +12,10 @@ export function SummaryWidget({ monthlyTotal, nextPaymentName, nextPaymentDate }
     <FlexWidget
       style={{
         flexDirection: 'column',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
+        alignItems: 'stretch',
         backgroundColor: '#0B0F19',
-        padding: 12,
+        padding: 8,
         height: 'match_parent',
         width: 'match_parent',
       }}
@@ -22,62 +23,63 @@ export function SummaryWidget({ monthlyTotal, nextPaymentName, nextPaymentDate }
       <FlexWidget
         style={{
           flexDirection: 'column',
-          backgroundColor: '#1F2937',
-          padding: 16,
+          backgroundColor: '#1E293B',
+          padding: 14,
           borderRadius: 16,
           height: 'match_parent',
           width: 'match_parent',
-          justifyContent: 'center',
+          justifyContent: 'space-between',
         }}
       >
-        <TextWidget 
-          text="TOTAL MONTHLY SPEND" 
-          style={{ 
-            fontSize: 10, 
-            color: '#9CA3AF', 
-            fontWeight: 'bold' 
-          }} 
-        />
-        <TextWidget 
-          text={monthlyTotal} 
-          style={{ 
-            fontSize: 22, 
-            color: '#FFFFFF', 
-            fontWeight: 'bold', 
-            marginTop: 4 
-          }} 
-        />
-        
+        <FlexWidget style={{ flexDirection: 'column' }}>
+          <TextWidget
+            text="SUBMATE • AYLIK TOPLAM"
+            style={{
+              fontSize: 9,
+              color: '#3B82F6',
+              fontWeight: 'bold',
+              letterSpacing: 0.5,
+            }}
+          />
+          <TextWidget
+            text={monthlyTotal}
+            style={{
+              fontSize: 22,
+              color: '#FFFFFF',
+              fontWeight: 'bold',
+              marginTop: 4,
+            }}
+          />
+        </FlexWidget>
+
         <FlexWidget
           style={{
             flexDirection: 'column',
-            marginTop: 16,
-            paddingTop: 12,
+            marginTop: 8,
+            paddingTop: 8,
             borderTopWidth: 1,
-            borderColor: '#374151',
+            borderColor: '#334155',
           }}
         >
-          <TextWidget 
-            text="NEXT PAYMENT" 
-            style={{ 
-              fontSize: 9, 
-              color: '#9CA3AF', 
-              fontWeight: 'bold' 
-            }} 
+          <TextWidget
+            text="SIRADAKİ ÖDEME"
+            style={{
+              fontSize: 8,
+              color: '#94A3B8',
+              fontWeight: 'bold',
+            }}
           />
-          <TextWidget 
-            text={`${nextPaymentName} • ${nextPaymentDate}`} 
-            style={{ 
-              fontSize: 12, 
-              color: '#E5E7EB', 
-              marginTop: 4,
-              fontWeight: 'bold'
-            }} 
+          <TextWidget
+            text={`${nextPaymentName} • ${nextPaymentDate}`}
+            style={{
+              fontSize: 11,
+              color: '#E2E8F0',
+              marginTop: 2,
+              fontWeight: 'bold',
+            }}
           />
         </FlexWidget>
       </FlexWidget>
     </FlexWidget>
   );
 }
-
-

@@ -18,10 +18,10 @@ export const authenticateUser = async (): Promise<boolean> => {
     }
 
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'SubMate Kasına Giriş Yapın',
-      fallbackLabel: 'Şifre Kullan',
+      promptMessage: (t.global as any)?.biometricPrompt || 'Unlock SubMate',
+      fallbackLabel: (t.global as any)?.usePassword || 'Use Password',
       disableDeviceFallback: false,
-      cancelLabel: 'İptal',
+      cancelLabel: t.common?.cancel || 'Cancel',
     });
 
     return result.success;

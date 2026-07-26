@@ -3,6 +3,7 @@ import React from 'react';
 import { View, Text, Modal, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getCancelUrl } from '@/utils/cancelLinksDb';
+import { useTheme } from '@/context/ThemeContext';
 
 interface Props {
   visible: boolean;
@@ -13,6 +14,8 @@ interface Props {
 }
 
 export function DeleteConfirmationModal({ visible, onConfirm, onCancel, isLoading, subscriptionName }: Props) {
+  const { colors, isDark } = useTheme();
+
   const handleOpenCancelUrl = () => {
     const url = getCancelUrl(subscriptionName);
     Linking.openURL(url).catch((err) => console.error('An error occurred', err));
@@ -20,17 +23,33 @@ export function DeleteConfirmationModal({ visible, onConfirm, onCancel, isLoadin
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-        <View style={{ backgroundColor: '#ffffff', borderRadius: 16, padding: 24, width: '100%', maxWidth: 350, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 3.84, elevation: 5 }}>
-          <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#0f172a', marginBottom: 8 }}>{t.global?.deleteSubscription || 'Delete Subscription?'}</Text>
-          <Text style={{ color: '#64748b', marginBottom: 16, lineHeight: 22 }}>
+      <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', alignItems: 'center', padding: 16 }}>
+        <View style={{ 
+          backgroundColor: isDark ? '#1E293B' : '#ffffff', 
+          borderRadius: 20, 
+          padding: 24, 
+          width: '100%', 
+          maxWidth: 360, 
+          borderWidth: 1,
+          borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+          shadowColor: '#000', 
+          shadowOffset: { width: 0, height: 4 }, 
+          shadowOpacity: 0.3, 
+          shadowRadius: 8, 
+          elevation: 8 
+        }}>
+          <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text, marginBottom: 8 }}>
+            {t.global?.deleteSubscription || 'Delete Subscription?'}
+          </Text>
+          <Text style={{ color: colors.textSecondary, marginBottom: 18, lineHeight: 22, fontSize: 14 }}>
             {t.features?.deleteDoesNotCancel || "Deleting this subscription from SubMate does not cancel your actual subscription."}
           </Text>
 
           <TouchableOpacity 
             onPress={handleOpenCancelUrl}
+            activeOpacity={0.8}
             style={{ 
-              backgroundColor: '#EFF6FF', 
+              backgroundColor: isDark ? 'rgba(37, 99, 235, 0.15)' : '#EFF6FF', 
               paddingVertical: 12, 
               paddingHorizontal: 16, 
               borderRadius: 12, 
@@ -38,24 +57,29 @@ export function DeleteConfirmationModal({ visible, onConfirm, onCancel, isLoadin
               alignItems: 'center', 
               justifyContent: 'center',
               borderWidth: 1,
-              borderColor: '#BFDBFE',
-              marginBottom: 24
+              borderColor: isDark ? 'rgba(37, 99, 235, 0.35)' : '#BFDBFE',
+              marginBottom: 20
             }}
           >
-            <Ionicons name="link-outline" size={20} color="#2563EB" style={{ marginRight: 8 }} />
-            <Text style={{ color: '#2563EB', fontWeight: '600', fontSize: 15 }}>{t.features?.goToCancelPage || 'Go to Cancel Page'}</Text>
+            <Ionicons name="link-outline" size={20} color={isDark ? '#60A5FA' : '#2563EB'} style={{ marginRight: 8 }} />
+            <Text style={{ color: isDark ? '#60A5FA' : '#2563EB', fontWeight: '600', fontSize: 15 }}>
+              {t.features?.goToCancelPage || 'Go to Cancel Page'}
+            </Text>
           </TouchableOpacity>
 
-          <View style={{ flexDirection: 'column', gap: 12 }}>
+          <View style={{ flexDirection: 'column', gap: 10 }}>
             <TouchableOpacity 
               style={{ flex: 1, backgroundColor: '#10B981', paddingVertical: 14, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
               onPress={() => onConfirm(true)}
               disabled={isLoading}
+              activeOpacity={0.85}
             >
               {isLoading ? <ActivityIndicator color="#ffffff" /> : (
                 <>
                   <Ionicons name="cash-outline" size={20} color="#FFF" />
-                  <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 16 }}>{t.features?.cancelledToSave || 'I cancelled this to save money!'}</Text>
+                  <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 15 }}>
+                    {t.features?.cancelledToSave || 'I cancelled this to save money!'}
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -64,16 +88,30 @@ export function DeleteConfirmationModal({ visible, onConfirm, onCancel, isLoadin
               style={{ flex: 1, backgroundColor: '#EF4444', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
               onPress={() => onConfirm(false)}
               disabled={isLoading}
+              activeOpacity={0.85}
             >
-              <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 15 }}>{t.features?.justDelete || 'Just delete from app'}</Text>
+              <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 14 }}>
+                {t.features?.justDelete || 'Just delete from app'}
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={{ flex: 1, backgroundColor: '#f1f5f9', paddingVertical: 12, borderRadius: 12, alignItems: 'center' }}
+              style={{ 
+                flex: 1, 
+                backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F1F5F9', 
+                paddingVertical: 12, 
+                borderRadius: 12, 
+                alignItems: 'center',
+                borderWidth: isDark ? 1 : 0,
+                borderColor: 'rgba(255,255,255,0.1)'
+              }}
               onPress={onCancel}
               disabled={isLoading}
+              activeOpacity={0.8}
             >
-              <Text style={{ color: '#475569', fontWeight: 'bold', fontSize: 15 }}>{t.common?.cancel || 'Cancel'}</Text>
+              <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14 }}>
+                {t.common?.cancel || 'Cancel'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -81,5 +119,3 @@ export function DeleteConfirmationModal({ visible, onConfirm, onCancel, isLoadin
     </Modal>
   );
 }
-
-

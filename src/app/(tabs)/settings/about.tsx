@@ -1,181 +1,174 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, Image } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { triggerHaptic } from '@/utils/haptics';
 
 export default function AboutScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
   const { t } = useTranslation();
-  const insets = useSafeAreaInsets();
-  const dynamicStyles = React.useMemo(() => getStyles(colors, isDark, insets), [colors, isDark, insets]);
 
   const handleGoBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)/settings');
-    }
+    triggerHaptic('light');
+    router.replace('/(tabs)/settings');
   };
 
   const handlePressItem = () => {
     triggerHaptic('light');
-    // Implement navigation or external links here
   };
 
   return (
-    <View style={dynamicStyles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header Bar */}
-      <View style={dynamicStyles.headerBar}>
-        <TouchableOpacity onPress={handleGoBack} style={dynamicStyles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={28} color={isDark ? '#FFFFFF' : colors.text} />
+      <View style={[styles.headerBar, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity onPress={handleGoBack} style={styles.backButton} activeOpacity={0.7}>
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={dynamicStyles.headerBarTitle}>{t.settings.about}</Text>
+        <Text style={[styles.headerBarTitle, { color: colors.text }]}>{t.settings?.about || 'SubMate Hakkında'}</Text>
         <View style={{ width: 28 }} />
       </View>
 
       <ScrollView 
-        style={dynamicStyles.scrollContainer} 
-        contentContainerStyle={dynamicStyles.scrollContent}
+        style={styles.scrollContainer} 
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* App Title Section */}
-        <View style={dynamicStyles.titleSection}>
-          <View style={dynamicStyles.logoContainer}>
+        <View style={styles.titleSection}>
+          <View style={[styles.logoContainer, { backgroundColor: 'rgba(59, 130, 246, 0.12)', borderColor: colors.border }]}>
             <Image 
               source={require('../../../../assets/images/logo.png')} 
-              style={dynamicStyles.logoImage} 
+              style={styles.logoImage} 
               resizeMode="cover"
             />
           </View>
-          <Text style={dynamicStyles.appName}>{t.global.submate}</Text>
-          <Text style={dynamicStyles.appVersion}>{t.global.version100}</Text>
+          <Text style={[styles.appName, { color: colors.text }]}>SubMate Pro</Text>
+          <Text style={[styles.appVersion, { color: colors.textSecondary }]}>v1.0.0 (Build 2026)</Text>
+          <Text style={[styles.appDesc, { color: colors.textSecondary }]}>
+            Your ultimate privacy-first subscription tracker & financial shield.
+          </Text>
         </View>
 
-        {/* Action Cards */}
-        <View style={dynamicStyles.cardGroup}>
-          <TouchableOpacity style={dynamicStyles.cardRow} onPress={handlePressItem} activeOpacity={0.7}>
-            <View style={dynamicStyles.rowLeft}>
-              <Ionicons name="star-outline" size={22} color={isDark ? '#FFFFFF' : colors.text} />
-              <Text style={dynamicStyles.rowText}>{t.global.rateSubmate}</Text>
+        {/* Action Cards Group */}
+        <View style={[styles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <TouchableOpacity style={styles.cardRow} onPress={handlePressItem} activeOpacity={0.7}>
+            <View style={styles.rowLeft}>
+              <View style={[styles.menuIconBox, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
+                <Ionicons name="star-outline" size={18} color="#F59E0B" />
+              </View>
+              <Text style={[styles.rowText, { color: colors.text }]}>{t.global?.rateSubmate || 'SubMate\'i Değerlendirin'}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={isDark ? '#9CA3AF' : colors.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
           
-          <View style={dynamicStyles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
           
-          <TouchableOpacity style={dynamicStyles.cardRow} onPress={() => router.push('/(tabs)/settings/privacy')} activeOpacity={0.7}>
-            <View style={dynamicStyles.rowLeft}>
-              <Ionicons name="shield-checkmark-outline" size={22} color={isDark ? '#FFFFFF' : colors.text} />
-              <Text style={dynamicStyles.rowText}>{t.global.privacyPolicy}</Text>
+          <TouchableOpacity style={styles.cardRow} onPress={() => router.push('/(tabs)/settings/privacy')} activeOpacity={0.7}>
+            <View style={styles.rowLeft}>
+              <View style={[styles.menuIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
+                <Ionicons name="shield-checkmark-outline" size={18} color="#10B981" />
+              </View>
+              <Text style={[styles.rowText, { color: colors.text }]}>{t.global?.privacyPolicy || 'Gizlilik Politikası'}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={isDark ? '#9CA3AF' : colors.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
           
-          <View style={dynamicStyles.separator} />
+          <View style={[styles.separator, { backgroundColor: colors.border }]} />
           
-          <TouchableOpacity style={dynamicStyles.cardRow} onPress={() => router.push('/(tabs)/settings/terms')} activeOpacity={0.7}>
-            <View style={dynamicStyles.rowLeft}>
-              <Ionicons name="document-text-outline" size={22} color={isDark ? '#FFFFFF' : colors.text} />
-              <Text style={dynamicStyles.rowText}>{t.global.termsOfService}</Text>
+          <TouchableOpacity style={styles.cardRow} onPress={() => router.push('/(tabs)/settings/terms')} activeOpacity={0.7}>
+            <View style={styles.rowLeft}>
+              <View style={[styles.menuIconBox, { backgroundColor: 'rgba(99, 102, 241, 0.12)' }]}>
+                <Ionicons name="document-text-outline" size={18} color="#6366F1" />
+              </View>
+              <Text style={[styles.rowText, { color: colors.text }]}>{t.global?.termsOfService || 'Kullanım Koşulları'}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={isDark ? '#9CA3AF' : colors.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         {/* Signature Footer */}
-        <View style={dynamicStyles.footer}>
-          <Text style={dynamicStyles.signatureText}>{t.global.createdByDoanAslan}</Text>
+        <View style={styles.footer}>
+          <Text style={[styles.signatureText, { color: colors.textSecondary }]}>
+            Crafted with ❤️ by <Text style={{ color: colors.text, fontWeight: '800' }}>Doğan Aslan</Text>
+          </Text>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
-const getStyles = (colors: any, isDark: boolean, insets: any) => StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: isDark ? '#0B0F19' : colors.background,
   },
   headerBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 50 : 20),
-    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: isDark ? '#1F2937' : colors.border,
-    backgroundColor: isDark ? '#0B0F19' : colors.surface,
-    zIndex: 10,
   },
   backButton: {
     padding: 4,
   },
   headerBarTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: isDark ? '#FFFFFF' : colors.text,
-    fontFamily: 'Hanken Grotesk',
+    fontWeight: '800',
   },
   scrollContainer: {
     flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 40,
-    paddingBottom: insets.bottom + 40,
-    flexGrow: 1,
+    paddingTop: 24,
+    paddingBottom: 140,
   },
   titleSection: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 32,
   },
   logoContainer: {
+    width: 96,
+    height: 96,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
-    marginBottom: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    padding: 4,
   },
   logoImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 22,
-    backgroundColor: '#1F2937', // Elegant placeholder backing
+    width: '100%',
+    height: '100%',
+    borderRadius: 20,
   },
   appName: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '800',
-    color: isDark ? '#FFFFFF' : colors.text,
-    fontFamily: 'Hanken Grotesk',
-    letterSpacing: -0.5,
-    marginBottom: 8,
+    letterSpacing: -0.3,
+    marginBottom: 4,
   },
   appVersion: {
-    fontSize: 15,
-    color: isDark ? '#9CA3AF' : colors.textSecondary,
-    fontWeight: '500',
-    letterSpacing: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  appDesc: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    paddingHorizontal: 24,
   },
   cardGroup: {
-    backgroundColor: isDark ? '#1F2937' : colors.surface,
-    borderRadius: 16,
+    borderRadius: 20,
+    borderWidth: 1,
     overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 12,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
+    marginBottom: 32,
   },
   cardRow: {
     flexDirection: 'row',
@@ -186,32 +179,29 @@ const getStyles = (colors: any, isDark: boolean, insets: any) => StyleSheet.crea
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
+  },
+  menuIconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: isDark ? '#FFFFFF' : colors.text,
-    marginLeft: 14,
-    fontFamily: 'Hanken Grotesk',
+    fontSize: 14,
+    fontWeight: '700',
   },
   separator: {
-    height: 1,
-    backgroundColor: isDark ? '#374151' : colors.border,
-    marginLeft: 52, // Aligns exactly with the start of the text
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 62,
   },
   footer: {
-    flex: 1,
-    justifyContent: 'flex-end',
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 20,
   },
   signatureText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '500',
-    color: isDark ? '#9CA3AF' : colors.textSecondary,
-    fontFamily: 'Hanken Grotesk',
-    letterSpacing: 0.5,
-  }
+  },
 });
-
-

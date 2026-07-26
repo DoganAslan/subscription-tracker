@@ -1,53 +1,65 @@
 import React from 'react';
-import { View, SafeAreaView, TouchableOpacity, Text, useColorScheme, Platform } from 'react-native';
+import { View, TouchableOpacity, Text, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SubscriptionList } from '@/features/subscriptions/components/SubscriptionList';
 import { Header } from '@/components/common/Header';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { Ionicons } from '@expo/vector-icons';
+import { triggerHaptic } from '@/utils/haptics';
 
 export default function SubscriptionListScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const paddingTop = Math.max(insets.top, Platform.OS === 'web' ? 16 : 8);
+  const paddingTop = Math.max(insets.top + 8, Platform.OS === 'web' ? 16 : 12);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop }}>
-      <View style={{ paddingHorizontal: 16 }}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop }]}>
+      <View style={styles.headerRow}>
         <Header title={t.subscriptionsPage?.title || 'My Subscriptions'} />
       </View>
 
       <SubscriptionList />
-      
+
       {/* Floating Action Button */}
-      <TouchableOpacity 
-        onPress={() => router.push('/(tabs)/subscriptions/add')}
-        activeOpacity={0.8}
-        style={{
-          position: 'absolute',
-          bottom: 100,
-          right: 24,
-          width: 64,
-          height: 64,
-          backgroundColor: colors.primary,
-          borderRadius: 32,
-          alignItems: 'center',
-          justifyContent: 'center',
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 5,
-          zIndex: 50
+      <TouchableOpacity
+        onPress={() => {
+          triggerHaptic('impactLight');
+          router.push('/(tabs)/subscriptions/add');
         }}
+        activeOpacity={0.85}
+        style={[styles.fabButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
       >
-        <Text style={{ color: '#ffffff', fontSize: 36, fontWeight: '300', marginBottom: 4 }}>+</Text>
+        <Ionicons name="add" size={32} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
 }
 
-
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  headerRow: {
+    paddingHorizontal: 16,
+    marginBottom: 8,
+  },
+  fabButton: {
+    position: 'absolute',
+    bottom: 90,
+    right: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+    zIndex: 99,
+  },
+});

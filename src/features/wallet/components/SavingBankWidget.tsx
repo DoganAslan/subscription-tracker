@@ -5,13 +5,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { SUPPORTED_CURRENCIES } from '@/utils/currency';
+import { triggerHaptic } from '@/utils/haptics';
 
 export const SavingBankWidget = () => {
-  const { totalSaved, goals, setGoal, deleteGoal } = useSavingsStore();
+  const { totalSaved, goals, setGoal } = useSavingsStore();
   const activeGoal = goals?.[0];
   const { colors, isDark } = useTheme();
   const { t } = useTranslation();
-  
+  const baseCurrency = useCurrencyStore(state => state.baseCurrency);
+  const currencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || baseCurrency;
+
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [goalTitle, setGoalTitle] = useState('');
@@ -20,12 +25,14 @@ export const SavingBankWidget = () => {
   const handleSaveGoal = () => {
     const amount = parseFloat(goalAmount);
     if (goalTitle && !isNaN(amount) && amount > 0) {
+      triggerHaptic('success');
       setGoal(goalTitle, amount);
       setIsModalVisible(false);
       setGoalTitle('');
       setGoalAmount('');
     }
   };
+
   useEffect(() => {
     if (totalSaved > 0) {
       Animated.sequence([
@@ -35,74 +42,83 @@ export const SavingBankWidget = () => {
     }
   }, [totalSaved]);
 
-  if (totalSaved <= 0) return null;
+  const targetAmount = activeGoal?.targetAmount || 1;
+  const percentSaved = Math.min(100, (totalSaved / targetAmount) * 100);
 
   return (
     <Animated.View style={[styles.wrapper, { transform: [{ scale: scaleAnim }] }]}>
       <LinearGradient
-        colors={isDark ? ['rgba(16, 185, 129, 0.15)', 'rgba(16, 185, 129, 0.05)'] : ['rgba(16, 185, 129, 0.1)', 'rgba(16, 185, 129, 0.02)']}
+        colors={isDark ? ['#0F172A', '#1E293B'] : ['#F8FAFC', '#FFFFFF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.container, { borderColor: isDark ? 'rgba(16, 185, 129, 0.3)' : 'rgba(16, 185, 129, 0.2)' }]}
+        style={[styles.container, { borderColor: isDark ? '#334155' : '#E2E8F0' }]}
       >
-        {/* Glow effect */}
+        {/* Glow orb background */}
         <View style={styles.glow} />
-        
-        <View style={styles.iconContainer}>
-          <LinearGradient
-            colors={['#34D399', '#059669']}
-            style={styles.iconBg}
-          >
-            <Ionicons name="cash" size={26} color="#FFFFFF" />
-          </LinearGradient>
-        </View>
-        <View style={styles.textContainer}>
-          <View style={styles.headerRow}>
-            <Text style={styles.title}>{'Saving Bank'}</Text>
-            {activeGoal && (
-              <TouchableOpacity onPress={() => setIsModalVisible(true)}>
-                <Ionicons name="pencil" size={14} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          <Text style={styles.amount}>+{totalSaved.toFixed(0)}</Text>
-          
-          {activeGoal ? (
-            <View style={styles.goalContainer}>
-              <View style={styles.goalHeader}>
-                <Text style={[styles.goalTitle, { color: colors.textSecondary }]}>{activeGoal.title}</Text>
-                <Text style={[styles.goalTitle, { color: colors.textSecondary }]}>
-                  {Math.min(100, (totalSaved / activeGoal.targetAmount) * 100).toFixed(0)}%
-                </Text>
-              </View>
-              <View style={[styles.progressTrack, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }]}>
-                <View style={[
-                  styles.progressBar, 
-                  { 
-                    backgroundColor: '#10B981', 
-                    width: `${Math.min(100, (totalSaved / activeGoal.targetAmount) * 100)}%` 
-                  }
-                ]} />
-              </View>
+
+        <View style={styles.topRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <LinearGradient
+              colors={['#10B981', '#059669']}
+              style={styles.iconBg}
+            >
+              <Ionicons name="wallet-outline" size={24} color="#FFFFFF" />
+            </LinearGradient>
+            <View>
+              <Text style={[styles.widgetLabel, { color: colors.textSecondary }]}>{t.walletPage?.savingsBank || 'SAVINGS BANK'}</Text>
+              <Text style={[styles.totalAmountText, { color: '#10B981' }]}>
+                +{currencySymbol}{totalSaved.toFixed(2)}
+              </Text>
             </View>
-          ) : (
-            <TouchableOpacity style={styles.setGoalBtn} onPress={() => setIsModalVisible(true)}>
-              <Text style={styles.setGoalText}>Set a Savings Goal</Text>
-            </TouchableOpacity>
-          )}
+          </View>
+
+          <TouchableOpacity
+            onPress={() => {
+              triggerHaptic('selection');
+              setIsModalVisible(true);
+            }}
+            style={styles.setGoalBtn}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="trophy-outline" size={14} color="#10B981" style={{ marginRight: 4 }} />
+            <Text style={styles.setGoalText}>
+              {activeGoal ? (t.walletPage?.editGoal || 'Hedef Düzenle') : (t.walletPage?.setGoal || 'Hedef Belirle')}
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Goal Section */}
+        {activeGoal ? (
+          <View style={styles.goalBox}>
+            <View style={styles.goalHeaderRow}>
+              <Text style={[styles.goalTitleText, { color: colors.text }]}>
+                Target: {activeGoal.title} ({currencySymbol}{activeGoal.targetAmount})
+              </Text>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#10B981' }}>
+                {percentSaved.toFixed(0)}%
+              </Text>
+            </View>
+
+            <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
+              <View style={[styles.progressBarFill, { width: `${percentSaved}%` }]} />
+            </View>
+          </View>
+        ) : (
+          <Text style={[styles.subHintText, { color: colors.textSecondary }]}>
+            Money saved from cancelled subscriptions will accumulate in your Savings Bank!
+          </Text>
+        )}
       </LinearGradient>
 
       {/* Goal Modal */}
       <Modal visible={isModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Set Savings Goal</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{(t.walletPage as any)?.setSavingsGoal || 'Set Savings Goal'}</Text>
             
             <TextInput
               style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-              placeholder="Goal (e.g. PS5, Vacation)"
+              placeholder={(t.walletPage as any)?.goalPlaceholder || 'Goal (e.g. Vacation, New Phone)'}
               placeholderTextColor={colors.textSecondary}
               value={goalTitle}
               onChangeText={setGoalTitle}
@@ -110,7 +126,7 @@ export const SavingBankWidget = () => {
             
             <TextInput
               style={[styles.input, { color: colors.text, borderColor: colors.border }]}
-              placeholder="Target Amount"
+              placeholder={(t.walletPage as any)?.targetAmount || 'Target Amount'}
               placeholderTextColor={colors.textSecondary}
               value={goalAmount}
               onChangeText={setGoalAmount}
@@ -122,13 +138,13 @@ export const SavingBankWidget = () => {
                 style={[styles.modalBtn, { backgroundColor: colors.border }]}
                 onPress={() => setIsModalVisible(false)}
               >
-                <Text style={{ color: colors.text, fontWeight: '600' }}>Cancel</Text>
+                <Text style={{ color: colors.text, fontWeight: '700' }}>{t.common?.cancel || 'Cancel'}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalBtn, { backgroundColor: '#10B981' }]}
                 onPress={handleSaveGoal}
               >
-                <Text style={{ color: '#FFF', fontWeight: '600' }}>Save</Text>
+                <Text style={{ color: '#FFF', fontWeight: '800' }}>{(t.walletPage as any)?.saveGoal || 'Save Goal'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -140,114 +156,92 @@ export const SavingBankWidget = () => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginHorizontal: 24,
-    marginBottom: 8,
-    marginTop: 8,
+    marginBottom: 16,
   },
   container: {
-    borderRadius: 20,
+    borderRadius: 22,
     borderWidth: 1,
-    padding: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
+    padding: 18,
     overflow: 'hidden',
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    zIndex: 10,
   },
   glow: {
     position: 'absolute',
-    top: -20,
-    left: -20,
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-    filter: 'blur(20px)' as any,
+    top: -30,
+    left: -30,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
   },
-  iconContainer: {
-    shadowColor: '#10B981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  iconBg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#10B981',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  amount: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#10B981',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
-  },
-  headerRow: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
   },
-  goalContainer: {
-    marginTop: 12,
+  iconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  goalHeader: {
+  widgetLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  totalAmountText: {
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  setGoalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 12,
+  },
+  setGoalText: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  goalBox: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(148, 163, 184, 0.2)',
+  },
+  goalHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  goalTitle: {
+  goalTitleText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   progressTrack: {
     height: 6,
     borderRadius: 3,
     overflow: 'hidden',
   },
-  progressBar: {
+  progressBarFill: {
     height: '100%',
+    backgroundColor: '#10B981',
     borderRadius: 3,
   },
-  setGoalBtn: {
-    marginTop: 12,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderRadius: 12,
-    alignSelf: 'flex-start',
-  },
-  setGoalText: {
-    color: '#10B981',
-    fontSize: 12,
-    fontWeight: '700',
+  subHintText: {
+    fontSize: 11,
+    marginTop: 10,
+    lineHeight: 16,
+    fontWeight: '500',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
@@ -256,35 +250,28 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 24,
     padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 20,
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 16,
   },
   input: {
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    marginBottom: 16,
+    borderRadius: 14,
+    padding: 14,
+    fontSize: 15,
+    marginBottom: 14,
   },
   modalButtons: {
     flexDirection: 'row',
     gap: 12,
-    marginTop: 8,
+    marginTop: 6,
   },
   modalBtn: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
+    padding: 14,
+    borderRadius: 14,
     alignItems: 'center',
-  }
+  },
 });
-
-

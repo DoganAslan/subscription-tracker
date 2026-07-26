@@ -1,6 +1,6 @@
 import i18n, { t } from '@/locales/i18n';
 import React, { useState } from 'react';
-import { View, ScrollView, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Modal, FlatList, TextInput } from 'react-native';
+import { View, ScrollView, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Modal, FlatList } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { triggerHaptic } from '@/utils/haptics';
@@ -12,6 +12,9 @@ import { Card } from '@/services/firebase/types';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { CardWidget } from './CardWidget';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+
+import { useTranslation } from '@/context/LanguageContext';
 
 const CARD_TYPES = [
   { label: 'Visa', value: 'visa' },
@@ -34,14 +37,16 @@ const CURRENCIES = [
 ] as const;
 
 const PREMIUM_COLORS = [
-  '#0F172A', // Deep Black/Slate
-  '#1E3A8A', // Royal Blue
-  '#047857', // Emerald Green
-  '#BE123C', // Crimson Red
-  '#4338CA', // Indigo
-  '#B45309', // Amber/Gold
-  '#0F766E', // Teal
-  '#5B21B6', // Purple
+  { hex: '#0F172A', label: 'Slate Black' },
+  { hex: '#1E3A8A', label: 'Royal Blue' },
+  { hex: '#047857', label: 'Emerald' },
+  { hex: '#BE123C', label: 'Crimson' },
+  { hex: '#4338CA', label: 'Indigo' },
+  { hex: '#B45309', label: 'Gold' },
+  { hex: '#0F766E', label: 'Teal' },
+  { hex: '#5B21B6', label: 'Purple' },
+  { hex: '#831843', label: 'Rose' },
+  { hex: '#064E3B', label: 'Forest' },
 ];
 
 interface Props {
@@ -55,7 +60,8 @@ interface Props {
 export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDelete }: Props) {
   const [isTypeModalVisible, setIsTypeModalVisible] = useState(false);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const { t } = useTranslation();
   
   const isEdit = !!initialData;
   const currentYear = new Date().getFullYear();
@@ -68,186 +74,204 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
       lastFourDigits: initialData?.lastFourDigits || '',
       expiryMonth: initialData?.expiryMonth || new Date().getMonth() + 1,
       expiryYear: initialData?.expiryYear || currentYear + 3,
-      color: initialData?.color || PREMIUM_COLORS[0],
+      color: initialData?.color || PREMIUM_COLORS[0].hex,
       currency: initialData?.currency || 'TRY',
     }
   });
 
+  // Watch all fields for live preview
+  const watchedName = watch('name');
+  const watchedType = watch('type');
+  const watchedLastFour = watch('lastFourDigits');
+  const watchedMonth = watch('expiryMonth');
+  const watchedYear = watch('expiryYear');
+  const watchedColor = watch('color');
+  const watchedCurrency = watch('currency');
 
   return (
     <>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Visual Preview */}
+      {/* Sticky Live Preview Card */}
+      <View style={[styles.previewContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <CardWidget
           card={{
             id: 'preview',
             userId: 'preview',
-            name: watch('name') || 'Card Name',
-            type: watch('type') || 'visa',
-            lastFourDigits: watch('lastFourDigits') || '****',
-            expiryMonth: watch('expiryMonth') || 12,
-            expiryYear: watch('expiryYear') || 2099,
-            color: watch('color') || PREMIUM_COLORS[0],
-            currency: watch('currency') || 'TRY',
+            name: watchedName || ((t.global as any)?.cardName || 'Card Name'),
+            type: watchedType || 'visa',
+            lastFourDigits: watchedLastFour || '****',
+            expiryMonth: watchedMonth || 12,
+            expiryYear: watchedYear || 2099,
+            color: watchedColor || PREMIUM_COLORS[0].hex,
+            currency: watchedCurrency || 'TRY',
             limit: 0,
             isPinned: false,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           }}
           subscriptions={[]}
-          style={{ marginBottom: 24, marginTop: 12, marginHorizontal: 20 }}
+          style={{ marginHorizontal: 4 }}
         />
+      </View>
 
-        <View style={styles.formContainer}>
-          <Controller
-          control={control}
-          name="name"
-          render={({ field: { onChange, onBlur, value } }) => (
-            <Input 
-              label="Card Name" 
-              placeholder={t.global.egVirtualShoppingCar} 
-              onBlur={onBlur} 
-              onChangeText={onChange} 
-              value={value} 
-              error={errors.name?.message} 
-            />
-          )}
-        />
-
-        <View style={styles.row}>
-          <View style={styles.flexHalf}>
-            <Controller
-              control={control}
-              name="type"
-              render={({ field: { value } }) => (
-                <TouchableOpacity activeOpacity={0.8} onPress={() => setIsTypeModalVisible(true)}>
-                  <View pointerEvents="none">
-                    <Input 
-                      label="Card Type" 
-                      placeholder={t.global.selectType} 
-                      value={CARD_TYPES.find(t => t.value === value)?.label || value} 
-                      error={errors.type?.message} 
-                      editable={false}
-                    />
-                  </View>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-          <View style={styles.flexHalf}>
-            <Controller
-              control={control}
-              name="lastFourDigits"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input 
-                  label="Last 4 Digits" 
-                  placeholder={t.global.eg4321} 
-                  keyboardType="numeric"
-                  maxLength={4}
-                  onBlur={onBlur} 
-                  onChangeText={onChange} 
-                  value={value} 
-                  error={errors.lastFourDigits?.message} 
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-                />
-              )}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Controller
-              control={control}
-              name="currency"
-              render={({ field: { value } }) => (
-                <TouchableOpacity activeOpacity={0.8} onPress={() => setIsCurrencyModalVisible(true)}>
-                  <View pointerEvents="none">
-                    <Input 
-                      label="Para Birimi / Currency" 
-                      placeholder={t.global.try} 
-                      value={CURRENCIES.find(c => c.value === value)?.label || value} 
-                      error={errors.currency?.message} 
-                      editable={false}
-                    />
-                  </View>
-                </TouchableOpacity>
-              )}
-            />
-          </View>
-        </View>
-
-        <View style={styles.row}>
-          <View style={styles.flexHalf}>
-            <Controller
-              control={control}
-              name="expiryMonth"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input 
-                  label="Expiry Month (MM)" 
-                  placeholder={t.global.mm} 
-                  keyboardType="numeric"
-                  maxLength={2}
-                  onBlur={onBlur} 
-                  onChangeText={(text) => onChange(parseInt(text) || 0)} 
-                  value={value ? value.toString() : ''} 
-                  error={errors.expiryMonth?.message} 
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-                />
-              )}
-            />
-          </View>
-          <View style={styles.flexHalf}>
-            <Controller
-              control={control}
-              name="expiryYear"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input 
-                  label="Expiry Year (YYYY)" 
-                  placeholder={t.global.yyyy} 
-                  keyboardType="numeric"
-                  maxLength={4}
-                  onBlur={onBlur} 
-                  onChangeText={(text) => onChange(parseInt(text) || 0)} 
-                  value={value ? value.toString() : ''} 
-                  error={errors.expiryYear?.message} 
-                  inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
-                />
-              )}
-            />
-          </View>
-        </View>
-
-        <View style={styles.colorSection}>
-          <Text style={[styles.colorLabel, { color: colors.textSecondary }]}>{t.global.cardColor}</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={[styles.formContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
           <Controller
             control={control}
-            name="color"
-            render={({ field: { onChange, value } }) => (
-              <View style={styles.colorGrid}>
-                {PREMIUM_COLORS.map(c => {
-                  const isSelected = value === c;
-                  return (
-                    <TouchableOpacity 
-                      key={c}
-                      activeOpacity={0.8}
-                      onPress={() => {
-                        triggerHaptic('selection');
-                        onChange(c);
-                      }}
-                      style={[
-                        styles.colorCircle,
-                        { backgroundColor: c },
-                        isSelected && { borderWidth: 3, borderColor: colors.primary }
-                      ]}
-                    />
-                  );
-                })}
-              </View>
+            name="name"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input 
+                label={(t.global as any)?.cardName || 'Card Name'} 
+                placeholder={t.global?.egVirtualShoppingCar || 'e.g., Virtual Shopping Card'} 
+                onBlur={onBlur} 
+                onChangeText={onChange} 
+                value={value} 
+                error={errors.name?.message} 
+              />
             )}
           />
-        </View>
+
+          <View style={styles.row}>
+            <View style={styles.flexHalf}>
+              <Controller
+                control={control}
+                name="type"
+                render={({ field: { value } }) => (
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => setIsTypeModalVisible(true)}>
+                    <View pointerEvents="none">
+                      <Input 
+                        label={(t.global as any)?.cardType || 'Card Type'} 
+                        placeholder={t.global?.selectType || 'Select Type'} 
+                        value={CARD_TYPES.find(t => t.value === value)?.label || value} 
+                        error={errors.type?.message} 
+                        editable={false}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+            <View style={styles.flexHalf}>
+              <Controller
+                control={control}
+                name="lastFourDigits"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Input 
+                    label={(t.global as any)?.lastFourDigits || 'Last 4 Digits'} 
+                    placeholder={t.global?.eg4321 || 'e.g. 4321'} 
+                    keyboardType="numeric"
+                    maxLength={4}
+                    onBlur={onBlur} 
+                    onChangeText={onChange} 
+                    value={value} 
+                    error={errors.lastFourDigits?.message} 
+                    inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+                  />
+                )}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={{ flex: 1 }}>
+              <Controller
+                control={control}
+                name="currency"
+                render={({ field: { value } }) => (
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => setIsCurrencyModalVisible(true)}>
+                    <View pointerEvents="none">
+                      <Input 
+                        label={(t.global as any)?.currency || 'Currency'} 
+                        placeholder="TRY" 
+                        value={CURRENCIES.find(c => c.value === value)?.label || value} 
+                        error={errors.currency?.message} 
+                        editable={false}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+
+          <View style={styles.row}>
+            <View style={styles.flexHalf}>
+              <Controller
+                control={control}
+                name="expiryMonth"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Input 
+                    label={(t.global as any)?.expiryMonth || 'Expiry Month (MM)'} 
+                    placeholder={t.global?.mm || 'MM'} 
+                    keyboardType="numeric"
+                    maxLength={2}
+                    onBlur={onBlur} 
+                    onChangeText={(text) => onChange(parseInt(text) || 0)} 
+                    value={value ? value.toString() : ''} 
+                    error={errors.expiryMonth?.message} 
+                    inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+                  />
+                )}
+              />
+            </View>
+            <View style={styles.flexHalf}>
+              <Controller
+                control={control}
+                name="expiryYear"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Input 
+                    label={(t.global as any)?.expiryYear || 'Expiry Year (YYYY)'} 
+                    placeholder={t.global?.yyyy || 'YYYY'} 
+                    keyboardType="numeric"
+                    maxLength={4}
+                    onBlur={onBlur} 
+                    onChangeText={(text) => onChange(parseInt(text) || 0)} 
+                    value={value ? value.toString() : ''} 
+                    error={errors.expiryYear?.message} 
+                    inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+                  />
+                )}
+              />
+            </View>
+          </View>
+
+          {/* Color Picker */}
+          <View style={styles.colorSection}>
+            <Text style={[styles.colorLabel, { color: colors.textSecondary }]}>{(t.global as any)?.cardColor || 'CARD COLOR'}</Text>
+            <Controller
+              control={control}
+              name="color"
+              render={({ field: { onChange, value } }) => (
+                <View style={styles.colorGrid}>
+                  {PREMIUM_COLORS.map((c) => {
+                    const isSelected = value === c.hex;
+                    return (
+                      <TouchableOpacity
+                        key={c.hex}
+                        activeOpacity={0.8}
+                        onPress={() => {
+                          triggerHaptic('selection');
+                          onChange(c.hex);
+                        }}
+                        style={[
+                          styles.colorCircleWrapper,
+                          isSelected && { transform: [{ scale: 1.15 }] }
+                        ]}
+                      >
+                        <View style={[styles.colorCircle, { backgroundColor: c.hex }]}>
+                          {isSelected && (
+                            <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                          )}
+                        </View>
+                        <Text style={[styles.colorCircleLabel, { color: isSelected ? colors.primary : colors.textSecondary }]} numberOfLines={1}>
+                          {c.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            />
+          </View>
         </View>
 
         <View style={styles.buttonGroup}>
@@ -261,7 +285,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
           />
           {isEdit && onDelete && (
             <Button 
-              title="Delete Card" 
+              title={(t.global as any)?.deleteCard || 'Delete Card'} 
               variant="destructive"
               onPress={() => {
                 triggerHaptic('heavy');
@@ -361,59 +385,22 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
 }
 
 const styles = StyleSheet.create({
+  previewContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    paddingTop: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
-    paddingBottom: 80,
+    paddingTop: 20,
+    paddingBottom: 160,
   },
-  previewCard: {
-    borderRadius: 16,
+  formContainer: {
+    borderRadius: 24,
     padding: 20,
-    minHeight: 180,
-    marginBottom: 24,
-    justifyContent: 'space-between',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-  },
-  previewHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  previewName: {
-    color: '#FFF',
-    fontSize: 18,
-    fontWeight: '600',
-    flex: 1,
-    marginRight: 12,
-  },
-  previewNumber: {
-    color: '#FFF',
-    fontSize: 22,
-    letterSpacing: 2,
-    fontFamily: 'monospace',
-    marginVertical: 20,
-  },
-  previewFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  previewValue: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '500',
-    letterSpacing: 1,
-  },
-  previewType: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-    fontStyle: 'italic',
-    letterSpacing: 1,
+    borderWidth: 1,
+    marginBottom: 16,
   },
   row: {
     flexDirection: 'row',
@@ -425,35 +412,44 @@ const styles = StyleSheet.create({
   },
   colorSection: {
     marginTop: 8,
-    marginBottom: 32,
+    marginBottom: 4,
   },
   colorLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#94A3B8',
-    marginBottom: 12,
+    fontSize: 11,
+    fontWeight: '800',
+    marginBottom: 14,
     letterSpacing: 1,
-  },
-  formContainer: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    borderRadius: 24,
-    padding: 20,
-    marginHorizontal: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
+    textTransform: 'uppercase',
   },
   colorGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 10,
+  },
+  colorCircleWrapper: {
+    alignItems: 'center',
+    width: 56,
   },
   colorCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  colorCircleLabel: {
+    fontSize: 8,
+    fontWeight: '600',
+    marginTop: 4,
+    textAlign: 'center',
   },
   buttonGroup: {
-    marginTop: 16,
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
@@ -486,5 +482,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-
-

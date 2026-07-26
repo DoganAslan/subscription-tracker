@@ -13,6 +13,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     firebaseMessagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     firebaseAppId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID
   },
-  plugins: [...(config.plugins || []), 'expo-localization', 'expo-secure-store']
+  plugins: [...(config.plugins || []), 'expo-localization', 'expo-secure-store', 'expo-image', 'expo-web-browser']
 });
 

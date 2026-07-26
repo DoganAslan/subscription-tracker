@@ -15,7 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomSplashScreen } from '@/components/SplashScreen';
 import { authenticateUser } from '@/utils/biometrics';
 import { BiometricOverlay } from '@/components/BiometricOverlay';
-import { registerForPushNotificationsAsync } from '@/services/notifications/notificationService';
+import { registerForPushNotificationsAsync } from '@/services/notificationService';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { getMarketRatesWithDynamicCache } from '@/utils/currency';
 import { neutralizeProductionLogs } from '@/utils/security';
@@ -27,9 +27,11 @@ import { t } from '@/locales/i18n';
 neutralizeProductionLogs();
 // Suppress third-party web-only SVG touch warnings
 LogBox.ignoreLogs([
+  'Unknown event handler property',
   'Unknown event handler property `onPressIn`',
   'Unknown event handler property `onResponder`',
   'Unknown event handler property `onStartShouldSetResponder`',
+  'Unknown event handler property `onResponderTerminate`',
 ]);
 
 // Prevent splash screen from auto-hiding until we manually hide it
@@ -151,5 +153,3 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   }
 });
-
-

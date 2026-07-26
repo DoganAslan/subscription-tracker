@@ -1,6 +1,7 @@
 import i18n, { t } from '@/locales/i18n';
 import React from 'react';
-import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { CardForm } from '@/features/cards/components/CardForm';
 import { useCards, useUpdateCard, useDeleteCard, cardKeys } from '@/features/cards/hooks/useCards';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,7 +11,6 @@ import { CardFormData } from '@/features/cards/schemas/card.schema';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { triggerHaptic } from '@/utils/haptics';
-import { Alert } from 'react-native';
 
 export default function EditCardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,11 +24,7 @@ export default function EditCardScreen() {
   const card = cards?.find(c => c.id === id);
 
   const handleGoBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)/wallet');
-    }
+    router.replace('/(tabs)/wallet');
   };
 
   const handleSubmit = (data: CardFormData) => {
@@ -47,44 +43,43 @@ export default function EditCardScreen() {
     try {
       if (!user) return;
       
-      // A. Fetch current truth from Cache
       const currentList = queryClient.getQueryData<any[]>(cardKeys.list(user.uid)) || [];
-
-      // B. Filter out the dead entity
       const updatedList = currentList.filter((item: any) => item.id !== targetCardId);
-
-      // C. Write back strictly BEFORE updating UI
       queryClient.setQueryData(cardKeys.list(user.uid), updatedList);
 
-      // D. Update backend and sync
       deleteCard(targetCardId);
-
-      console.log(`[Wallet Purge] Card ${targetCardId} annihilated successfully.`);
       handleGoBack();
     } catch (error) {
-      console.error('[Wallet Purge Fatal Error]:', error);
+      console.error('[Wallet Purge Error]:', error);
     }
   };
 
   const handleDeleteTrigger = (cardId: string, cardName: string) => {
     triggerHaptic('warning');
+    const confirmMsg = (t.global as any)?.deleteCardConfirm
+      ? (t.global as any).deleteCardConfirm.replace('{{name}}', cardName)
+      : `Are you sure you want to permanently delete ${cardName}?`;
+    const deleteTitle = (t.global as any)?.deleteCardTitle || 'Delete Card';
+    const deleteDesc = (t.global as any)?.deleteCardDesc 
+      ? (t.global as any).deleteCardDesc.replace('{{name}}', cardName)
+      : `${cardName} will be removed from your wallet. This action cannot be undone.`;
+
     if (Platform.OS === 'web') {
-      // Web Browser Safe Confirm
-      if (window.confirm(`${cardName} kartını cüzdandan kalıcı olarak silmek istediğinize emin misiniz?`)) {
+      if (window.confirm(confirmMsg)) {
         executePurge(cardId);
       }
     } else {
-      // Native iOS / Android Alert
       Alert.alert(
-        'Kartı İmha Et',
-        `${cardName} cüzdanınızdan kaldırılacak. Bu işlem geri alınamaz.`,
+        deleteTitle,
+        deleteDesc,
         [
-          { text: 'Vazgeç', style: 'cancel' },
-          { text: 'Sil', style: 'destructive', onPress: () => executePurge(cardId) }
+          { text: t.common?.cancel || 'Cancel', style: 'cancel' },
+          { text: t.common?.delete || 'Delete', style: 'destructive', onPress: () => executePurge(cardId) }
         ]
       );
     }
   };
+
   if (isLoadingCard) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }}>
@@ -107,12 +102,13 @@ export default function EditCardScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <TouchableOpacity onPress={handleGoBack} style={{ padding: 4 }}>
-             <Ionicons name="close" size={28} color={colors.text} />
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={20} color={colors.primary} />
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>Cancel</Text>
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{t.global.editCard}</Text>
-          <View style={{ width: 28 }} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t.global?.editCard || 'Edit Card'}</Text>
+          <View style={{ width: 70 }} />
         </View>
 
         <View style={{ flex: 1 }}>
@@ -129,3 +125,26 @@ export default function EditCardScreen() {
   );
 }
 
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
+  },
+  backButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+});

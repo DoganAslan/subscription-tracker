@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, TextInput, Platform, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  TextInput,
+  Platform,
+  ActivityIndicator,
+  Pressable,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
@@ -10,7 +23,6 @@ import { AuthService } from '@/services/firebase/auth';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from '@/context/LanguageContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 
@@ -41,7 +53,7 @@ export default function AccountSettingsScreen() {
   const [showCurrentPass, setShowCurrentPass] = useState(false);
   const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
-  
+
   // Track what action to retry after re-auth
   const [pendingAction, setPendingAction] = useState<'email' | 'password' | 'delete' | null>(null);
 
@@ -74,20 +86,20 @@ export default function AccountSettingsScreen() {
       setReauthPassword('');
       setReauthModalVisible(true);
     } else {
-      Alert.alert(t.global.error, error.message || 'An unexpected error occurred.');
+      Alert.alert(t.global?.error || 'Error', error.message || 'An unexpected error occurred.');
     }
   };
 
   const executePendingAction = async () => {
     if (!pendingAction) return;
-    
+
     if (pendingAction === 'email') {
       await AuthService.updateEmailAddress(newEmail);
-      Alert.alert(t.global.success, t.global.emailUpdatedSuccessf);
+      Alert.alert(t.global?.success || 'Success', 'Email address updated successfully.');
       setEmailModalVisible(false);
     } else if (pendingAction === 'password') {
       await AuthService.updateUserPassword(newPassword);
-      Alert.alert(t.global.success, t.global.passwordUpdatedSucce);
+      Alert.alert(t.global?.success || 'Success', 'Password updated successfully.');
       setPasswordModalVisible(false);
     } else if (pendingAction === 'delete') {
       await AuthService.deleteAccount();
@@ -98,7 +110,7 @@ export default function AccountSettingsScreen() {
 
   const handleReauthSubmit = async () => {
     if (!reauthPassword) {
-      Alert.alert(t.global.deleteError, t.global.pleaseEnterYourPassw);
+      Alert.alert(t.global?.error || 'Error', 'Please enter your password.');
       return;
     }
 
@@ -108,11 +120,9 @@ export default function AccountSettingsScreen() {
       await executePendingAction();
     } catch (error: any) {
       if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        Alert.alert(t.global.deleteError, t.global.thePasswordYouEntere);
-      } else if (error.code === 'auth/requires-recent-login') {
-        Alert.alert(t.global.deleteError, t.global.sessionExpiredPlease);
+        Alert.alert(t.global?.error || 'Error', 'The password you entered is incorrect.');
       } else {
-        Alert.alert(t.global.deleteError, error.message || 'An unexpected error occurred.');
+        Alert.alert(t.global?.error || 'Error', error.message || 'An unexpected error occurred.');
       }
     } finally {
       setIsLoading(false);
@@ -121,14 +131,14 @@ export default function AccountSettingsScreen() {
 
   const handleChangeEmail = async () => {
     if (!newEmail || !newEmail.includes('@')) {
-      Alert.alert(t.global.invalidEmail, t.global.pleaseEnterAValidEma);
+      Alert.alert(t.global?.invalidEmail || 'Invalid Email', 'Please enter a valid email address.');
       return;
     }
 
     setIsLoading(true);
     try {
       await AuthService.updateEmailAddress(newEmail);
-      Alert.alert(t.global.success, t.global.emailUpdatedSuccessf);
+      Alert.alert(t.global?.success || 'Success', 'Email updated successfully.');
       setEmailModalVisible(false);
       setNewEmail('');
     } catch (error: any) {
@@ -140,36 +150,33 @@ export default function AccountSettingsScreen() {
 
   const handleChangePassword = async () => {
     if (!currentPassword) {
-      Alert.alert(t.global.error, t.global.pleaseEnterYourCurre);
+      Alert.alert(t.global?.error || 'Error', 'Please enter your current password.');
       return;
     }
     if (!newPassword || newPassword.length < 6) {
-      Alert.alert(t.global.invalidPassword, t.global.passwordMustBeAtLeas);
+      Alert.alert(t.global?.invalidPassword || 'Invalid Password', 'Password must be at least 6 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert(t.global.error, t.global.passwordsDoNotMatch);
+      Alert.alert(t.global?.error || 'Error', 'Passwords do not match.');
       return;
     }
 
     setIsLoading(true);
     try {
-      // 1. Re-authenticate user explicitly
       await AuthService.reauthenticate(currentPassword);
-      
-      // 2. Update password
       await AuthService.updateUserPassword(newPassword);
-      
-      Alert.alert(t.global.success, t.global.passwordUpdatedSucce);
+
+      Alert.alert(t.global?.success || 'Success', 'Password updated successfully.');
       setPasswordModalVisible(false);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (error: any) {
       if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        Alert.alert(t.global.authenticationFailed, t.global.currentPasswordIsInc);
+        Alert.alert(t.global?.error || 'Error', 'Current password is incorrect.');
       } else {
-        Alert.alert(t.global.error, error.message || 'Failed to update password.');
+        Alert.alert(t.global?.error || 'Error', error.message || 'Failed to update password.');
       }
     } finally {
       setIsLoading(false);
@@ -177,16 +184,11 @@ export default function AccountSettingsScreen() {
   };
 
   const handleSendResetEmail = async () => {
-    console.log("Reset button clicked!");
     const authInstance = getAuth();
     const currentUser = authInstance.currentUser;
 
     if (!currentUser || !currentUser.email) {
-      if (Platform.OS === 'web') {
-        window.alert("No authenticated user found.");
-      } else {
-        Alert.alert(t.global.error, t.global.noAuthenticatedUserF);
-      }
+      Alert.alert(t.global?.error || 'Error', 'No authenticated user email found.');
       return;
     }
 
@@ -194,33 +196,23 @@ export default function AccountSettingsScreen() {
       try {
         setIsLoading(true);
         await sendPasswordResetEmail(authInstance, currentUser.email!);
-        if (Platform.OS === 'web') {
-          window.alert("Password reset email sent. Please check your inbox.");
-        } else {
-          Alert.alert(t.global.success, t.global.passwordResetEmailSe);
-        }
+        Alert.alert(t.global?.success || 'Success', 'Password reset email sent. Please check your inbox.');
       } catch (error: any) {
-        console.error("Reset Email Error:", error);
-        if (Platform.OS === 'web') {
-          window.alert(error.message || "Failed to send reset email.");
-        } else {
-          Alert.alert(t.global.error, error.message || "Failed to send reset email.");
-        }
+        Alert.alert(t.global?.error || 'Error', error.message || 'Failed to send reset email.');
       } finally {
         setIsLoading(false);
       }
     };
 
     if (Platform.OS === 'web') {
-      const confirmed = window.confirm(`Send a password reset link to ${currentUser.email}?`);
-      if (confirmed) await executeReset();
+      if (window.confirm(`Send a password reset link to ${currentUser.email}?`)) {
+        await executeReset();
+      }
     } else {
-      Alert.alert(t.global.resetPassword, t.global.sendAPasswordResetLi,
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Send", onPress: executeReset }
-        ]
-      );
+      Alert.alert('Reset Password', `Send password reset link to ${currentUser.email}?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Send', onPress: executeReset },
+      ]);
     }
   };
 
@@ -231,23 +223,16 @@ export default function AccountSettingsScreen() {
 
   const confirmAndDelete = async () => {
     if (!deletePassword) {
-      Alert.alert(t.global.error, t.global.passwordIsRequiredTo);
+      Alert.alert(t.global?.error || 'Error', 'Password is required to delete account.');
       return;
     }
-    
+
     setIsLoading(true);
     try {
       await AuthService.reauthenticate(deletePassword);
       await AuthService.deleteAccount();
     } catch (error: any) {
-      console.error("Deletion Error:", error);
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        Alert.alert(t.global.deletionFailed, t.global.thePasswordYouEntere);
-      } else if (error.code === 'auth/requires-recent-login') {
-        Alert.alert(t.global.deletionFailed, t.global.sessionExpiredPlease);
-      } else {
-        Alert.alert(t.global.deletionFailed, error.message || 'Please check your password and try again.');
-      }
+      Alert.alert(t.global?.error || 'Error', error.message || 'Failed to delete account.');
     } finally {
       setIsLoading(false);
     }
@@ -262,347 +247,250 @@ export default function AccountSettingsScreen() {
   };
 
   return (
-    <View style={dynamicStyles.container}>
-      <View style={dynamicStyles.header}>
-        <TouchableOpacity 
-          style={dynamicStyles.backButton} 
-          onPress={() => {
-            router.replace('/(tabs)/settings');
-          }}
+    <SafeAreaView style={dynamicStyles.container}>
+      {/* Header Bar */}
+      <View style={[dynamicStyles.header, { borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={dynamicStyles.backButton}
+          onPress={() => router.replace('/(tabs)/settings')}
+          activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={28} color={colors.text} />
+          <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={dynamicStyles.headerTitle}>{t.accountSettings?.title || t.settings?.accountSettings || 'Account Settings'}</Text>
+        <Text style={[dynamicStyles.headerTitle, { color: colors.text }]}>{t.accountSettings?.title || 'Account Settings'}</Text>
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView style={dynamicStyles.content} contentContainerStyle={{ paddingBottom: 120 }}>
-        <View style={dynamicStyles.section}>
-          <Text style={dynamicStyles.sectionTitle}>{t.accountSettings?.personalInfo || t.settings?.profileInfo || 'Personal Information'}</Text>
-          <View style={dynamicStyles.card}>
-            <View style={dynamicStyles.infoRow}>
-              <Text style={dynamicStyles.infoLabel}>{t.accountSettings?.emailLabel || t.settings?.email || 'Email Address'}</Text>
-              <Text style={dynamicStyles.infoValue}>{user?.email || 'N/A'}</Text>
+      <ScrollView style={dynamicStyles.content} contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
+        {/* Personal Info */}
+        <Text style={[dynamicStyles.sectionTitle, { color: colors.textSecondary }]}>{(t.accountSettings?.personalInfo || 'PERSONAL INFORMATION').toUpperCase()}</Text>
+        <View style={[dynamicStyles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {/* Email Row */}
+          <View style={dynamicStyles.menuRow}>
+            <View style={dynamicStyles.menuRowLeft}>
+              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
+                <Ionicons name="mail-outline" size={18} color="#3B82F6" />
+              </View>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{t.accountSettings?.emailLabel || 'Email Address'}</Text>
             </View>
-            <View style={dynamicStyles.infoRow}>
-              <Text style={dynamicStyles.infoLabel}>{t.settings.accountId}</Text>
-              {isIdVisible ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TouchableOpacity 
-                    style={dynamicStyles.copyContainer} 
-                    onPress={handleCopyId}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[dynamicStyles.infoValue, { maxWidth: 120 }]} numberOfLines={1} ellipsizeMode="middle">
-                      {user?.uid}
-                    </Text>
-                    <Ionicons name="copy-outline" size={16} color={colors.textSecondary} style={{ marginLeft: 6 }} />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    onPress={() => {
-                      triggerHaptic('light');
-                      setIsIdVisible(false);
-                    }} 
-                    style={{ padding: 4, marginLeft: 8 }}
-                  >
-                    <Ionicons name="eye-off-outline" size={20} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <TouchableOpacity 
-                  onPress={() => { 
-                    triggerHaptic('medium'); 
-                    setIsIdVisible(true); 
-                  }} 
-                  style={{ flexDirection: 'row', alignItems: 'center', padding: 4 }}
-                >
-                  <Ionicons name="eye-outline" size={16} color={colors.primary} />
-                  <Text style={[dynamicStyles.infoValue, { color: colors.primary, marginLeft: 6, fontWeight: '500' }]}>{t.global.revealId}</Text>
+            <Text style={[dynamicStyles.menuValue, { color: colors.textSecondary }]} numberOfLines={1}>
+              {user?.email || 'N/A'}
+            </Text>
+          </View>
+
+          <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
+
+          {/* Account ID Row */}
+          <View style={dynamicStyles.menuRow}>
+            <View style={dynamicStyles.menuRowLeft}>
+              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
+                <Ionicons name="key-outline" size={18} color="#10B981" />
+              </View>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{(t.accountSettings as any)?.accountId || 'Account ID'}</Text>
+            </View>
+
+            {isIdVisible ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity style={dynamicStyles.copyContainer} onPress={handleCopyId} activeOpacity={0.7}>
+                  <Text style={[dynamicStyles.menuValue, { color: colors.text, maxWidth: 110 }]} numberOfLines={1} ellipsizeMode="middle">
+                    {user?.uid}
+                  </Text>
+                  <Ionicons name="copy-outline" size={16} color={colors.primary} style={{ marginLeft: 4 }} />
                 </TouchableOpacity>
-              )}
+                <TouchableOpacity onPress={() => setIsIdVisible(false)} style={{ marginLeft: 8 }}>
+                  <Ionicons name="eye-off-outline" size={18} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic('medium');
+                  setIsIdVisible(true);
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center' }}
+              >
+                <Ionicons name="eye-outline" size={16} color={colors.primary} style={{ marginRight: 4 }} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.primary }}>Reveal ID</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
+
+          {/* Language Row */}
+          <TouchableOpacity
+            style={dynamicStyles.menuRow}
+            activeOpacity={0.7}
+            onPress={() => router.replace('/(tabs)/settings')}
+          >
+            <View style={dynamicStyles.menuRowLeft}>
+              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.12)' }]}>
+                <Ionicons name="language-outline" size={18} color="#8B5CF6" />
+              </View>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Language / Dil</Text>
             </View>
 
-            <View style={dynamicStyles.divider} />
-
-            {/* RESTORED: Elegant Language Row Link */}
-            <TouchableOpacity 
-              style={dynamicStyles.menuItem} 
-              onPress={() => {
-                router.push('/settings/language-picker');
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Text style={dynamicStyles.menuItemText}>
-                  {t.accountSettings?.languageLabel || 'Language'}
-                </Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
-                  {currentLanguage === 'tr' ? 'Türkçe' : 'English'}
-                </Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-              </View>
-            </TouchableOpacity>
-          </View>
+            <View style={dynamicStyles.menuRowRight}>
+              <Text style={[dynamicStyles.menuValue, { color: colors.textSecondary }]}>
+                {currentLanguage === 'tr' ? 'Türkçe 🇹🇷' : 'English 🇬🇧'}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </View>
+          </TouchableOpacity>
         </View>
 
-        <View style={dynamicStyles.section}>
-          <Text style={dynamicStyles.sectionTitle}>{t.global.security}</Text>
-          <View style={dynamicStyles.card}>
-            <TouchableOpacity 
-              style={dynamicStyles.menuItem} 
-              onPress={() => {
-                triggerHaptic('medium');
-                setNewEmail('');
-                setEmailModalVisible(true);
-              }}
-            >
-              <View style={dynamicStyles.menuItemLeft}>
-                <Ionicons name="mail-outline" size={22} color={colors.text} />
-                <Text style={dynamicStyles.menuItemText}>{t.global.changeEmail}</Text>
+        {/* Security Section */}
+        <Text style={[dynamicStyles.sectionTitle, { color: colors.textSecondary }]}>GÜVENLİK</Text>
+        <View style={[dynamicStyles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          {/* Change Email */}
+          <TouchableOpacity
+            style={dynamicStyles.menuRow}
+            activeOpacity={0.7}
+            onPress={() => {
+              triggerHaptic('medium');
+              setNewEmail('');
+              setEmailModalVisible(true);
+            }}
+          >
+            <View style={dynamicStyles.menuRowLeft}>
+              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
+                <Ionicons name="at-outline" size={18} color="#3B82F6" />
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{(t.accountSettings as any)?.changeEmail || 'Change Email'}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
 
-            <View style={dynamicStyles.divider} />
+          <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
 
-            <TouchableOpacity 
-              style={dynamicStyles.menuItem} 
-              onPress={() => {
-                triggerHaptic('medium');
-                setCurrentPassword('');
-                setNewPassword('');
-                setConfirmPassword('');
-                setShowCurrentPass(false);
-                setShowNewPass(false);
-                setShowConfirmPass(false);
-                setPasswordModalVisible(true);
-              }}
-            >
-              <View style={dynamicStyles.menuItemLeft}>
-                <Ionicons name="lock-closed-outline" size={22} color={colors.text} />
-                <Text style={dynamicStyles.menuItemText}>{t.global.changePassword}</Text>
+          {/* Change Password */}
+          <TouchableOpacity
+            style={dynamicStyles.menuRow}
+            activeOpacity={0.7}
+            onPress={() => {
+              triggerHaptic('medium');
+              setCurrentPassword('');
+              setNewPassword('');
+              setConfirmPassword('');
+              setPasswordModalVisible(true);
+            }}
+          >
+            <View style={dynamicStyles.menuRowLeft}>
+              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
+                <Ionicons name="lock-closed-outline" size={18} color="#F59E0B" />
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{(t.accountSettings as any)?.changePassword || 'Change Password'}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
 
-            <View style={dynamicStyles.divider} />
+          <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
 
-            <TouchableOpacity 
-              style={dynamicStyles.menuItem} 
-              onPress={() => {
-                triggerHaptic('medium');
-                handleSendResetEmail();
-              }}
-            >
-              <View style={dynamicStyles.menuItemLeft}>
-                <Ionicons name="mail-unread-outline" size={22} color={colors.text} />
-                <Text style={dynamicStyles.menuItemText}>{t.global.sendPasswordResetEma}</Text>
+          {/* Send Password Reset Email */}
+          <TouchableOpacity
+            style={dynamicStyles.menuRow}
+            activeOpacity={0.7}
+            onPress={() => {
+              triggerHaptic('medium');
+              handleSendResetEmail();
+            }}
+          >
+            <View style={dynamicStyles.menuRowLeft}>
+              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
+                <Ionicons name="paper-plane-outline" size={18} color="#10B981" />
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-
-            <View style={dynamicStyles.divider} />
-
-            <TouchableOpacity 
-              style={dynamicStyles.menuItem} 
-              onPress={() => {
-                triggerHaptic('medium');
-                Notifications.scheduleNotificationAsync({
-                  content: { 
-                    title: "SubMate Alert", 
-                    body: "Notifications are working perfectly!" 
-                  }, 
-                  trigger: { 
-                    type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-                    seconds: 3 
-                  } 
-                });
-                Toast.show({ type: 'success', text1: 'Notification scheduled for 3 seconds', position: 'top' });
-              }}
-            >
-              <View style={dynamicStyles.menuItemLeft}>
-                <Ionicons name="notifications-outline" size={22} color={colors.text} />
-                <Text style={dynamicStyles.menuItemText}>{t.global.testNotification}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{(t.accountSettings as any)?.sendResetEmail || 'Send Password Reset Email'}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
         </View>
 
-        <View style={[dynamicStyles.section, { marginTop: 40 }]}>
-          <Text style={[dynamicStyles.sectionTitle, { color: colors.danger }]}>{t.global.dangerZone}</Text>
-          <View style={[dynamicStyles.card, { borderColor: colors.danger, borderWidth: 1 }]}>
-            <TouchableOpacity 
-              style={dynamicStyles.menuItem} 
-              onPress={() => {
-                triggerHaptic('heavy');
-                handleDeleteAccount();
-              }}
-            >
-              <View style={dynamicStyles.menuItemLeft}>
-                <Ionicons name="warning-outline" size={22} color={colors.danger} />
-                <Text style={[dynamicStyles.menuItemText, { color: colors.danger, fontWeight: '600' }]}>{t.accountSettings?.deleteAccount || t.global?.deleteAccount || 'Delete Account'}</Text>
+        {/* Danger Zone */}
+        <Text style={[dynamicStyles.sectionTitle, { color: '#EF4444', marginTop: 16 }]}>{(t.accountSettings as any)?.dangerZone || 'DANGER ZONE'}</Text>
+        <View style={[dynamicStyles.cardGroup, { backgroundColor: colors.surface, borderColor: 'rgba(239, 68, 68, 0.3)' }]}>
+          <TouchableOpacity
+            style={dynamicStyles.menuRow}
+            activeOpacity={0.8}
+            onPress={() => {
+              triggerHaptic('heavy');
+              handleDeleteAccount();
+            }}
+          >
+            <View style={dynamicStyles.menuRowLeft}>
+              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                <Ionicons name="trash-outline" size={18} color="#EF4444" />
               </View>
-            </TouchableOpacity>
-          </View>
+              <Text style={[dynamicStyles.menuLabel, { color: '#EF4444', fontWeight: '800' }]}>{(t.accountSettings as any)?.deleteAccount || 'Delete Account'}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#EF4444" />
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
       {/* Change Email Modal */}
-      <Modal visible={emailModalVisible} animationType="slide" transparent>
+      <Modal visible={emailModalVisible} animationType="fade" transparent>
         <View style={dynamicStyles.modalOverlay}>
-          <View style={dynamicStyles.modalContent}>
-            <Text style={dynamicStyles.modalTitle}>{t.global.changeEmail}</Text>
-            <Text style={dynamicStyles.modalSubtitle}>{t.global.enterYourNewEmailAdd}</Text>
-            
+          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setEmailModalVisible(false)} />
+          <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{(t.accountSettings as any)?.changeEmail || 'Change Email'}</Text>
+            <Text style={[dynamicStyles.modalSubtitle, { color: colors.textSecondary }]}>{(t.accountSettings as any)?.enterNewEmail || 'Enter your new email address.'}</Text>
+
             <TextInput
-              style={dynamicStyles.input}
-              placeholder={t.global.newEmail}
+              style={[dynamicStyles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              placeholder={(t.accountSettings as any)?.newEmailPlaceholder || 'New Email Address'}
               placeholderTextColor={colors.textSecondary}
               value={newEmail}
               onChangeText={setNewEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              autoCorrect={false}
             />
 
             <View style={dynamicStyles.modalButtons}>
-              <Button 
-                title="Cancel" 
-                variant="secondary" 
-                onPress={() => setEmailModalVisible(false)} 
-                style={{ flex: 1, marginRight: 8 }}
-                disabled={isLoading}
-              />
-              <Button 
-                title="Save" 
-                onPress={handleChangeEmail} 
-                style={{ flex: 1, marginLeft: 8 }}
-                isLoading={isLoading}
-              />
+              <Button title={t.common?.cancel || 'Cancel'} variant="secondary" onPress={() => setEmailModalVisible(false)} style={{ flex: 1, marginRight: 8 }} />
+              <Button title={(t.global as any)?.saveChanges || 'Save'} onPress={handleChangeEmail} style={{ flex: 1, marginLeft: 8 }} isLoading={isLoading} />
             </View>
           </View>
         </View>
       </Modal>
 
       {/* Change Password Modal */}
-      <Modal visible={passwordModalVisible} animationType="slide" transparent>
+      <Modal visible={passwordModalVisible} animationType="fade" transparent>
         <View style={dynamicStyles.modalOverlay}>
-          <View style={dynamicStyles.modalContent}>
-            <Text style={dynamicStyles.modalTitle}>{t.global.changePassword}</Text>
-            <Text style={dynamicStyles.modalSubtitle}>{t.global.createANewSecurePass}</Text>
-            
-            <View style={dynamicStyles.passwordInputContainer}>
-              <TextInput
-                style={dynamicStyles.passwordInput}
-                placeholder={t.global.currentPassword}
-                placeholderTextColor={colors.textSecondary}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry={!showCurrentPass}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity onPress={() => setShowCurrentPass(!showCurrentPass)} style={dynamicStyles.eyeIcon}>
-                <Ionicons name={showCurrentPass ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
+          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setPasswordModalVisible(false)} />
+          <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{(t.accountSettings as any)?.changePassword || 'Change Password'}</Text>
+            <Text style={[dynamicStyles.modalSubtitle, { color: colors.textSecondary }]}>{(t.accountSettings as any)?.enterCurrentAndNewPassword || 'Enter your current and new password.'}</Text>
 
-            <View style={dynamicStyles.passwordInputContainer}>
-              <TextInput
-                style={dynamicStyles.passwordInput}
-                placeholder={t.global.newPassword}
-                placeholderTextColor={colors.textSecondary}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry={!showNewPass}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity onPress={() => setShowNewPass(!showNewPass)} style={dynamicStyles.eyeIcon}>
-                <Ionicons name={showNewPass ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={[
-              dynamicStyles.passwordInputContainer, 
-              confirmPassword.length > 0 && newPassword !== confirmPassword ? { borderColor: colors.danger } : {}
-            ]}>
-              <TextInput
-                style={dynamicStyles.passwordInput}
-                placeholder={t.global.confirmNewPassword}
-                placeholderTextColor={colors.textSecondary}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPass}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-              <TouchableOpacity onPress={() => setShowConfirmPass(!showConfirmPass)} style={dynamicStyles.eyeIcon}>
-                <Ionicons name={showConfirmPass ? 'eye-off-outline' : 'eye-outline'} size={20} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            {confirmPassword.length > 0 && newPassword !== confirmPassword ? (
-              <Text style={dynamicStyles.errorText}>{t.global.passwordsDoNotMatch}</Text>
-            ) : null}
-
-            <View style={[dynamicStyles.modalButtons, { marginTop: 8 }]}>
-              <Button 
-                title="Cancel" 
-                variant="secondary" 
-                onPress={() => setPasswordModalVisible(false)} 
-                style={{ flex: 1, marginRight: 8 }}
-                disabled={isLoading}
-              />
-              <Button 
-                title="Save" 
-                onPress={handleChangePassword} 
-                style={{ flex: 1, marginLeft: 8 }}
-                isLoading={isLoading}
-                disabled={isLoading || !currentPassword || !newPassword || newPassword !== confirmPassword}
-              />
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Re-Authentication Modal */}
-      <Modal visible={reauthModalVisible} animationType="fade" transparent>
-        <View style={dynamicStyles.modalOverlay}>
-          <View style={dynamicStyles.modalContent}>
-            <Text style={dynamicStyles.modalTitle}>{t.global.verifyIdentity}</Text>
-            <Text style={dynamicStyles.modalSubtitle}>{t.global.thisIsASensitiveActi}</Text>
-            
             <TextInput
-              style={dynamicStyles.input}
-              placeholder={t.global.currentPassword}
+              style={[dynamicStyles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              placeholder={(t.accountSettings as any)?.currentPasswordPlaceholder || 'Current Password'}
               placeholderTextColor={colors.textSecondary}
-              value={reauthPassword}
-              onChangeText={setReauthPassword}
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
               secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
+            />
+
+            <TextInput
+              style={[dynamicStyles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              placeholder={(t.accountSettings as any)?.newPasswordPlaceholder || 'New Password'}
+              placeholderTextColor={colors.textSecondary}
+              value={newPassword}
+              onChangeText={setNewPassword}
+              secureTextEntry
+            />
+
+            <TextInput
+              style={[dynamicStyles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              placeholder={(t.accountSettings as any)?.confirmPasswordPlaceholder || 'Confirm New Password'}
+              placeholderTextColor={colors.textSecondary}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
             />
 
             <View style={dynamicStyles.modalButtons}>
-              <Button 
-                title="Cancel" 
-                variant="secondary" 
-                onPress={() => {
-                  setReauthModalVisible(false);
-                  setPendingAction(null);
-                }} 
-                style={{ flex: 1, marginRight: 8 }}
-                disabled={isLoading}
-              />
-              <Button 
-                title="Verify & Continue" 
-                onPress={handleReauthSubmit} 
-                style={{ flex: 1, marginLeft: 8 }}
-                isLoading={isLoading}
-              />
+              <Button title={t.common?.cancel || 'Cancel'} variant="secondary" onPress={() => setPasswordModalVisible(false)} style={{ flex: 1, marginRight: 8 }} />
+              <Button title={(t.global as any)?.update || 'Update'} onPress={handleChangePassword} style={{ flex: 1, marginLeft: 8 }} isLoading={isLoading} />
             </View>
           </View>
         </View>
@@ -611,210 +499,152 @@ export default function AccountSettingsScreen() {
       {/* Delete Account Modal */}
       <Modal visible={isDeleteModalVisible} animationType="fade" transparent>
         <View style={dynamicStyles.modalOverlay}>
-          <View style={[dynamicStyles.modalContent, { borderColor: colors.danger, borderWidth: 1 }]}>
-            <Text style={[dynamicStyles.modalTitle, { color: colors.danger }]}>{t.accountSettings?.deleteAccount || t.settings?.deleteAccount || 'Delete Account'}</Text>
-            <Text style={dynamicStyles.modalSubtitle}>
-              {t.settings.deleteWarning}
+          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setDeleteModalVisible(false)} />
+          <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: '#EF4444' }]}>
+            <Text style={[dynamicStyles.modalTitle, { color: '#EF4444' }]}>{(t.accountSettings as any)?.deleteAccountPermanently || 'Permanently Delete Account'}</Text>
+            <Text style={[dynamicStyles.modalSubtitle, { color: colors.textSecondary }]}>
+              {(t.accountSettings as any)?.deleteAccountWarning || 'This action cannot be undone. Enter current password to confirm.'}
             </Text>
-            
+
             <TextInput
-              style={dynamicStyles.input}
-              placeholder={t.global.enterYourPassword}
+              style={[dynamicStyles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              placeholder={(t.accountSettings as any)?.currentPasswordPlaceholder || 'Current Password'}
               placeholderTextColor={colors.textSecondary}
               value={deletePassword}
               onChangeText={setDeletePassword}
               secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
             />
 
             <View style={dynamicStyles.modalButtons}>
-              <Button 
-                title={t.settings.cancel} 
-                variant="secondary" 
-                onPress={() => {
-                  setDeleteModalVisible(false);
-                  setDeletePassword('');
-                }} 
-                style={{ flex: 1, marginRight: 8 }}
-                disabled={isLoading}
-              />
-              <Button 
-                title={t.settings.permanentlyDelete} 
-                onPress={confirmAndDelete} 
-                style={{ flex: 1, marginLeft: 8, backgroundColor: colors.danger }}
-                isLoading={isLoading}
-              />
+              <Button title={t.common?.cancel || 'Cancel'} variant="secondary" onPress={() => setDeleteModalVisible(false)} style={{ flex: 1, marginRight: 8 }} />
+              <Button title={(t.accountSettings as any)?.permanentlyDelete || 'Permanently Delete'} onPress={confirmAndDelete} style={{ flex: 1, marginLeft: 8, backgroundColor: '#EF4444' }} isLoading={isLoading} />
             </View>
           </View>
         </View>
       </Modal>
-
-    </View>
+    </SafeAreaView>
   );
 }
 
-const getStyles = (colors: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 16,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  content: {
-    flex: 1,
-    padding: 16,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: 16,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  infoLabel: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  infoValue: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    flexShrink: 1,
-  },
-  copyContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 16,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuItemText: {
-    fontSize: 16,
-    color: colors.text,
-    marginLeft: 12,
-    fontWeight: '500',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: 50,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  modalSubtitle: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    marginBottom: 20,
-    lineHeight: 22,
-  },
-  input: {
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text,
-    marginBottom: 24,
-  },
-  passwordInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  passwordInput: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    color: colors.text,
-  },
-  eyeIcon: {
-    padding: 16,
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: 13,
-    marginTop: -8,
-    marginBottom: 16,
-    marginLeft: 4,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-});
-
-
+const getStyles = (colors: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: 1,
+    },
+    backButton: {
+      padding: 4,
+    },
+    headerTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 20,
+      paddingTop: 16,
+    },
+    sectionTitle: {
+      fontSize: 11,
+      fontWeight: '800',
+      letterSpacing: 0.8,
+      marginBottom: 8,
+      marginLeft: 4,
+      marginTop: 12,
+    },
+    cardGroup: {
+      borderRadius: 20,
+      borderWidth: 1,
+      overflow: 'hidden',
+      marginBottom: 16,
+    },
+    menuRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: 16,
+    },
+    menuRowLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    menuIconBox: {
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    menuLabel: {
+      fontSize: 14,
+      fontWeight: '700',
+    },
+    menuRowRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    menuValue: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      marginLeft: 62,
+    },
+    copyContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: Platform.OS === 'web' ? 'center' : 'flex-end',
+      alignItems: Platform.OS === 'web' ? 'center' : 'stretch',
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      padding: Platform.OS === 'web' ? 20 : 0,
+    },
+    modalDismissArea: {
+      position: 'absolute',
+      top: 0,
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
+    modalContent: {
+      width: '100%',
+      maxWidth: 520,
+      alignSelf: 'center',
+      borderRadius: 24,
+      padding: 24,
+      borderWidth: 1,
+    },
+    modalTitle: {
+      fontSize: 18,
+      fontWeight: '800',
+      marginBottom: 6,
+    },
+    modalSubtitle: {
+      fontSize: 13,
+      marginBottom: 16,
+    },
+    input: {
+      borderRadius: 14,
+      borderWidth: 1,
+      padding: 14,
+      fontSize: 15,
+      marginBottom: 16,
+    },
+    modalButtons: {
+      flexDirection: 'row',
+      marginTop: 8,
+    },
+  });

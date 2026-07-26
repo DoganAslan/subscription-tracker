@@ -34,8 +34,7 @@ export default function TabsLayout() {
           ),
         }}
       />
-      
-      {/* Route name must be exactly "subscriptions" to match the directory name, not subscriptions/index */}
+
       <Tabs.Screen
         name="subscriptions"
         options={{
@@ -46,8 +45,18 @@ export default function TabsLayout() {
           ),
         }}
       />
-      
-      {/* Route name must be exactly "calendar" to match the directory name */}
+
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          title: "Analytics",
+          tabBarLabel: "Analytics",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "stats-chart" : "stats-chart-outline"} color={color} size={size} />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="calendar"
         options={{
@@ -58,7 +67,7 @@ export default function TabsLayout() {
           ),
         }}
       />
-      
+
       <Tabs.Screen
         name="wallet"
         options={{
@@ -69,8 +78,7 @@ export default function TabsLayout() {
           ),
         }}
       />
-      
-      {/* Route name must be exactly "settings" to match the directory name, not settings/index */}
+
       <Tabs.Screen
         name="settings"
         options={{
@@ -81,28 +89,28 @@ export default function TabsLayout() {
           ),
         }}
       />
-      
+
       <Tabs.Screen
         name="wallet/add"
         options={{
           href: null,
         }}
       />
-      
+
       <Tabs.Screen
         name="wallet/[id]"
         options={{
           href: null,
         }}
       />
-      
+
       <Tabs.Screen
         name="subscriptions/add"
         options={{
           href: null,
         }}
       />
-      
+
       <Tabs.Screen
         name="subscriptions/[id]"
         options={{
@@ -126,5 +134,3 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   }
 });
-
-

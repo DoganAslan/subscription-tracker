@@ -1,77 +1,108 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SubscriptionService } from '@/services/firebase/firestore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { Subscription } from '@/services/firebase/types';
 import { SubscriptionFormData } from '../schemas/subscription.schema';
-import { Timestamp } from 'firebase/firestore';
-import Toast from 'react-native-toast-message';
-import { Platform, Alert } from 'react-native';
-import { useAuthStore } from '@/store/useAuthStore';
 import { triggerHaptic } from '@/utils/haptics';
+import Toast from 'react-native-toast-message';
 import { scheduleSubReminder, cancelSubReminder, scheduleContractDoomReminder } from '@/services/notificationService';
 import { getNextRenewalDate } from '@/features/dashboard/utils/calculations';
-import * as Notifications from 'expo-notifications';
+import { Timestamp } from 'firebase/firestore';
+import { triggerWidgetSync } from '@/services/background/widgetSync';
 import { useTranslation } from '@/context/LanguageContext';
+import { Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
 
-// React Query Keys
 export const subscriptionKeys = {
   all: ['subscriptions'] as const,
-  lists: () => [...subscriptionKeys.all, 'list'] as const,
-  list: (userId: string) => [...subscriptionKeys.lists(), userId] as const,
+  list: (userId: string) => [...subscriptionKeys.all, 'list', userId] as const,
+};
+
+const safeToTimestamp = (val: any): Timestamp | null => {
+  if (!val) return null;
+  if (val instanceof Timestamp) return val;
+  if (typeof val?.toDate === 'function') return Timestamp.fromDate(val.toDate());
+  if (val instanceof Date) return isNaN(val.getTime()) ? null : Timestamp.fromDate(val);
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? null : Timestamp.fromDate(d);
+};
+
+const safeToDate = (val: any): Date => {
+  if (!val) return new Date();
+  if (val instanceof Date) return isNaN(val.getTime()) ? new Date() : val;
+  if (typeof val?.toDate === 'function') return val.toDate();
+  const d = new Date(val);
+  return isNaN(d.getTime()) ? new Date() : d;
 };
 
 export function useSubscriptions() {
-  const user = useAuthStore(state => state.user);
+  const user = useAuthStore((state) => state.user);
 
   return useQuery({
     queryKey: subscriptionKeys.list(user?.uid || ''),
     queryFn: () => SubscriptionService.getSubscriptions(user!.uid),
-    enabled: !!user?.uid, // Only fetch if user exists
-    initialData: [], // Ensure subscriptions array is never undefined
+    enabled: !!user?.uid,
+    staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
 }
 
 export function useAddSubscription() {
   const queryClient = useQueryClient();
-  const user = useAuthStore(state => state.user);
+  const user = useAuthStore((state) => state.user);
   const { t } = useTranslation();
-
 
   return useMutation({
     mutationFn: async (data: SubscriptionFormData) => {
       if (!user) throw new Error("Not authenticated");
+
+      const cleanMembers = Array.isArray(data.splitMembers)
+        ? data.splitMembers.map((m: any, idx: number) => ({
+            id: String(m.id || Date.now() + idx),
+            name: String(m.name || ''),
+            phone: String(m.phone || ''),
+            shareAmount: Number(m.shareAmount) || 0,
+            isPaid: Boolean(m.isPaid),
+          }))
+        : [];
+
       const payload = {
         ...data,
+        status: data.status || 'active',
         notes: data.notes || '',
         isSplit: data.isSplit ?? false,
-        splitParticipants: data.splitParticipants ?? [],
-        renewalDate: Timestamp.fromDate(data.renewalDate),
-        trialEndDate: data.trialEndDate ? Timestamp.fromDate(data.trialEndDate) : null, // Avoid undefined
-        contractEndDate: data.hasContract && data.contractEndDate ? Timestamp.fromDate(data.contractEndDate) : null,
+        splitMembers: cleanMembers,
+        renewalDate: safeToTimestamp(data.renewalDate) || Timestamp.now(),
+        trialEndDate: safeToTimestamp(data.trialEndDate),
+        contractEndDate: data.hasContract ? safeToTimestamp(data.contractEndDate) : null,
         hasContract: data.hasContract || false,
       };
-      
+
       delete (payload as any).paymentDetails;
-      // Clean undefined keys before Firestore
-      Object.keys(payload).forEach(key => payload[key as keyof typeof payload] === undefined && delete payload[key as keyof typeof payload]);
-      
-      const docRef = await SubscriptionService.addSubscription(user.uid, payload);
-      return { id: typeof docRef === 'string' ? docRef : docRef?.id || `temp_${Date.now()}`, payload };
+
+      const newId = await SubscriptionService.addSubscription(user.uid, payload as any);
+      return { id: newId, payload };
     },
     onSuccess: (result) => {
       triggerHaptic('success');
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
+        triggerWidgetSync(user.uid);
       }
+      Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionAdded || 'Subscription Added', position: 'top' });
       try {
-        const nextDate = getNextRenewalDate(result.payload.renewalDate, result.payload.billingCycle);
-        scheduleSubReminder({ id: result.id, ...result.payload }, nextDate).catch(() => {});
+        const renDate = safeToDate(result.payload.renewalDate);
+        const nextDate = getNextRenewalDate(renDate, result.payload.billingCycle);
+        scheduleSubReminder({ id: result.id, ...result.payload, renewalDate: renDate }, nextDate).catch((e) => {
+          console.error('Reminder error:', e);
+        });
+
         if (result.payload.hasContract && result.payload.contractEndDate) {
-          scheduleContractDoomReminder({ id: result.id, ...result.payload }, result.payload.contractEndDate.toDate()).catch(() => {});
+          const cDate = safeToDate(result.payload.contractEndDate);
+          scheduleContractDoomReminder({ id: result.id, ...result.payload, contractEndDate: cDate }).catch((e) => console.error(e));
         }
       } catch (err) {
-        // silent fail
+        console.error('Failed to parse dates for reminder:', err);
       }
-      Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionSaved || 'Subscription Saved', position: 'top' });
     },
     onError: (error) => {
       triggerHaptic('error');
@@ -87,48 +118,78 @@ export function useUpdateSubscription() {
   const { t } = useTranslation();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: SubscriptionFormData }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<SubscriptionFormData> | any }) => {
       if (!user) throw new Error("Not authenticated");
-      const payload = {
-        ...data,
-        notes: data.notes || '',
-        isSplit: data.isSplit ?? false,
-        splitParticipants: data.splitParticipants ?? [],
-        renewalDate: Timestamp.fromDate(data.renewalDate),
-        trialEndDate: data.trialEndDate ? Timestamp.fromDate(data.trialEndDate) : null,
-        contractEndDate: data.hasContract && data.contractEndDate ? Timestamp.fromDate(data.contractEndDate) : null,
-        hasContract: data.hasContract || false,
-      };
-      
-      delete (payload as any).paymentDetails;
-      delete (payload as any).status;
-      delete (payload as any).pauseEndDate;
-      // Clean undefined keys before Firestore
-      Object.keys(payload).forEach(key => payload[key as keyof typeof payload] === undefined && delete payload[key as keyof typeof payload]);
-      
+
       const cachedSubs = queryClient.getQueryData<Subscription[]>(subscriptionKeys.list(user.uid));
       const oldSub = cachedSubs?.find(s => s.id === id);
-      
-      let newPriceHistory = oldSub?.priceHistory || [];
-      if (oldSub && oldSub.amount !== payload.amount) {
-        newPriceHistory = [...newPriceHistory, { amount: payload.amount, date: new Date().toISOString() }];
-        (payload as any).priceHistory = newPriceHistory;
+
+      const payload: any = {
+        ...data,
+      };
+
+      if (data.renewalDate !== undefined) {
+        payload.renewalDate = safeToTimestamp(data.renewalDate) || Timestamp.now();
       }
-      
+      if (data.trialEndDate !== undefined) {
+        payload.trialEndDate = safeToTimestamp(data.trialEndDate);
+      }
+      if (data.contractEndDate !== undefined) {
+        payload.contractEndDate = safeToTimestamp(data.contractEndDate);
+      }
+
+      if (Array.isArray(data.splitMembers)) {
+        payload.splitMembers = data.splitMembers.map((m: any, idx: number) => ({
+          id: String(m.id || Date.now() + idx),
+          name: String(m.name || ''),
+          phone: String(m.phone || ''),
+          shareAmount: Number(m.shareAmount) || 0,
+          isPaid: Boolean(m.isPaid),
+        }));
+      }
+
+      delete payload.paymentDetails;
+      delete payload.status;
+      delete payload.pauseEndDate;
+
+      // Clean undefined keys before Firestore
+      Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
+      let newPriceHistory = oldSub?.priceHistory || [];
+      if (oldSub && payload.amount !== undefined && oldSub.amount !== payload.amount) {
+        newPriceHistory = [...newPriceHistory, { amount: payload.amount, date: new Date().toISOString() }];
+        payload.priceHistory = newPriceHistory;
+      }
+
       await SubscriptionService.updateSubscription(user.uid, id, payload);
-      return { id, payload };
+      return { id, payload, oldSub };
     },
     onSuccess: (result) => {
       triggerHaptic('success');
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
+        triggerWidgetSync(user.uid);
       }
+      Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionUpdated || 'Subscription Updated', position: 'top' });
       try {
-        const nextDate = getNextRenewalDate(result.payload.renewalDate, result.payload.billingCycle);
-        scheduleSubReminder({ id: result.id, ...result.payload }, nextDate).catch(() => {});
+        const mergedSub = {
+          ...result.oldSub,
+          ...result.payload,
+        };
 
-        if (result.payload.hasContract && result.payload.contractEndDate) {
-          scheduleContractDoomReminder({ id: result.id, ...result.payload }).catch(() => {});
+        if (mergedSub.renewalDate) {
+          const renDate = safeToDate(mergedSub.renewalDate);
+          const billingCycleVal = mergedSub.billingCycle || 'monthly';
+          const nextDate = getNextRenewalDate(renDate, billingCycleVal);
+
+          scheduleSubReminder({ id: result.id, ...mergedSub, renewalDate: renDate }, nextDate).catch((e) => {
+            console.error('Reminder error:', e);
+          });
+        }
+
+        if (mergedSub.hasContract && mergedSub.contractEndDate) {
+          const cDate = safeToDate(mergedSub.contractEndDate);
+          scheduleContractDoomReminder({ id: result.id, ...mergedSub, contractEndDate: cDate }).catch((e) => console.error(e));
         } else {
           try {
             if (Platform.OS !== 'web') {
@@ -137,9 +198,8 @@ export function useUpdateSubscription() {
           } catch(e) {}
         }
       } catch (err) {
-        // silent fail
+        console.error('Failed to parse dates for reminder:', err);
       }
-      Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionUpdated || 'Subscription Updated', position: 'top' });
     },
     onError: (error) => {
       triggerHaptic('error');
@@ -154,7 +214,6 @@ export function useDeleteSubscription() {
   const user = useAuthStore(state => state.user);
   const { t } = useTranslation();
 
-
   return useMutation({
     mutationFn: async (id: string) => {
       if (!user) throw new Error("Not authenticated");
@@ -162,16 +221,13 @@ export function useDeleteSubscription() {
       return id;
     },
     onSuccess: (id) => {
-      triggerHaptic('success');
+      triggerHaptic('medium');
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
+        triggerWidgetSync(user.uid);
       }
-      try {
-        cancelSubReminder(id).catch(() => {});
-      } catch (err) {
-        // silent fail
-      }
-      Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionDeleted || 'Subscription Removed', position: 'top' });
+      cancelSubReminder(id).catch(console.error);
+      Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionDeleted || 'Subscription Deleted', position: 'top' });
     },
     onError: (error) => {
       triggerHaptic('error');
@@ -184,23 +240,35 @@ export function useDeleteSubscription() {
 export function useTogglePauseSubscription() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
+  const { t } = useTranslation();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Subscription> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: { status: 'active' | 'paused'; pauseEndDate?: Date | null } }) => {
       if (!user) throw new Error("Not authenticated");
-      await SubscriptionService.updateSubscription(user.uid, id, data);
-      return { id, data };
+      const payload = {
+        status: data.status,
+        pauseEndDate: data.pauseEndDate ? Timestamp.fromDate(data.pauseEndDate) : null,
+      };
+      await SubscriptionService.updateSubscription(user.uid, id, payload as any);
+      return { id, status: data.status };
     },
-    onSuccess: () => {
-      triggerHaptic('success');
+    onSuccess: ({ id, status }) => {
+      triggerHaptic('selection');
       if (user) {
         queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
+        triggerWidgetSync(user.uid);
+      }
+      if (status === 'paused') {
+        cancelSubReminder(id).catch(console.error);
+        Toast.show({ type: 'info', text1: (t.global as any)?.subscriptionPaused || 'Subscription Paused', position: 'top' });
+      } else {
+        Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionResumed || 'Subscription Resumed', position: 'top' });
       }
     },
-    onError: () => {
+    onError: (error) => {
       triggerHaptic('error');
+      Toast.show({ type: 'error', text1: (t.global as any)?.failedToUpdateStatus || 'Failed to update status', position: 'top' });
+      console.error(error);
     }
   });
 }
-
-

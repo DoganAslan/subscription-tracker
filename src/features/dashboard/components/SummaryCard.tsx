@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { useBudgetStore } from '@/store/useBudgetStore';
-import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '@/context/ThemeContext';
 
 interface Props {
   monthlyTotal: number;
@@ -39,6 +39,8 @@ export const SummaryCard = React.memo(function SummaryCard({ monthlyTotal, month
   const budgetUsagePercent = monthlyBudget ? (monthlyGross / monthlyBudget) * 100 : 0;
   const isOverBudget = monthlyBudget ? monthlyGross > monthlyBudget : false;
 
+  const { colors, isDark } = useTheme();
+
   return (
     <View style={styles.container}>
       <View style={styles.cardsWrapper}>
@@ -65,21 +67,21 @@ export const SummaryCard = React.memo(function SummaryCard({ monthlyTotal, month
         </View>
       </View>
 
-      {/* Budget Indicator */}
+      {/* Monthly Budget Bar */}
       <TouchableOpacity 
-        style={styles.budgetContainer}
-        onPress={() => setIsBudgetModalVisible(true)}
+        style={styles.budgetContainer} 
+        activeOpacity={0.8}
+        onPress={() => {
+          setBudgetInput(monthlyBudget ? monthlyBudget.toString() : '');
+          setIsBudgetModalVisible(true);
+        }}
       >
-        <View style={styles.budgetHeader}>
-          <Text style={styles.budgetTitle}>Monthly Budget</Text>
-          <Ionicons name="pencil" size={14} color="#94A3B8" />
-        </View>
         {monthlyBudget ? (
           <>
-            <View style={styles.budgetRow}>
-              <Text style={styles.budgetText}>{monthlyGross.toFixed(0)} / {monthlyBudget} {baseCurrency}</Text>
+            <View style={styles.budgetHeader}>
+              <Text style={styles.budgetTitle}>{(t.dashboard as any)?.monthlyBudgetLimit || 'Monthly Budget Limit'}</Text>
               <Text style={[styles.budgetPercent, { color: isOverBudget ? '#EF4444' : '#10B981' }]}>
-                {budgetUsagePercent.toFixed(0)}%
+                {monthlyGross.toFixed(0)} / {monthlyBudget} {baseCurrency} ({budgetUsagePercent.toFixed(0)}%)
               </Text>
             </View>
             <View style={styles.budgetTrack}>
@@ -87,37 +89,37 @@ export const SummaryCard = React.memo(function SummaryCard({ monthlyTotal, month
             </View>
           </>
         ) : (
-          <Text style={styles.setBudgetText}>Tap to set a monthly limit</Text>
+          <Text style={styles.setBudgetText}>{(t.dashboard as any)?.tapToSetLimit || 'Tap to set a monthly limit'}</Text>
         )}
       </TouchableOpacity>
 
       <Modal visible={isBudgetModalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Set Monthly Budget</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{(t.dashboard as any)?.setMonthlyBudget || 'Set Monthly Budget'}</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
               placeholder="e.g. 500"
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.textSecondary}
               value={budgetInput}
               onChangeText={setBudgetInput}
               keyboardType="numeric"
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity 
-                style={[styles.modalBtn, { backgroundColor: '#334155' }]}
+                style={[styles.modalBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0' }]}
                 onPress={() => {
                   setMonthlyBudget(null);
                   setIsBudgetModalVisible(false);
                 }}
               >
-                <Text style={styles.modalBtnText}>Clear</Text>
+                <Text style={[styles.modalBtnText, { color: colors.text }]}>{(t.common as any)?.clear || 'Clear'}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.modalBtn, { backgroundColor: '#10B981' }]}
                 onPress={handleSaveBudget}
               >
-                <Text style={styles.modalBtnText}>Save</Text>
+                <Text style={[styles.modalBtnText, { color: '#FFF' }]}>{(t.global as any)?.saveChanges || 'Save'}</Text>
               </TouchableOpacity>
             </View>
           </View>

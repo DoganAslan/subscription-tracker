@@ -21,6 +21,12 @@
         "backgroundColor": "#0B0F19",
         "foregroundImage": "./assets/images/logo.png"
       },
+      "permissions": [
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE",
+        "POST_NOTIFICATIONS",
+        "SCHEDULE_EXACT_ALARM"
+      ],
       "predictiveBackGestureEnabled": false,
       "googleServicesFile": "./google-services.json",
       "jsEngine": "hermes"

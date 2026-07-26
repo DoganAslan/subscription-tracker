@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LANGUAGES, TranslationType } from '../locales';
 
+import i18n from '../locales/i18n';
+
 type LanguageContextType = {
   currentLanguage: string;
   t: TranslationType;
@@ -16,7 +18,12 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     AsyncStorage.getItem('@submate_lang').then(savedLang => {
-      if (savedLang && LANGUAGES[savedLang]) setCurrentLanguage(savedLang);
+      if (savedLang && LANGUAGES[savedLang]) {
+        setCurrentLanguage(savedLang);
+        if (i18n && typeof i18n.changeLanguage === 'function') {
+          i18n.changeLanguage(savedLang);
+        }
+      }
     });
   }, []);
 
@@ -24,6 +31,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (LANGUAGES[lang]) {
       setCurrentLanguage(lang);
       await AsyncStorage.setItem('@submate_lang', lang);
+      await AsyncStorage.setItem('user-language', lang);
+      if (i18n && typeof i18n.changeLanguage === 'function') {
+        i18n.changeLanguage(lang);
+      }
     }
   };
 

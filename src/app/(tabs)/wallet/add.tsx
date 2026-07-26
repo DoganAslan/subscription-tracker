@@ -1,6 +1,6 @@
-import i18n, { t } from '@/locales/i18n';
 import React, { useState, useCallback } from 'react';
-import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { CardForm } from '@/features/cards/components/CardForm';
 import { useAddCard } from '@/features/cards/hooks/useCards';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -8,11 +8,13 @@ import { CardFormData } from '@/features/cards/schemas/card.schema';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { triggerHaptic } from '@/utils/haptics';
+import { useTranslation } from '@/context/LanguageContext';
 
 export default function AddCardScreen() {
   const router = useRouter();
   const { mutate: addCard, isPending } = useAddCard();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const [formKey, setFormKey] = useState(0);
 
   useFocusEffect(
@@ -22,11 +24,7 @@ export default function AddCardScreen() {
   );
 
   const handleGoBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)/wallet');
-    }
+    router.replace('/(tabs)/wallet');
   };
 
   const handleSubmit = (data: CardFormData) => {
@@ -41,12 +39,14 @@ export default function AddCardScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <TouchableOpacity onPress={handleGoBack} style={{ padding: 4 }}>
-             <Ionicons name="close" size={28} color={colors.text} />
+        {/* Navigation Header */}
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={handleGoBack} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="chevron-back" size={20} color={colors.primary} />
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>{t.common?.cancel || 'Cancel'}</Text>
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{t.global.addVirtualCard}</Text>
-          <View style={{ width: 28 }} />
+          <Text style={[styles.headerTitle, { color: colors.text }]}>{t.global?.addVirtualCard || 'Add Card'}</Text>
+          <View style={{ width: 70 }} />
         </View>
 
         <View style={{ flex: 1 }}>
@@ -54,7 +54,7 @@ export default function AddCardScreen() {
             key={formKey}
             onSubmit={handleSubmit} 
             isLoading={isPending} 
-            submitLabel="Save Card" 
+            submitLabel={t.global?.saveChanges || 'Save Card'} 
           />
         </View>
       </KeyboardAvoidingView>
@@ -62,4 +62,26 @@ export default function AddCardScreen() {
   );
 }
 
-
+const styles = StyleSheet.create({
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 4,
+  },
+  backButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
+});

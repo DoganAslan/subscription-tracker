@@ -100,7 +100,8 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
       return;
     }
 
-    const convertedAmount = convertCurrency(sub.amount, sub.currency || 'USD', baseCurrency);
+    const rawVal = sub.amount !== undefined && sub.amount !== null ? sub.amount : ((sub as any).price || 0);
+    const convertedAmount = convertCurrency(rawVal, sub.currency || 'USD', baseCurrency);
     
     const monthlyCost = getMonthlyCost(convertedAmount, sub.billingCycle);
     const yearlyCost = getYearlyCost(convertedAmount, sub.billingCycle);

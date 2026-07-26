@@ -1,6 +1,7 @@
 import React from 'react';
 import { triggerHaptic } from '@/utils/haptics';
-import { View, Text, SafeAreaView, KeyboardAvoidingView, Platform, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
 import { useAddSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useRouter } from 'expo-router';
@@ -18,11 +19,7 @@ export default function AddSubscriptionScreen() {
   const { t } = useTranslation();
 
   const handleGoBack = () => {
-    if (router.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(tabs)/subscriptions');
-    }
+    router.replace('/(tabs)/subscriptions');
   };
 
   React.useEffect(() => {

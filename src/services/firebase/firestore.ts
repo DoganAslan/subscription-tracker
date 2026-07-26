@@ -1,8 +1,39 @@
-import { getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, query, where } from 'firebase/firestore';
+import { getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, query, where, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './config';
 import { getSubscriptionsCollection, getSubscriptionDoc, getCardsCollection, getCardDoc } from './collections';
 import { Subscription, Card } from './types';
 import { t } from '@/locales/i18n';
+
+export const UserService = {
+  // Fetch user profile document from Firestore
+  getUserProfile: async (userId: string) => {
+    if (!userId) return null;
+    try {
+      const userRef = doc(db, 'users', userId);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        return snap.data();
+      }
+    } catch (e) {
+      console.warn('[UserService] getUserProfile error:', e);
+    }
+    return null;
+  },
+
+  // Save/Update user profile document in Firestore
+  updateUserProfile: async (userId: string, data: { photoURL?: string | null; displayName?: string }) => {
+    if (!userId) return;
+    try {
+      const userRef = doc(db, 'users', userId);
+      await setDoc(userRef, {
+        ...data,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    } catch (e) {
+      console.warn('[UserService] updateUserProfile error:', e);
+    }
+  }
+};
 
 export const SubscriptionService = {
   // Get all subscriptions for a user
@@ -153,5 +184,3 @@ export const CardService = {
     await Promise.all(updatePromises);
   },
 };
-
-
