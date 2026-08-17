@@ -16,7 +16,8 @@ export const SpendingInsightsCard = React.memo(function SpendingInsightsCard({ m
   const monthlyCost = hasData ? getMonthlyCost(mostExpensive.amount, mostExpensive.billingCycle) : 0;
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
@@ -26,13 +27,15 @@ export const SpendingInsightsCard = React.memo(function SpendingInsightsCard({ m
         <Ionicons name="sparkles" size={24} color={colors.primary} />
       </View>
       <View style={dynamicStyles.textContainer}>
-        <Text style={dynamicStyles.insightTitle}>{t.dashboard?.highestExpense || 'Highest Expense'}</Text>
+        <Text style={dynamicStyles.insightTitle}>
+          {isTurkish ? 'En Yüksek Harcama' : (t.dashboard?.highestExpense || 'Highest Expense')}
+        </Text>
         {hasData === true ? (
           <Text style={dynamicStyles.insightValue}>
-            {mostExpensive.name} <Text style={dynamicStyles.insightAmount}>— {monthlyCost.toFixed(2)} {baseCurrency}/mo</Text>
+            {mostExpensive.name} <Text style={dynamicStyles.insightAmount}>— {monthlyCost.toFixed(2)} {baseCurrency}/{isTurkish ? 'ay' : 'mo'}</Text>
           </Text>
         ) : (
-          <Text style={dynamicStyles.insightValue}>{t.calendar.noPayments}</Text>
+          <Text style={dynamicStyles.insightValue}>{isTurkish ? 'Henüz ödeme yok' : t.calendar.noPayments}</Text>
         )}
       </View>
     </View>

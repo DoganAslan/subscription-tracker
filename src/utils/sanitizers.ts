@@ -1,4 +1,3 @@
-import { t } from '@/locales/i18n';
 export const sanitizePriceInput = (value: string): string => {
   if (!value) return '';
 
@@ -55,6 +54,7 @@ export const sanitizeTextInput = (value: string, maxLength: number = 100): strin
 
   return scrubbed;
 };
+
 
 
 

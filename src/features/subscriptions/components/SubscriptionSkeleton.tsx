@@ -1,4 +1,3 @@
-import React from 'react';
 import { View } from 'react-native';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useTheme } from '@/context/ThemeContext';
@@ -8,7 +7,7 @@ interface Props {
 }
 
 export const SubscriptionSkeleton = ({ count = 1 }: Props) => {
-  const { colors } = useTheme();
+  useTheme();
 
   return (
     <>

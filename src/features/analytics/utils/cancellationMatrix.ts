@@ -1,4 +1,3 @@
-import { t } from '@/locales/i18n';
 export const CANCELLATION_MATRIX: Record<string, string> = {
   netflix: 'https://www.netflix.com/youraccount',
   spotify: 'https://www.spotify.com/account/overview/',

@@ -4,18 +4,22 @@ import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import Checkbox from 'expo-checkbox';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Ionicons } from '@expo/vector-icons';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { registerSchema, RegisterFormData } from '../schemas/auth.schema';
 import { useAuthMutations } from '../hooks/useAuthMutations';
-
+import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
+import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 
 export function RegisterForm() {
   const { registerMutation } = useAuthMutations();
+  const { startGoogleSignIn, isSigningIn } = useGoogleSignIn();
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const [isConsentGiven, setIsConsentGiven] = React.useState(false);
 
   const { control, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
@@ -111,6 +115,36 @@ export function RegisterForm() {
         disabled={!isConsentGiven}
         style={styles.button}
       />
+
+      {/* OR DIVIDER & GOOGLE SIGN IN BUTTON */}
+      <View style={styles.dividerRow}>
+        <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+        <View style={[styles.dividerBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.dividerText, { color: colors.textSecondary }]}>
+            {isTurkish ? 'VEYA' : 'OR'}
+          </Text>
+        </View>
+        <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+      </View>
+
+      <TouchableOpacity
+        style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        onPress={() => {
+          triggerHaptic('impactLight');
+          void startGoogleSignIn();
+        }}
+        activeOpacity={0.85}
+        disabled={isSigningIn}
+      >
+        <View style={styles.googleIconCircle}>
+          <Ionicons name="logo-google" size={16} color="#EA4335" />
+        </View>
+        <Text style={[styles.googleButtonText, { color: colors.text }]}>
+          {isSigningIn
+            ? (isTurkish ? 'Bağlanılıyor...' : 'Connecting...')
+            : (isTurkish ? 'Google ile Kayıt Ol' : 'Continue with Google')}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -138,7 +172,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginHorizontal: 8,
+  },
+  dividerText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  googleIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#EA4335',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  googleButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });
-
-
-

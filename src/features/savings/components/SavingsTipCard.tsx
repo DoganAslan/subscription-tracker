@@ -1,5 +1,4 @@
 import i18n, { t } from '@/locales/i18n';
-import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SavingsTip } from '../utils/savingsEngine';
 

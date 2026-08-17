@@ -9,6 +9,7 @@ import Animated, { FadeInUp, FadeInDown, ZoomIn } from 'react-native-reanimated'
 import { Subscription } from '@/services/firebase/types';
 import { useRouter } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
+import { CategoryBadge } from '@/components/ui/CategoryBadge';
 
 interface Props {
   breakdown: { category: string; amount: number; percentage: number }[];
@@ -31,7 +32,8 @@ const getCategoryMeta = (cat: string) => {
 export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({ breakdown, monthlyTotal, subscriptions = [] }: Props) {
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const router = useRouter();
   
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -101,13 +103,13 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
         <Text style={dynamicStyles.cardTitle}>{t.dashboard?.categoryBreakdown || 'Category Breakdown'}</Text>
         {(selectedCategory || hoveredCategory) && (
           <TouchableOpacity onPress={() => { setSelectedCategory(null); setHoveredCategory(null); }} activeOpacity={0.7}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary }}>Reset Filter</Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary }}>{isTurkish ? 'Filtreyi sıfırla' : 'Reset filter'}</Text>
           </TouchableOpacity>
         )}
       </View>
       
       {!hasData ? (
-        <Text style={dynamicStyles.emptyText}>No category data recorded yet.</Text>
+        <Text style={dynamicStyles.emptyText}>{isTurkish ? 'Henüz kategori verisi yok.' : 'No category data recorded yet.'}</Text>
       ) : (
         <View style={dynamicStyles.contentColumn}>
           {/* TOP SECTION: Interactive Donut Chart with Center Text */}
@@ -144,11 +146,11 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
                         </>
                       ) : (
                         <>
-                          <Text style={[dynamicStyles.donutTotalLabel, { color: colors.textSecondary }]}>TOTAL</Text>
+                          <Text style={[dynamicStyles.donutTotalLabel, { color: colors.textSecondary }]}>{isTurkish ? 'TOPLAM' : 'TOTAL'}</Text>
                           <Text style={[dynamicStyles.donutTotalAmount, { color: colors.text }]}>
                             {totalSpend.toFixed(0)} {baseCurrency}
                           </Text>
-                          <Text style={[dynamicStyles.donutSubtext, { color: colors.textSecondary }]}>Hover a slice</Text>
+                          <Text style={[dynamicStyles.donutSubtext, { color: colors.textSecondary }]}>{isTurkish ? 'Bir dilime dokun' : 'Tap a slice'}</Text>
                         </>
                       )}
                     </View>
@@ -189,10 +191,7 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
                     {/* Info Row */}
                     <View style={dynamicStyles.catInfoRow}>
                       <View style={dynamicStyles.catLeft}>
-                        <View style={[dynamicStyles.categoryDot, { backgroundColor: color }]} />
-                        <Text style={dynamicStyles.catName} numberOfLines={1}>
-                          {(t.categories as any)?.[item.category] || item.category}
-                        </Text>
+                        <CategoryBadge category={item.category} size="sm" />
                         <View style={[dynamicStyles.pillBadge, { backgroundColor: color + '20' }]}>
                           <Text style={[dynamicStyles.pillText, { color: color }]}>%{pct}</Text>
                         </View>
@@ -220,12 +219,12 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
                   {isExpanded && (
                     <Animated.View entering={FadeInDown.duration(300)} style={dynamicStyles.subAppsContainer}>
                       <Text style={[dynamicStyles.expandedHeaderTitle, { color: colors.textSecondary }]}>
-                        {categorySubs.length} App{categorySubs.length === 1 ? '' : 's'} in {item.category}:
+                        {currentLanguage === 'tr' ? `${item.category} kategorisindeki ${categorySubs.length} abonelik:` : `${categorySubs.length} Apps in ${item.category}:`}
                       </Text>
 
                       {categorySubs.length === 0 ? (
                         <Text style={[dynamicStyles.noSubsText, { color: colors.textSecondary }]}>
-                          No active subscriptions in this category.
+                          {currentLanguage === 'tr' ? 'Bu kategoride aktif abonelik bulunmuyor.' : 'No active subscriptions in this category.'}
                         </Text>
                       ) : (
                         categorySubs.map(sub => {
@@ -235,7 +234,7 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
                               key={sub.id}
                               style={[dynamicStyles.subAppRow, { backgroundColor: colors.background, borderColor: colors.border }]}
                               activeOpacity={0.7}
-                              onPress={() => handleSubPress(sub.id)}
+                              onPress={() => sub.id && handleSubPress(sub.id)}
                             >
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                 <View style={[dynamicStyles.appIconBox, { backgroundColor: meta.color + '20' }]}>
@@ -280,17 +279,21 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: 'hidden',
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+    overflow: 'hidden',
+    gap: 8,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: '800',
     color: colors.text,
+    flexShrink: 1,
   },
   emptyText: {
     color: colors.textSecondary,
@@ -479,4 +482,3 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
   }
 });
-

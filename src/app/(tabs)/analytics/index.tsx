@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -27,18 +27,24 @@ import { CostPerUseCard } from '@/features/dashboard/components/CostPerUseCard';
 import { SmartAlternativesCard } from '@/features/dashboard/components/SmartAlternativesCard';
 import { BundleAlertCard } from '@/features/dashboard/components/BundleAlertCard';
 import { CurrencyRiskCard } from '@/features/dashboard/components/CurrencyRiskCard';
-import { AiRecommendationsCard } from '@/features/dashboard/components/AiRecommendationsCard';
+import { SpendingHeatmapCard } from '@/features/dashboard/components/SpendingHeatmapCard';
 
-import { convertCurrency, getMarketRatesWithDynamicCache, ExchangeRates, SUPPORTED_CURRENCIES } from '@/utils/currency';
+import { SubmateWrappedModal } from '@/features/analytics/components/SubmateWrappedModal';
+import { AiChatModal } from '@/features/ai/components/AiChatModal';
+
+import { getMarketRatesWithDynamicCache, ExchangeRates, SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { generate6MonthProjection } from '@/utils/projection';
 import { analyzeFinancialHealth } from '@/utils/healthScore';
 import { triggerHaptic } from '@/utils/haptics';
 
 export default function AnalyticsScreen() {
   const [liveRates, setLiveRates] = useState<ExchangeRates | null>(null);
+  const [wrappedVisible, setWrappedVisible] = useState(false);
+  const [aiChatVisible, setAiChatVisible] = useState(false);
 
-  const { t } = useTranslation();
-  const { data: subscriptions, isLoading, isError, refetch, isRefetching } = useSubscriptions();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
+  const { data: subscriptions, refetch, isRefetching } = useSubscriptions();
   const { data: cards = [] } = useCards();
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
   const router = useRouter();
@@ -77,9 +83,9 @@ export default function AnalyticsScreen() {
   }, [subscriptions, metrics.monthlyTotal]);
 
   const getScoreStatusText = () => {
-    if (healthData.score >= 80) return t.healthScore?.excellent || 'Excellent Budget Health';
-    if (healthData.score >= 50) return t.healthScore?.good || 'Moderate Spending';
-    return t.healthScore?.warning || 'Budget Risk Warning';
+    if (healthData.score >= 80) return isTurkish ? 'Mükemmel Bütçe Sağlığı' : (t.healthScore?.excellent || 'Excellent Budget Health');
+    if (healthData.score >= 50) return isTurkish ? 'Dengeli Harcama Düzeyi' : (t.healthScore?.good || 'Moderate Spending');
+    return isTurkish ? 'Bütçe Riski Uyarısı' : (t.healthScore?.warning || 'Budget Risk Warning');
   };
 
   const getVampirAlertMessage = () => {
@@ -87,7 +93,9 @@ export default function AnalyticsScreen() {
       if (typeof t.healthScore?.vampirWarning === 'function') {
         return t.healthScore.vampirWarning(healthData.vampireStats.category, healthData.vampireStats.count);
       }
-      return `Vampire Alert: Multiple entries found in "${healthData.vampireStats.category}".`;
+      return isTurkish
+        ? `Vampir Abonelik Uyarısı: "${healthData.vampireStats.category}" kategorisinde ${healthData.vampireStats.count} fazla servis tespit edildi.`
+        : `Vampire Alert: Multiple entries found in "${healthData.vampireStats.category}".`;
     }
     return null;
   };
@@ -104,76 +112,140 @@ export default function AnalyticsScreen() {
       >
         {/* Header Row */}
         <View style={styles.headerRow}>
-          <View>
-            <Text style={[styles.pageTitle, { color: colors.text }]}>Analytics & AI Insights</Text>
-            <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>Detailed breakdown & smart budget optimization</Text>
+          <View style={{ flex: 1, marginRight: 8, overflow: 'hidden' }}>
+            <Text numberOfLines={1} style={[styles.pageTitle, { color: colors.text }]}>
+              {isTurkish ? 'Analiz & YZ İpuçları' : 'Analytics & AI Insights'}
+            </Text>
+            <Text numberOfLines={1} style={[styles.pageSubtitle, { color: colors.textSecondary }]}>
+              {isTurkish ? 'Detaylı harcama dökümü ve akıllı bütçe optimizasyonu' : 'Detailed breakdown & smart budget optimization'}
+            </Text>
           </View>
 
-          <TouchableOpacity
-            style={[styles.headerIconBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={() => {
-              triggerHaptic('selection');
-              router.push('/(tabs)/subscriptions');
-            }}
-          >
-            <Ionicons name="options-outline" size={20} color={colors.text} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <TouchableOpacity
+              style={[styles.aiChatHeaderBtn, { backgroundColor: 'rgba(139, 92, 246, 0.15)', borderColor: 'rgba(139, 92, 246, 0.3)' }]}
+              onPress={() => {
+                triggerHaptic('impactLight');
+                setAiChatVisible(true);
+              }}
+            >
+              <Ionicons name="sparkles" size={16} color="#8B5CF6" style={{ marginRight: 4 }} />
+              <Text style={styles.aiChatHeaderBtnText}>{isTurkish ? 'YZ Asistan' : 'AI Advisor'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.headerIconBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => {
+                triggerHaptic('selection');
+                router.push('/(tabs)/subscriptions');
+              }}
+            >
+              <Ionicons name="options-outline" size={20} color={colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
+
+        {/* SubMate Wrapped Banner CTA */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: '#8B5CF6',
+            borderRadius: 18,
+            padding: 14,
+            marginBottom: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+          onPress={() => {
+            triggerHaptic('impactLight');
+            setWrappedVisible(true);
+          }}
+          activeOpacity={0.85}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+            <Ionicons name="sparkles" size={24} color="#FFFFFF" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' }}>
+                {isTurkish ? '🎁 SubMate Wrapped Yıllık Özet' : '🎁 SubMate Annual Wrapped'}
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 1 }}>
+                {isTurkish ? 'Yıllık abonelik istatistiklerinizi keşfedin!' : 'Explore your annual subscription stats!'}
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
 
         {/* 1. TOP STATS OVERVIEW CARDS */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.statHeader}>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Monthly Spend</Text>
+              <Text numberOfLines={1} style={[styles.statLabel, { color: colors.textSecondary }]}>
+                {isTurkish ? 'Aylık Harcama' : 'Monthly Spend'}
+              </Text>
               <View style={[styles.statIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
                 <Ionicons name="wallet-outline" size={16} color="#3B82F6" />
               </View>
             </View>
-            <Text style={[styles.statValue, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[styles.statValue, { color: colors.text }]}>
               {currencySymbol}{metrics.monthlyTotal.toFixed(2)}
             </Text>
-            <Text style={[styles.statSub, { color: '#10B981' }]}>Active Commitment</Text>
+            <Text numberOfLines={1} style={[styles.statSub, { color: '#10B981' }]}>
+              {isTurkish ? 'Aktif Taahhüt' : 'Active Commitment'}
+            </Text>
           </View>
 
           <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.statHeader}>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Yearly Outlook</Text>
+              <Text numberOfLines={1} style={[styles.statLabel, { color: colors.textSecondary }]}>
+                {isTurkish ? 'Yıllık Görünüm' : 'Yearly Outlook'}
+              </Text>
               <View style={[styles.statIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.12)' }]}>
                 <Ionicons name="trending-up-outline" size={16} color="#8B5CF6" />
               </View>
             </View>
-            <Text style={[styles.statValue, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[styles.statValue, { color: colors.text }]}>
               {currencySymbol}{yearlyProjection.toFixed(0)}
             </Text>
-            <Text style={[styles.statSub, { color: colors.textSecondary }]}>12 Months Total</Text>
+            <Text numberOfLines={1} style={[styles.statSub, { color: colors.textSecondary }]}>
+              {isTurkish ? '12 Aylık Toplam' : '12 Months Total'}
+            </Text>
           </View>
         </View>
 
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.statHeader}>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Avg / Subscription</Text>
+              <Text numberOfLines={1} style={[styles.statLabel, { color: colors.textSecondary }]}>
+                {isTurkish ? 'Abonelik Başı Ort.' : 'Avg / Subscription'}
+              </Text>
               <View style={[styles.statIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
                 <Ionicons name="calculator-outline" size={16} color="#10B981" />
               </View>
             </View>
-            <Text style={[styles.statValue, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[styles.statValue, { color: colors.text }]}>
               {currencySymbol}{avgCostPerSub.toFixed(2)}
             </Text>
-            <Text style={[styles.statSub, { color: colors.textSecondary }]}>Per active service</Text>
+            <Text numberOfLines={1} style={[styles.statSub, { color: colors.textSecondary }]}>
+              {isTurkish ? 'Aktif servis başına' : 'Per active service'}
+            </Text>
           </View>
 
           <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.statHeader}>
-              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Active Services</Text>
+              <Text numberOfLines={1} style={[styles.statLabel, { color: colors.textSecondary }]}>
+                {isTurkish ? 'Aktif Servisler' : 'Active Services'}
+              </Text>
               <View style={[styles.statIconBox, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
                 <Ionicons name="cube-outline" size={16} color="#F59E0B" />
               </View>
             </View>
-            <Text style={[styles.statValue, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[styles.statValue, { color: colors.text }]}>
               {subscriptions?.length || 0}
             </Text>
-            <Text style={[styles.statSub, { color: colors.textSecondary }]}>Tracked items</Text>
+            <Text numberOfLines={1} style={[styles.statSub, { color: colors.textSecondary }]}>
+              {isTurkish ? 'Takip edilen servis' : 'Tracked items'}
+            </Text>
           </View>
         </View>
 
@@ -183,7 +255,7 @@ export default function AnalyticsScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Ionicons name="sparkles" size={16} color="#8B5CF6" />
               <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-                {t.health?.meterTitle || 'AI FINANCIAL HEALTH SCORE'}
+                {isTurkish ? 'YZ FİNANSAL SAĞLIK SKORU' : (t.health?.meterTitle || 'AI FINANCIAL HEALTH SCORE')}
               </Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
@@ -225,14 +297,11 @@ export default function AnalyticsScreen() {
           ))}
         </View>
 
-        {/* 3. AI SMART RECOMMENDATIONS CARD */}
-        <AiRecommendationsCard subscriptions={subscriptions || []} />
-
         {/* 4. REDESIGNED 6-MONTH PROJECTION SPENDING CHART */}
         <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={styles.cardHeaderRow}>
             <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>
-              6-Month Spending Outlook
+              {isTurkish ? '6 Aylık Harcama Projeksiyonu' : '6-Month Spending Outlook'}
             </Text>
             <View style={styles.currencyPill}>
               <Text style={styles.currencyPillText}>{baseCurrency}</Text>
@@ -288,6 +357,7 @@ export default function AnalyticsScreen() {
         <CardBreakdownCard cards={cards} subscriptions={subscriptions || []} />
 
         {/* 7. SMART ALTERNATIVES, BUNDLES & CURRENCY RISKS */}
+        <SpendingHeatmapCard subscriptions={subscriptions || []} baseCurrency={baseCurrency} />
         <SmartAlternativesCard subscriptions={subscriptions || []} />
         <BundleAlertCard subscriptions={subscriptions || []} />
         <CurrencyRiskCard subscriptions={subscriptions || []} baseCurrency={baseCurrency} liveRates={liveRates} />
@@ -296,6 +366,15 @@ export default function AnalyticsScreen() {
         <SpendingInsightsCard mostExpensive={metrics.mostExpensive} />
         <CostPerUseCard />
       </ScrollView>
+
+      {/* SubMate Annual Wrapped Interactive Modal */}
+      <SubmateWrappedModal
+        visible={wrappedVisible}
+        onClose={() => setWrappedVisible(false)}
+        subscriptions={subscriptions || []}
+        baseCurrency={baseCurrency}
+      />
+      <AiChatModal visible={aiChatVisible} onClose={() => setAiChatVisible(false)} />
     </SafeAreaView>
   );
 }
@@ -328,6 +407,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 2,
   },
+  aiChatHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  aiChatHeaderBtnText: {
+    color: '#8B5CF6',
+    fontSize: 12,
+    fontWeight: '800',
+  },
   headerIconBtn: {
     width: 42,
     height: 42,
@@ -339,24 +431,30 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 12,
   },
   statCard: {
     flex: 1,
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
+    overflow: 'hidden',
+    minWidth: 0,
   },
   statHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 8,
+    gap: 6,
+    overflow: 'hidden',
   },
   statLabel: {
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    flexShrink: 1,
   },
   statIconBox: {
     width: 28,
@@ -364,6 +462,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   statValue: {
     fontSize: 20,
@@ -467,4 +566,3 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-

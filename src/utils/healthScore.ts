@@ -43,7 +43,7 @@ export const analyzeFinancialHealth = (subs: Subscription[] = []): HealthReport 
   // Rule 2: Payment Date Clashing (-10 pts)
   const dateCounts: Record<string, number> = {};
   subs.forEach(s => {
-    const dt = new Date(s.paymentDate || s.renewalDate?.toDate() || Date.now());
+    const dt = s.renewalDate.toDate();
     const day = dt.getDate();
     dateCounts[day] = (dateCounts[day] || 0) + 1;
   });
@@ -78,4 +78,3 @@ export const analyzeFinancialHealth = (subs: Subscription[] = []): HealthReport 
 
   return { score: finalScore, statusTitle, colorTheme, insights: warnings.slice(0, 3), vampireStats };
 };
-

@@ -5,13 +5,16 @@ import { Subscription } from '@/services/firebase/types';
 import { SubscriptionFormData } from '../schemas/subscription.schema';
 import { triggerHaptic } from '@/utils/haptics';
 import Toast from 'react-native-toast-message';
-import { scheduleSubReminder, cancelSubReminder, scheduleContractDoomReminder } from '@/services/notificationService';
+import {
+  scheduleSubReminder,
+  cancelSubReminder,
+  cancelContractDoomReminder,
+  scheduleContractDoomReminder,
+} from '@/services/notificationService';
 import { getNextRenewalDate } from '@/features/dashboard/utils/calculations';
 import { Timestamp } from 'firebase/firestore';
 import { triggerWidgetSync } from '@/services/background/widgetSync';
 import { useTranslation } from '@/context/LanguageContext';
-import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
 
 export const subscriptionKeys = {
   all: ['subscriptions'] as const,
@@ -191,11 +194,7 @@ export function useUpdateSubscription() {
           const cDate = safeToDate(mergedSub.contractEndDate);
           scheduleContractDoomReminder({ id: result.id, ...mergedSub, contractEndDate: cDate }).catch((e) => console.error(e));
         } else {
-          try {
-            if (Platform.OS !== 'web') {
-              Notifications.cancelScheduledNotificationAsync('sub_contract_doom_' + result.id);
-            }
-          } catch(e) {}
+          cancelContractDoomReminder(result.id).catch(console.error);
         }
       } catch (err) {
         console.error('Failed to parse dates for reminder:', err);
@@ -227,6 +226,7 @@ export function useDeleteSubscription() {
         triggerWidgetSync(user.uid);
       }
       cancelSubReminder(id).catch(console.error);
+      cancelContractDoomReminder(id).catch(console.error);
       Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionDeleted || 'Subscription Deleted', position: 'top' });
     },
     onError: (error) => {
@@ -260,6 +260,7 @@ export function useTogglePauseSubscription() {
       }
       if (status === 'paused') {
         cancelSubReminder(id).catch(console.error);
+        cancelContractDoomReminder(id).catch(console.error);
         Toast.show({ type: 'info', text1: (t.global as any)?.subscriptionPaused || 'Subscription Paused', position: 'top' });
       } else {
         Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionResumed || 'Subscription Resumed', position: 'top' });
@@ -272,4 +273,3 @@ export function useTogglePauseSubscription() {
     }
   });
 }
-

@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useTheme } from '@/context/ThemeContext';
@@ -6,9 +5,13 @@ import { getMonthlyCost } from '@/features/dashboard/utils/calculations';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { useTranslation } from '@/context/LanguageContext';
+
 export const CostPerUseCard = () => {
   const { data: subscriptions } = useSubscriptions();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
+  const { currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const router = useRouter();
 
   if (!subscriptions || subscriptions.length === 0) return null;
@@ -32,7 +35,9 @@ export const CostPerUseCard = () => {
     <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <View style={styles.header}>
         <Ionicons name="analytics" size={20} color="#10B981" />
-        <Text style={[styles.title, { color: colors.text }]}>Cost-per-Use Insights</Text>
+        <Text style={[styles.title, { color: colors.text }]}>
+          {isTurkish ? 'Kullanım Başı Maliyet Analizi' : 'Cost-per-Use Insights'}
+        </Text>
       </View>
       
       <TouchableOpacity 
@@ -41,13 +46,17 @@ export const CostPerUseCard = () => {
       >
         <View style={styles.leftCol}>
           <Text style={[styles.subName, { color: colors.text }]}>{highestCostSub.name}</Text>
-          <Text style={[styles.subDetail, { color: colors.textSecondary }]}>Highest cost per use</Text>
+          <Text style={[styles.subDetail, { color: colors.textSecondary }]}>
+            {isTurkish ? 'En yüksek kullanım başı maliyet' : 'Highest cost per use'}
+          </Text>
         </View>
         <View style={styles.rightCol}>
           <Text style={[styles.costText, { color: '#EF4444' }]}>
             {highestCostSub.costPerUse.toFixed(2)} {highestCostSub.currency}
           </Text>
-          <Text style={[styles.perUseLabel, { color: colors.textSecondary }]}>per use</Text>
+          <Text style={[styles.perUseLabel, { color: colors.textSecondary }]}>
+            {isTurkish ? 'kullanım başı' : 'per use'}
+          </Text>
         </View>
       </TouchableOpacity>
 
@@ -57,13 +66,17 @@ export const CostPerUseCard = () => {
       >
         <View style={styles.leftCol}>
           <Text style={[styles.subName, { color: colors.text }]}>{lowestCostSub.name}</Text>
-          <Text style={[styles.subDetail, { color: colors.textSecondary }]}>Best value</Text>
+          <Text style={[styles.subDetail, { color: colors.textSecondary }]}>
+            {isTurkish ? 'En yüksek verim / En uygun' : 'Best value'}
+          </Text>
         </View>
         <View style={styles.rightCol}>
           <Text style={[styles.costText, { color: '#10B981' }]}>
             {lowestCostSub.costPerUse.toFixed(2)} {lowestCostSub.currency}
           </Text>
-          <Text style={[styles.perUseLabel, { color: colors.textSecondary }]}>per use</Text>
+          <Text style={[styles.perUseLabel, { color: colors.textSecondary }]}>
+            {isTurkish ? 'kullanım başı' : 'per use'}
+          </Text>
         </View>
       </TouchableOpacity>
     </View>

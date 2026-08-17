@@ -58,9 +58,10 @@ export const deleteSecureData = async (key: string): Promise<void> => {
 
 export const secureStorageAdapter = {
   getItem: getSecureData,
-  setItem: saveSecureData,
+  setItem: async (key: string, value: string): Promise<void> => {
+    await saveSecureData(key, value);
+  },
   removeItem: deleteSecureData,
 };
-
 
 

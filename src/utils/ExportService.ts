@@ -1,4 +1,4 @@
-import i18n, { t } from '@/locales/i18n';
+import { t } from '@/locales/i18n';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { Platform, Alert } from 'react-native';

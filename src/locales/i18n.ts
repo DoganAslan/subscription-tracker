@@ -112,9 +112,9 @@ initI18n();
 export default i18n;
 
 export const t: any = new Proxy({}, {
-  get(target, namespace) {
+  get(_target, namespace) {
     return new Proxy({}, {
-      get(target2, key) {
+      get(_target2, key) {
         return i18n.t(`${String(namespace)}.${String(key)}`);
       }
     });

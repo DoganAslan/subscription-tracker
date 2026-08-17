@@ -55,19 +55,24 @@ export const compressAvatarImage = async (uri: string | null): Promise<string | 
       });
     }
 
-    if (uri.startsWith('data:image/')) return uri;
-
-    const response = await fetch(uri);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64data = reader.result as string;
-        resolve(base64data);
-      };
-      reader.onerror = () => resolve(uri);
-      reader.readAsDataURL(blob);
-    });
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const response = await fetch(uri, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      const blob = await response.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          resolve(base64data);
+        };
+        reader.onerror = () => resolve(uri);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      return uri;
+    }
   } catch (e) {
     console.warn('[ProfileStore] Compression fallback:', e);
     return uri;
@@ -101,7 +106,7 @@ const safeStorage = {
 
 export const useProfileStore = create<ProfileState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       profileImage: null,
 
       setProfileImage: async (rawUri: string | null) => {

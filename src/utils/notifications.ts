@@ -1,10 +1,11 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { t } from '@/locales/i18n';
 
 Notifications.setNotificationHandler({
-  handleNotification: () => ({
+  handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
@@ -68,7 +69,6 @@ export const scheduleSubscriptionNotification = async (subscription: {
 
     // 6. Register with the OS Native Scheduler
     const notificationId = await Notifications.scheduleNotificationAsync({
-      id: subscription.id, // Direct mapping lets us cancel or update it later
       content: {
         title: '💳 Fatura Hatırlatıcı: ' + subscription.name,
         body: `Yarın ${subscription.price} tutarında ödemen gerçekleşecek. İptal etmek ister misin?`,
@@ -78,8 +78,9 @@ export const scheduleSubscriptionNotification = async (subscription: {
       },
       // Cross-platform trigger allocation
       trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: alertDate,
-      },
+      } as Notifications.DateTriggerInput,
     });
 
     console.log(`🚀 Notification successfully locked for [${subscription.name}] at: ${alertDate.toString()}`);
@@ -100,6 +101,4 @@ export const cancelRenewalReminder = async (notifId?: string | null) => {
     console.warn('[Push Cancel Bypassed]:', e);
   }
 };
-
-
 

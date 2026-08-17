@@ -1,12 +1,11 @@
 import { Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useAuthStore } from '@/store/useAuthStore';
 import { SubscriptionService } from '@/services/firebase/firestore';
 import { resyncAllReminders } from '@/services/notificationService';
 import { sanitizeTextInput, sanitizePriceInput } from '@/utils/sanitizers';
 import { Timestamp } from 'firebase/firestore';
-import { t } from '@/locales/i18n';
 
 export const exportData = async (): Promise<boolean> => {
   const user = useAuthStore.getState().user;
@@ -118,6 +117,5 @@ export const importData = async (fileDataString: string): Promise<boolean> => {
     return false; // Return false immediately (no crashes!)
   }
 };
-
 
 

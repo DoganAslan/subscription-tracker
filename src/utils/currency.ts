@@ -31,9 +31,12 @@ export const getMarketRatesWithDynamicCache = async (baseCurrency: string = 'TRY
     }
 
     if (!finalRates) {
-      // 2. Cache is expired or empty -> Fetch live from API
+      // 2. Cache is expired or empty -> Fetch live from API with 4s timeout protection
       console.log(`🌐 Cache expired or empty. Syncing with remote API updates for ${baseCurrency}...`);
-      const response = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const response = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
       const data = await response.json();
 
       if (data && data.rates && data.time_next_update_unix) {

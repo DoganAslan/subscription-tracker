@@ -1,14 +1,13 @@
 import React from 'react';
 import { triggerHaptic } from '@/utils/haptics';
-import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, useColorScheme } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
 import { useAddSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useRouter } from 'expo-router';
 import { SubscriptionFormData } from '@/features/subscriptions/schemas/subscription.schema';
-import { requestNotificationPermissions, scheduleRenewalReminder } from '@/utils/NotificationService';
+import { requestNotificationPermissions } from '@/services/notificationService';
 import { useTheme } from '@/context/ThemeContext';
-import { HeroInput } from '@/components/HeroInput';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '@/context/LanguageContext';
 
@@ -16,7 +15,8 @@ export default function AddSubscriptionScreen() {
   const router = useRouter();
   const { mutate: addSubscription, isPending } = useAddSubscription();
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
 
   const handleGoBack = () => {
     router.replace('/(tabs)/subscriptions');
@@ -41,7 +41,14 @@ export default function AddSubscriptionScreen() {
           <TouchableOpacity onPress={handleGoBack} style={{ padding: 4 }}>
              <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>{t.subscriptionsPage?.addSubscription || t.subscriptionsPage?.addSub || 'Add Subscription'}</Text>
+          <View style={{ alignItems: 'center', flex: 1 }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>
+              {t.subscriptionsPage?.addSubscription || t.subscriptionsPage?.addSub || 'Add Subscription'}
+            </Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 2 }}>
+              {isTurkish ? 'Ad, kategori, tutar ve yenileme tarihi yeterli' : 'Name, category, amount and renewal date are enough'}
+            </Text>
+          </View>
           <View style={{ width: 28 }} />
         </View>
 
@@ -49,7 +56,7 @@ export default function AddSubscriptionScreen() {
           <SubscriptionForm 
             onSubmit={handleSubmit} 
             isLoading={isPending} 
-            submitLabel={t.global?.saveChanges || 'Save'} 
+            submitLabel={isTurkish ? 'Aboneliği kaydet' : 'Save subscription'} 
             hideHero={false}
           />
         </View>
@@ -58,6 +65,4 @@ export default function AddSubscriptionScreen() {
     </SafeAreaView>
   );
 }
-
-
 

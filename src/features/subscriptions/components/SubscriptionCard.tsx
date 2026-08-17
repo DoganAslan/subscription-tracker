@@ -1,44 +1,29 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, useColorScheme, Animated, Alert, useWindowDimensions, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Animated, Alert, StyleSheet } from 'react-native';
 import { triggerHaptic } from '@/utils/haptics';
 import { Subscription } from '@/services/firebase/types';
 import { useRouter } from 'expo-router';
 import { Swipeable } from 'react-native-gesture-handler';
 import { useDeleteSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useTheme } from '@/context/ThemeContext';
-import { getMonthlyCost } from '@/features/dashboard/utils/calculations';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { convertCurrency } from '@/utils/currency';
 import { useTranslation } from '@/context/LanguageContext';
 import { useCards } from '@/features/cards/hooks/useCards';
 import { Ionicons } from '@expo/vector-icons';
+import { CategoryBadge } from '@/components/ui/CategoryBadge';
+import { getCategoryLabel, getBillingCycleLabel, getCategoryMeta } from '@/utils/categoryMeta';
 
 interface Props {
   subscription: Subscription;
   compact?: boolean;
 }
 
-const getCategoryMeta = (cat: string) => {
-  const c = String(cat || '').toLowerCase();
-  if (c.includes('music') || c.includes('müzik') || c.includes('audio') || c.includes('spotify')) {
-    return { icon: 'musical-notes-outline', color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' };
-  }
-  if (c.includes('entertain') || c.includes('eğlence') || c.includes('tv') || c.includes('video') || c.includes('stream') || c.includes('netflix')) {
-    return { icon: 'film-outline', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.12)' };
-  }
-  if (c.includes('product') || c.includes('üretken') || c.includes('work') || c.includes('cloud') || c.includes('software') || c.includes('tool')) {
-    return { icon: 'briefcase-outline', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)' };
-  }
-  if (c.includes('health') || c.includes('fit') || c.includes('spor') || c.includes('sağlık') || c.includes('gym')) {
-    return { icon: 'fitness-outline', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' };
-  }
-  if (c.includes('game') || c.includes('oyun')) {
-    return { icon: 'game-controller-outline', color: '#EC4899', bg: 'rgba(236, 72, 153, 0.12)' };
-  }
-  if (c.includes('finan') || c.includes('sigorta') || c.includes('bank')) {
-    return { icon: 'wallet-outline', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' };
-  }
-  return { icon: 'sparkles-outline', color: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)' };
+const safeToDate = (dateVal: any): Date => {
+  if (!dateVal) return new Date();
+  if (typeof dateVal?.toDate === 'function') return dateVal.toDate();
+  const parsed = new Date(dateVal);
+  return isNaN(parsed.getTime()) ? new Date() : parsed;
 };
 
 export const SubscriptionCard = React.memo(function SubscriptionCard({ subscription, compact = false }: Props) {
@@ -46,7 +31,8 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
   const { mutate: deleteSubscription } = useDeleteSubscription();
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const { data: cards } = useCards();
 
   const linkedCard = cards?.find(c => c.id === subscription.cardId);
@@ -55,14 +41,9 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
     router.push(`/(tabs)/subscriptions/${subscription.id}`);
   };
 
-  const nextBilling = subscription.renewalDate.toDate().toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric'
-  });
-
-  const renewalDay = subscription.renewalDate.toDate().getDate();
-  const catMeta = getCategoryMeta(subscription.category || subscription.name);
+  const renewalDateObj = safeToDate(subscription.renewalDate);
+  const renewalDay = renewalDateObj.getDate();
+  const catMeta = getCategoryMeta(subscription.category || subscription.name, isTurkish);
 
   const convertedAmount = convertCurrency(subscription.amount, subscription.currency || 'USD', baseCurrency);
   const showConversion = (subscription.currency || 'USD') !== baseCurrency;
@@ -76,7 +57,7 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
     triggerHaptic('error');
     Alert.alert(
       t.common.delete,
-      `Are you sure you want to delete ${subscription.name}?`,
+      isTurkish ? `${subscription.name} aboneliğinizi silmek istediğinize emin misiniz?` : `Are you sure you want to delete ${subscription.name}?`,
       [
         { text: t.common.cancel, style: 'cancel' },
         { 
@@ -117,35 +98,58 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
     );
   };
 
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.96,
+      tension: 300,
+      friction: 20,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      tension: 300,
+      friction: 15,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
     <Swipeable renderRightActions={renderRightActions} containerStyle={{ marginBottom: compact ? 8 : 14 }}>
-      <TouchableOpacity 
-        onPress={handlePress}
-        activeOpacity={0.75}
-        style={compact ? {
-          backgroundColor: colors.surface,
-          padding: 14,
-          borderRadius: 18,
-          borderWidth: 1,
-          borderColor: colors.border,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        } : {
-          backgroundColor: colors.surface,
-          padding: 18,
-          borderRadius: 20,
-          flexDirection: 'column',
-          borderWidth: 1,
-          borderColor: colors.border,
-          shadowColor: '#000000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.12,
-          shadowRadius: 8,
-          elevation: 3,
-          opacity: subscription.status === 'paused' ? 0.6 : 1
-        }}
-      >
+      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+        <TouchableOpacity 
+          onPress={handlePress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={0.88}
+          style={compact ? {
+            backgroundColor: colors.surface,
+            padding: 14,
+            borderRadius: 18,
+            borderWidth: 1,
+            borderColor: colors.border,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          } : {
+            backgroundColor: colors.surface,
+            padding: 18,
+            borderRadius: 20,
+            flexDirection: 'column',
+            borderWidth: 1,
+            borderColor: colors.border,
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.12,
+            shadowRadius: 8,
+            elevation: 3,
+            opacity: subscription.status === 'paused' ? 0.6 : 1
+          }}
+        >
         {compact ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
@@ -156,8 +160,8 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
                 <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 2 }} numberOfLines={1}>
                   {subscription.name}
                 </Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary, textTransform: 'capitalize' }} numberOfLines={1}>
-                  {(t.categories as any)?.[subscription.category] || subscription.category} • {subscription.billingCycle}
+                <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>
+                  {getCategoryLabel(subscription.category, isTurkish)} • {getBillingCycleLabel(subscription.billingCycle, isTurkish)}
                 </Text>
               </View>
             </View>
@@ -167,7 +171,7 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
                 {subscription.amount.toFixed(2)} {subscription.currency}
               </Text>
               <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2, fontWeight: '500' }}>
-                Renews {renewalDay}th
+                {isTurkish ? `Yenilenme: ${renewalDay}. gün` : `Renews ${renewalDay}th`}
               </Text>
             </View>
           </View>
@@ -180,11 +184,14 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
                   <Ionicons name={catMeta.icon as any} size={24} color={catMeta.color} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text, marginBottom: 3 }} numberOfLines={1}>
-                    {subscription.name}
-                  </Text>
-                  <Text style={{ fontSize: 13, color: colors.textSecondary, textTransform: 'capitalize', fontWeight: '600' }} numberOfLines={1}>
-                    {(t.categories as any)?.[subscription.category] || subscription.category} • {subscription.billingCycle}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
+                    <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text, flexShrink: 1 }} numberOfLines={1}>
+                      {subscription.name}
+                    </Text>
+                    <CategoryBadge category={subscription.category || subscription.name} size="sm" />
+                  </View>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600' }} numberOfLines={1}>
+                    {getBillingCycleLabel(subscription.billingCycle, isTurkish)}
                   </Text>
                 </View>
               </View>
@@ -215,7 +222,7 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
                     <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase' }}>{t.common.paused}</Text>
                   </View>
                 )}
-                {subscription.isFreeTrial && (
+                {subscription.isTrial && (
                   <View style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
                     <Text style={{ fontSize: 10, fontWeight: '700', color: '#60A5FA' }}>{t.common.trial}</Text>
                   </View>
@@ -248,7 +255,7 @@ export const SubscriptionCard = React.memo(function SubscriptionCard({ subscript
           </View>
         )}
       </TouchableOpacity>
+      </Animated.View>
     </Swipeable>
   );
 });
-

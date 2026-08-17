@@ -1,4 +1,4 @@
-import i18n, { t } from '@/locales/i18n';
+import { t } from '@/locales/i18n';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
 

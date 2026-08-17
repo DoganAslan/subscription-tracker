@@ -13,8 +13,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const loadProfileFromCloud = useProfileStore((state) => state.loadProfileFromCloud);
 
   useEffect(() => {
-    // This observer will fire immediately with null or the user, and then whenever auth state changes.
+    // Safety fallback timer to prevent infinite loading or 12s timeout hangs on network drop
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
     const unsubscribe = AuthService.observeAuthState((firebaseUser) => {
+      clearTimeout(safetyTimer);
       setUser(firebaseUser);
       setLoading(false);
       if (firebaseUser?.uid) {
@@ -22,8 +27,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     });
 
-    // Cleanup observer on unmount
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      unsubscribe();
+    };
   }, [setUser, setLoading, loadProfileFromCloud]);
 
   return <>{children}</>;

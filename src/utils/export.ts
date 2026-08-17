@@ -1,4 +1,4 @@
-import i18n, { t } from '@/locales/i18n';
+import { t } from '@/locales/i18n';
 // src/utils/export.ts
 import { Platform, Share, Alert } from 'react-native';
 import { calculateMonthlyCosts } from './calculations'; 
@@ -23,7 +23,7 @@ export const exportSubscriptionsToCSV = async (subscriptions: any[], activeCurre
       sub.billingCycle || 'Monthly',
       sub.category || 'Uncategorized',
       calculated.net.toFixed(2),
-      sub.isPaused ? 'YES' : 'NO',
+      sub.status === 'paused' ? 'YES' : 'NO',
       sub.isSplit ? 'YES' : 'NO'
     ].join(',');
   });
@@ -56,6 +56,5 @@ export const exportSubscriptionsToCSV = async (subscriptions: any[], activeCurre
     }
   }
 };
-
 
 

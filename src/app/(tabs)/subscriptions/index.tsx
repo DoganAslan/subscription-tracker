@@ -1,5 +1,4 @@
-import React from 'react';
-import { View, TouchableOpacity, Text, Platform, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SubscriptionList } from '@/features/subscriptions/components/SubscriptionList';
 import { Header } from '@/components/common/Header';

@@ -2,7 +2,7 @@
   "expo": {
     "name": "SubMate",
     "slug": "submate",
-    "version": "1.5.0",
+    "version": "1.5.1",
     "jsEngine": "hermes",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
@@ -10,13 +10,13 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.doganaslan.submate",
-      "buildNumber": "5",
+      "buildNumber": "6",
       "icon": "./assets/images/logo.png",
       "jsEngine": "hermes"
     },
     "android": {
       "package": "com.doganaslan.submate",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
         "backgroundColor": "#0B0F19",
         "foregroundImage": "./assets/images/logo.png"
@@ -56,16 +56,25 @@
       ],
       "expo-sharing",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "SubMate, finansal verilerinizi güvenle açmak için Face ID kullanır."
+        }
+      ],
+      [
         "react-native-android-widget",
         {
           "widgets": [
             {
               "name": "SummaryWidget",
-              "label": "SubMate Summary",
-              "minWidth": "110dp",
+              "label": "SubMate Özet",
+              "minWidth": "250dp",
               "minHeight": "110dp",
-              "description": "Shows your monthly spend and next payment",
-              "previewImage": "./assets/images/logo.png"
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "description": "Aylık toplam ve sıradaki ödeme",
+              "previewImage": "./assets/images/logo.png",
+              "updatePeriodMillis": 1800000
             }
           ]
         }
@@ -91,4 +100,3 @@
     "owner": "doganaslan"
   }
 }
-

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'rea
 import { Subscription, SplitMember } from '@/services/firebase/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from '@/context/LanguageContext';
 import { triggerHaptic } from '@/utils/haptics';
 import { useUpdateSubscription } from '../hooks/useSubscriptions';
 
@@ -12,6 +13,8 @@ interface Props {
 
 export function SplitTrackerCard({ subscription }: Props) {
   const { colors } = useTheme();
+  const { currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const updateMutation = useUpdateSubscription();
 
   if (!subscription.isSplit || !subscription.splitMembers || subscription.splitMembers.length === 0) {
@@ -48,7 +51,9 @@ export function SplitTrackerCard({ subscription }: Props) {
     triggerHaptic('impactLight');
     const cleanPhone = (member.phone || '').replace(/[^0-9]/g, '');
     const text = encodeURIComponent(
-      `Merhaba ${member.name || 'dostum'}, ${subscription.name} aboneliği için senin payına düşen ${member.shareAmount} ${currency} tutarı gönderebilir misin? Teşekkürler!`
+      isTurkish
+        ? `Merhaba ${member.name || 'dostum'}, ${subscription.name} aboneliği için senin payına düşen ${member.shareAmount} ${currency} tutarı gönderebilir misin? Teşekkürler!`
+        : `Hi ${member.name || 'there'}, could you send your ${member.shareAmount} ${currency} share for the ${subscription.name} subscription? Thanks!`
     );
 
     const url = cleanPhone 
@@ -68,16 +73,16 @@ export function SplitTrackerCard({ subscription }: Props) {
     <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Header */}
       <View style={styles.headerRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={[styles.iconBg, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8, overflow: 'hidden' }}>
+          <View style={[styles.iconBg, { backgroundColor: 'rgba(16, 185, 129, 0.12)', flexShrink: 0 }]}>
             <Ionicons name="people" size={18} color="#10B981" />
           </View>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Split Bill Breakdown</Text>
+          <Text numberOfLines={1} style={[styles.cardTitle, { color: colors.text, flexShrink: 1 }]}>{isTurkish ? 'Ortak ödeme özeti' : 'Split bill breakdown'}</Text>
         </View>
 
-        <View style={[styles.paidStatusBadge, { backgroundColor: paidCount === members.length ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)' }]}>
+        <View style={[styles.paidStatusBadge, { backgroundColor: paidCount === members.length ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)', flexShrink: 0 }]}>
           <Text style={{ fontSize: 11, fontWeight: '800', color: paidCount === members.length ? '#10B981' : '#F59E0B' }}>
-            {paidCount}/{members.length} Paid
+            {paidCount}/{members.length} {isTurkish ? 'ödendi' : 'paid'}
           </Text>
         </View>
       </View>
@@ -85,17 +90,17 @@ export function SplitTrackerCard({ subscription }: Props) {
       {/* Summary Math Grid */}
       <View style={styles.summaryGrid}>
         <View style={[styles.summaryBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Your Share</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Senin payın' : 'Your share'}</Text>
           <Text style={[styles.summaryValue, { color: colors.text }]}>{userShare.toFixed(2)} {currency}</Text>
         </View>
 
         <View style={[styles.summaryBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Friends' Total</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Diğerlerinin payı' : "Friends' total"}</Text>
           <Text style={[styles.summaryValue, { color: '#10B981' }]}>{totalMembersShare.toFixed(2)} {currency}</Text>
         </View>
 
         <View style={[styles.summaryBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Pending</Text>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Bekleyen' : 'Pending'}</Text>
           <Text style={[styles.summaryValue, { color: pendingMembersShare > 0 ? '#F59E0B' : colors.textSecondary }]}>
             {pendingMembersShare.toFixed(2)} {currency}
           </Text>
@@ -103,7 +108,7 @@ export function SplitTrackerCard({ subscription }: Props) {
       </View>
 
       {/* Members Payment List */}
-      <Text style={[styles.membersTitle, { color: colors.textSecondary }]}>PARTNERS PAYMENT STATUS</Text>
+      <Text style={[styles.membersTitle, { color: colors.textSecondary }]}>{isTurkish ? 'ORTAKLARIN ÖDEME DURUMU' : 'PARTNERS PAYMENT STATUS'}</Text>
       
       <View style={{ gap: 10 }}>
         {members.map((member, idx) => (
@@ -120,10 +125,10 @@ export function SplitTrackerCard({ subscription }: Props) {
               />
               <View>
                 <Text style={[styles.memberName, { color: colors.text, textDecorationLine: member.isPaid ? 'line-through' : 'none' }]}>
-                  {member.name || `Partner ${idx + 1}`}
+                  {member.name || (isTurkish ? `Ortak ${idx + 1}` : `Partner ${idx + 1}`)}
                 </Text>
                 <Text style={[styles.memberShareText, { color: colors.textSecondary }]}>
-                  Share: {member.shareAmount} {currency}
+                  {isTurkish ? 'Pay: ' : 'Share: '}{member.shareAmount} {currency}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -134,7 +139,7 @@ export function SplitTrackerCard({ subscription }: Props) {
               activeOpacity={0.8}
             >
               <Ionicons name="logo-whatsapp" size={16} color="#25D366" style={{ marginRight: 4 }} />
-              <Text style={styles.waButtonText}>Remind</Text>
+              <Text style={styles.waButtonText}>{isTurkish ? 'Hatırlat' : 'Remind'}</Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -150,12 +155,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 16,
     marginBottom: 16,
+    overflow: 'hidden',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 16,
+    overflow: 'hidden',
   },
   iconBg: {
     width: 36,
@@ -236,4 +243,3 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
-

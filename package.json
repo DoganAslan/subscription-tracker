@@ -14,10 +14,12 @@
     "@tanstack/react-query": "^5.101.0",
     "@vitalets/google-translate-api": "^9.2.1",
     "expo": "~56.0.17",
+    "expo-auth-session": "~56.0.16",
     "expo-background-fetch": "~56.0.23",
     "expo-checkbox": "~56.0.1",
     "expo-clipboard": "~56.0.4",
     "expo-constants": "~56.0.17",
+    "expo-crypto": "~56.0.4",
     "expo-dev-client": "~56.0.24",
     "expo-device": "~56.0.4",
     "expo-document-picker": "~56.0.4",
@@ -83,4 +85,3 @@
   },
   "private": true
 }
-

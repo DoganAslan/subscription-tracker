@@ -1,11 +1,9 @@
-import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
-import { ExchangeRates } from '@/services/currency/rates';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
-import { convertCurrency } from '@/utils/currency';
+import { convertCurrency, ExchangeRates } from '@/utils/currency';
 
 interface Props {
   subscriptions: Subscription[];
@@ -14,8 +12,9 @@ interface Props {
 }
 
 export const CurrencyRiskCard = ({ subscriptions, baseCurrency, liveRates }: Props) => {
-  const { colors } = useTheme();
-  const { t } = useTranslation();
+  useTheme();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   
   if (!subscriptions || !liveRates || !baseCurrency) return null;
 
@@ -28,10 +27,10 @@ export const CurrencyRiskCard = ({ subscriptions, baseCurrency, liveRates }: Pro
   let totalForeignCostInBase = 0;
   foreignSubs.forEach(sub => {
     // We assume 1 month cost for simplicity
-    totalForeignCostInBase += convertCurrency(sub.amount, sub.currency, baseCurrency, liveRates);
+    totalForeignCostInBase += convertCurrency(sub.amount, sub.currency, baseCurrency);
   });
 
-  const formatter = new Intl.NumberFormat('en-US', {
+  const formatter = new Intl.NumberFormat(isTurkish ? 'tr-TR' : 'en-US', {
     style: 'currency',
     currency: baseCurrency,
     maximumFractionDigits: 0,
@@ -46,11 +45,13 @@ export const CurrencyRiskCard = ({ subscriptions, baseCurrency, liveRates }: Pro
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.title}>
-          {t.features?.currencyRiskTitle || 'Currency Risk Alert'}
+          {isTurkish ? 'Döviz Kuru Riski Uyarısı' : (t.features?.currencyRiskTitle || 'Currency Risk Alert')}
         </Text>
         <Text style={styles.description}>
-          {t.features?.currencyRiskDesc?.replace('{{count}}', String(foreignSubs.length)).replace('{{amount}}', formattedAmount) || 
-           `You have ${foreignSubs.length} foreign subscriptions costing ~${formattedAmount}/mo. Exchange rate fluctuations may suddenly increase your costs.`}
+          {isTurkish
+            ? `${foreignSubs.length} adet yabancı para birimli aboneliğiniz var (aylık ~${formattedAmount}). Kur dalgalanmaları maliyetinizi yükseltebilir.`
+            : (t.features?.currencyRiskDesc?.replace('{{count}}', String(foreignSubs.length)).replace('{{amount}}', formattedAmount) || 
+               `You have ${foreignSubs.length} foreign subscriptions costing ~${formattedAmount}/mo. Exchange rate fluctuations may suddenly increase your costs.`)}
         </Text>
       </View>
     </View>
@@ -89,6 +90,5 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   }
 });
-
 
 

@@ -26,11 +26,12 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { useProfileStore } from '@/store/useProfileStore';
 import { useSecurityStore } from '@/store/useSecurityStore';
-import * as LocalAuthentication from 'expo-local-authentication';
 import { triggerHaptic } from '@/utils/haptics';
+import { authenticateUser, getBiometricAvailability } from '@/utils/biometrics';
 import { exportVaultBackup, importVaultBackup } from '@/utils/vault';
 import { useTranslation } from '@/context/LanguageContext';
-import { testNotification } from '@/services/notificationService';
+import { exportCsvReport } from '@/utils/reportExporter';
+import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 
 const PROFILE_NAME_KEY = '@profile_name';
 
@@ -67,10 +68,12 @@ export default function SettingsScreen() {
   const { baseCurrency, setBaseCurrency } = useCurrencyStore();
   const { profileImage, setProfileImage } = useProfileStore();
   const { user } = useAuthStore();
+  const { data: subscriptions } = useSubscriptions();
   const { isBiometricsEnabled, setBiometricsEnabled } = useSecurityStore();
   const { themeMode, setThemeMode, colors } = useTheme();
   const router = useRouter();
   const { currentLanguage, t, changeLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
 
   const dynamicStyles = useMemo(() => getStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -121,27 +124,30 @@ export default function SettingsScreen() {
 
   const toggleBiometrics = async () => {
     if (Platform.OS === 'web') {
-      triggerHaptic('impactLight');
-      const newValue = !isBiometricsEnabled;
-      setBiometricsEnabled(newValue);
-      await AsyncStorage.setItem('@submate_biometric_enabled', newValue ? 'true' : 'false');
+      Alert.alert(
+        isTurkish ? 'Mobil cihaz gerekli' : 'Mobile device required',
+        isTurkish
+          ? 'Biyometrik kilit yalnızca uygulamanın Android veya iOS sürümünde kullanılabilir.'
+          : 'Biometric lock is only available in the Android or iOS app.'
+      );
       return;
     }
 
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+    const availability = await getBiometricAvailability();
 
-    if (!hasHardware || !isEnrolled) {
-      Alert.alert('Biometrics Unavailable', 'Your device does not support hardware biometric authentication.');
+    if (!availability.available) {
+      Alert.alert(
+        isTurkish ? 'Biyometri kullanılamıyor' : 'Biometrics unavailable',
+        isTurkish
+          ? 'Devam etmek için cihaz ayarlarından parmak izi veya yüz tanıma ekleyin.'
+          : 'Add a fingerprint or face authentication in your device settings to continue.'
+      );
       return;
     }
 
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: isBiometricsEnabled ? 'Authenticate to disable App Lock' : 'Authenticate to enable App Lock',
-      fallbackLabel: 'Use Passcode',
-    });
+    const result = await authenticateUser();
 
-    if (result.success) {
+    if (result) {
       triggerHaptic('medium');
       const newValue = !isBiometricsEnabled;
       setBiometricsEnabled(newValue);
@@ -236,13 +242,13 @@ export default function SettingsScreen() {
           <View style={[dynamicStyles.currencyBadge, { backgroundColor: colors.background, borderColor: colors.border }]}>
             <Ionicons name="cash-outline" size={14} color={colors.primary} style={{ marginRight: 4 }} />
             <Text style={[dynamicStyles.currencyBadgeText, { color: colors.textSecondary }]}>
-              Base Currency: <Text style={{ color: colors.text, fontWeight: '800' }}>{baseCurrency}</Text>
+              {isTurkish ? 'Ana para birimi: ' : 'Base currency: '}<Text style={{ color: colors.text, fontWeight: '800' }}>{baseCurrency}</Text>
             </Text>
           </View>
         </View>
 
         {/* SECTION 1: PREFERENCES */}
-        <Text style={[dynamicStyles.sectionHeader, { color: colors.textSecondary }]}>PREFERENCES</Text>
+        <Text style={[dynamicStyles.sectionHeader, { color: colors.textSecondary }]}>{isTurkish ? 'TERCİHLER' : 'PREFERENCES'}</Text>
         <View style={[dynamicStyles.menuGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Language */}
           <TouchableOpacity
@@ -257,7 +263,7 @@ export default function SettingsScreen() {
               <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
                 <Ionicons name="language-outline" size={18} color="#3B82F6" />
               </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Language / Dil</Text>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{isTurkish ? 'Dil' : 'Language'}</Text>
             </View>
 
             <View style={dynamicStyles.menuRowRight}>
@@ -283,7 +289,7 @@ export default function SettingsScreen() {
               <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
                 <Ionicons name="wallet-outline" size={18} color="#10B981" />
               </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Base Currency</Text>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{isTurkish ? 'Ana para birimi' : 'Base currency'}</Text>
             </View>
 
             <View style={dynamicStyles.menuRowRight}>
@@ -307,12 +313,12 @@ export default function SettingsScreen() {
               <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.12)' }]}>
                 <Ionicons name="color-palette-outline" size={18} color="#8B5CF6" />
               </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Appearance Theme</Text>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{isTurkish ? 'Görünüm teması' : 'Appearance theme'}</Text>
             </View>
 
             <View style={dynamicStyles.menuRowRight}>
               <Text style={[dynamicStyles.menuValue, { color: colors.textSecondary }]}>
-                {themeMode.charAt(0).toUpperCase() + themeMode.slice(1)}
+                {isTurkish ? ({ light: 'Açık', dark: 'Koyu', system: 'Sistem' }[themeMode] || themeMode) : themeMode.charAt(0).toUpperCase() + themeMode.slice(1)}
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </View>
@@ -320,7 +326,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* SECTION 2: SECURITY & SYSTEM */}
-        <Text style={[dynamicStyles.sectionHeader, { color: colors.textSecondary }]}>SECURITY & DATA</Text>
+        <Text style={[dynamicStyles.sectionHeader, { color: colors.textSecondary }]}>{isTurkish ? 'GÜVENLİK VE VERİLER' : 'SECURITY & DATA'}</Text>
         <View style={[dynamicStyles.menuGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Biometrics */}
           <TouchableOpacity
@@ -332,37 +338,13 @@ export default function SettingsScreen() {
               <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
                 <Ionicons name="finger-print-outline" size={18} color="#F59E0B" />
               </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Biometric Lock</Text>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{isTurkish ? 'Biyometrik kilit' : 'Biometric lock'}</Text>
             </View>
 
             <View style={dynamicStyles.menuRowRight}>
               <Text style={[dynamicStyles.menuValue, { color: isBiometricsEnabled ? '#10B981' : colors.textSecondary, fontWeight: '800' }]}>
-                {isBiometricsEnabled ? 'Enabled' : 'Disabled'}
+                {isBiometricsEnabled ? (isTurkish ? 'Açık' : 'Enabled') : (isTurkish ? 'Kapalı' : 'Disabled')}
               </Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-            </View>
-          </TouchableOpacity>
-
-          <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
-
-          {/* Test Notification */}
-          <TouchableOpacity
-            style={dynamicStyles.menuRow}
-            activeOpacity={0.7}
-            onPress={() => {
-              triggerHaptic('impactLight');
-              testNotification();
-            }}
-          >
-            <View style={dynamicStyles.menuRowLeft}>
-              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
-                <Ionicons name="notifications-outline" size={18} color="#3B82F6" />
-              </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Test Renewal Notification</Text>
-            </View>
-
-            <View style={dynamicStyles.menuRowRight}>
-              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.primary }}>Send Test</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </View>
           </TouchableOpacity>
@@ -372,41 +354,66 @@ export default function SettingsScreen() {
         <View style={[dynamicStyles.vaultCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <View style={dynamicStyles.vaultHeader}>
             <Ionicons name="shield-checkmark" size={20} color="#10B981" />
-            <Text style={[dynamicStyles.vaultTitle, { color: colors.text }]}>Sovereign Data Vault</Text>
+            <Text style={[dynamicStyles.vaultTitle, { color: colors.text }]}>{isTurkish ? 'Veri kasası' : 'Sovereign data vault'}</Text>
           </View>
           <Text style={[dynamicStyles.vaultDesc, { color: colors.textSecondary }]}>
-            Export your entire subscription history & wallet cards to an encrypted .json file for safe offline backups.
+            {isTurkish ? 'Abonelik geçmişini ve cüzdan kartlarını güvenli çevrimdışı yedek için şifreli bir .json dosyasına aktar.' : 'Export your subscription history and wallet cards to an encrypted .json file for safe offline backups.'}
           </Text>
 
-          <View style={dynamicStyles.vaultButtonsRow}>
-            <TouchableOpacity
-              style={[dynamicStyles.vaultBtn, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}
-              onPress={() => {
-                triggerHaptic('impactLight');
-                exportVaultBackup();
-              }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="download-outline" size={16} color="#3B82F6" style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#3B82F6' }}>Backup JSON</Text>
-            </TouchableOpacity>
+          <View style={{ gap: 10 }}>
+            {/* Row 1: Backup & Restore */}
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={[dynamicStyles.vaultBtn, { backgroundColor: 'rgba(59, 130, 246, 0.12)', borderColor: 'rgba(59, 130, 246, 0.25)', borderWidth: 1 }]}
+                onPress={() => {
+                  triggerHaptic('impactLight');
+                  exportVaultBackup();
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="download-outline" size={18} color="#3B82F6" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#3B82F6' }}>{isTurkish ? 'JSON yedekle' : 'Back up JSON'}</Text>
+              </TouchableOpacity>
 
+              <TouchableOpacity
+                style={[dynamicStyles.vaultBtn, { backgroundColor: 'rgba(16, 185, 129, 0.12)', borderColor: 'rgba(16, 185, 129, 0.25)', borderWidth: 1 }]}
+                onPress={() => {
+                  triggerHaptic('impactLight');
+                  importVaultBackup(() => router.replace('/(tabs)'));
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="refresh-outline" size={18} color="#10B981" style={{ marginRight: 6 }} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#10B981' }}>{isTurkish ? 'Geri yükle' : 'Restore'}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Row 2: Full-width Export CSV */}
             <TouchableOpacity
-              style={[dynamicStyles.vaultBtn, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}
+              style={[dynamicStyles.vaultBtnFull, { backgroundColor: 'rgba(245, 158, 11, 0.12)', borderColor: 'rgba(245, 158, 11, 0.25)', borderWidth: 1 }]}
               onPress={() => {
                 triggerHaptic('impactLight');
-                importVaultBackup(() => router.replace('/(tabs)'));
+                const items = (subscriptions || []).map(s => ({
+                  name: s.name,
+                  category: s.category,
+                  amount: s.amount,
+                  currency: s.currency,
+                  billingCycle: s.billingCycle,
+                  status: s.status ?? 'active',
+                  notes: s.notes,
+                }));
+                exportCsvReport(items, baseCurrency);
               }}
               activeOpacity={0.8}
             >
-              <Ionicons name="refresh-outline" size={16} color="#10B981" style={{ marginRight: 4 }} />
-              <Text style={{ fontSize: 12, fontWeight: '800', color: '#10B981' }}>Restore</Text>
+              <Ionicons name="document-text-outline" size={18} color="#F59E0B" style={{ marginRight: 6 }} />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#F59E0B' }}>{isTurkish ? 'CSV raporunu dışa aktar' : 'Export CSV report'}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* SECTION 3: ACCOUNT & INFO */}
-        <Text style={[dynamicStyles.sectionHeader, { color: colors.textSecondary }]}>ACCOUNT & INFO</Text>
+        <Text style={[dynamicStyles.sectionHeader, { color: colors.textSecondary }]}>{isTurkish ? 'HESAP VE BİLGİ' : 'ACCOUNT & INFO'}</Text>
         <View style={[dynamicStyles.menuGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Account Details */}
           <TouchableOpacity
@@ -421,7 +428,7 @@ export default function SettingsScreen() {
               <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(99, 102, 241, 0.12)' }]}>
                 <Ionicons name="person-outline" size={18} color="#6366F1" />
               </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Account & Password</Text>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{isTurkish ? 'Hesap ve şifre' : 'Account & password'}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -441,47 +448,7 @@ export default function SettingsScreen() {
               <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(236, 72, 153, 0.12)' }]}>
                 <Ionicons name="information-circle-outline" size={18} color="#EC4899" />
               </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>About SubMate</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
-
-          {/* Privacy Policy */}
-          <TouchableOpacity
-            style={dynamicStyles.menuRow}
-            activeOpacity={0.7}
-            onPress={() => {
-              triggerHaptic('selection');
-              setPrivacyModalVisible(true);
-            }}
-          >
-            <View style={dynamicStyles.menuRowLeft}>
-              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(148, 163, 184, 0.12)' }]}>
-                <Ionicons name="document-text-outline" size={18} color="#94A3B8" />
-              </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Privacy Policy</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
-
-          <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
-
-          {/* Terms of Use */}
-          <TouchableOpacity
-            style={dynamicStyles.menuRow}
-            activeOpacity={0.7}
-            onPress={() => {
-              triggerHaptic('selection');
-              setTermsModalVisible(true);
-            }}
-          >
-            <View style={dynamicStyles.menuRowLeft}>
-              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(148, 163, 184, 0.12)' }]}>
-                <Ionicons name="newspaper-outline" size={18} color="#94A3B8" />
-              </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Terms of Use</Text>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{isTurkish ? 'SubMate hakkında' : 'About SubMate'}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -494,7 +461,7 @@ export default function SettingsScreen() {
           onPress={handleSignOut}
         >
           <Ionicons name="log-out-outline" size={20} color="#EF4444" style={{ marginRight: 6 }} />
-          <Text style={dynamicStyles.signOutText}>Log Out Account</Text>
+          <Text style={dynamicStyles.signOutText}>{isTurkish ? 'Hesaptan çık' : 'Log out'}</Text>
         </TouchableOpacity>
 
         {/* MODAL: LANGUAGE SELECTOR */}
@@ -510,7 +477,7 @@ export default function SettingsScreen() {
               <View style={dynamicStyles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Ionicons name="language" size={20} color="#3B82F6" />
-                  <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>Select Language / Dil Seçimi</Text>
+                  <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{isTurkish ? 'Dil seçimi' : 'Select language'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
                   <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
@@ -562,7 +529,7 @@ export default function SettingsScreen() {
               <View style={dynamicStyles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Ionicons name="wallet" size={20} color="#10B981" />
-                  <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>Select Base Currency</Text>
+                  <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{isTurkish ? 'Ana para birimini seç' : 'Select base currency'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => setCurrencyModalVisible(false)}>
                   <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
@@ -622,7 +589,7 @@ export default function SettingsScreen() {
               <View style={dynamicStyles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Ionicons name="color-palette" size={20} color="#8B5CF6" />
-                  <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>Select Theme</Text>
+                  <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{isTurkish ? 'Tema seç' : 'Select theme'}</Text>
                 </View>
                 <TouchableOpacity onPress={() => setThemeModalVisible(false)}>
                   <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
@@ -673,7 +640,7 @@ export default function SettingsScreen() {
             <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setPrivacyModalVisible(false)} />
             <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={dynamicStyles.modalHeader}>
-                <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>Privacy Policy</Text>
+                <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{isTurkish ? 'Gizlilik politikası' : 'Privacy policy'}</Text>
                 <TouchableOpacity onPress={() => setPrivacyModalVisible(false)}>
                   <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
                 </TouchableOpacity>
@@ -698,7 +665,7 @@ export default function SettingsScreen() {
             <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setTermsModalVisible(false)} />
             <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={dynamicStyles.modalHeader}>
-                <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>Terms of Use</Text>
+                <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{isTurkish ? 'Kullanım koşulları' : 'Terms of use'}</Text>
                 <TouchableOpacity onPress={() => setTermsModalVisible(false)}>
                   <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
                 </TouchableOpacity>
@@ -883,8 +850,18 @@ const getStyles = (colors: any) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 10,
-      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+      borderRadius: 14,
+    },
+    vaultBtnFull: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 8,
+      borderRadius: 14,
     },
     signOutRow: {
       borderRadius: 16,
@@ -953,4 +930,3 @@ const getStyles = (colors: any) =>
       fontSize: 15,
     },
   });
-

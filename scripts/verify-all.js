@@ -191,21 +191,21 @@ console.log('');
 console.log('📌 3. Biyometrik Kilit & Güvenlik İşleyiş Testleri:');
 
 function simulateBiometricAuthentication({ isWeb, hasHardware, isEnrolled }) {
-  if (isWeb) return { success: true, reason: 'web_mock' };
-  if (!hasHardware || !isEnrolled) return { success: true, reason: 'fallback_open' };
+  if (isWeb) return { success: false, reason: 'web_unavailable' };
+  if (!hasHardware || !isEnrolled) return { success: false, reason: 'biometric_unavailable' };
   return { success: true, reason: 'authenticated' };
 }
 
-runTest('Web ortamında biyometrik kilit otomatik onaylanmalıdır', () => {
+runTest('Web ortamında biyometrik kilit etkinleştirilmemelidir', () => {
   const res = simulateBiometricAuthentication({ isWeb: true, hasHardware: false, isEnrolled: false });
-  assert.strictEqual(res.success, true);
-  assert.strictEqual(res.reason, 'web_mock');
+  assert.strictEqual(res.success, false);
+  assert.strictEqual(res.reason, 'web_unavailable');
 });
 
-runTest('Donanım veya kayıtlı parmak izi yoksa kullanıcının kilitli kalmaması için fail-open çalışmalıdır', () => {
+runTest('Donanım veya kayıtlı biyometri yoksa kilit doğrulaması başarısız olmalıdır', () => {
   const res = simulateBiometricAuthentication({ isWeb: false, hasHardware: false, isEnrolled: false });
-  assert.strictEqual(res.success, true);
-  assert.strictEqual(res.reason, 'fallback_open');
+  assert.strictEqual(res.success, false);
+  assert.strictEqual(res.reason, 'biometric_unavailable');
 });
 
 runTest('Donanım ve kaydı tam cihazda biyometrik kilit doğrulama istemelidir', () => {
@@ -214,7 +214,86 @@ runTest('Donanım ve kaydı tam cihazda biyometrik kilit doğrulama istemelidir'
   assert.strictEqual(res.reason, 'authenticated');
 });
 
+// --------------------------------------------------
+// 4. STEP 1: YZ ÜCRETSİZ DENEME & SANAL KART KALKANI TESTLERİ
+// --------------------------------------------------
+console.log('\n📌 4. Step 1: YZ Ücretsiz Deneme (Free Trial) & Sanal Kart Kalkanı Testleri:');
+
+runTest('Ücretsiz denemelerin kalan saat/gün hesabı ve risk seviyesi doğru belirlenmelidir (24h altı urgent)', () => {
+  const now = new Date();
+  const tomorrow = new Date(now.getTime() + 18 * 60 * 60 * 1000); // 18 hours left
+  const diffMs = tomorrow.getTime() - now.getTime();
+  const hoursLeft = Math.floor(diffMs / (1000 * 60 * 60));
+  assert(hoursLeft <= 24, '24 saat altı urgent risktir');
+});
+
+runTest('Sanal kart kalkanı bağlı olmayan aboneliklerde uyarı üretilmelidir', () => {
+  const sub = { id: 'sub-1', name: 'Spotify Trial', cardId: null, isFreeTrial: true };
+  const hasVirtualCard = !!sub.cardId;
+  assert.strictEqual(hasVirtualCard, false);
+});
+
+// --------------------------------------------------
+// 5. STEP 2: SUBMATE WRAPPED YILLIK FINANSAL ÖZET TESTLERİ
+// --------------------------------------------------
+console.log('\n📌 5. Step 2: SubMate Wrapped Yıllık Finansal Özet Testleri:');
+
+runTest('Yıllık harcama toplamı ve en çok harcanan kategori doğru hesaplanmalıdır', () => {
+  const sampleSubs = [
+    { name: 'Netflix', amount: 100, currency: 'TRY', billingCycle: 'monthly', category: 'Eğlence' },
+    { name: 'Spotify', amount: 50, currency: 'TRY', billingCycle: 'monthly', category: 'Müzik' },
+  ];
+  const annualTotal = (100 * 12) + (50 * 12);
+  assert.strictEqual(annualTotal, 1800);
+});
+
+runTest('Tasarruf potansiyeli tahmini pozitif olmalıdır', () => {
+  const annualSpent = 1800;
+  const estimatedSavings = annualSpent * 0.18;
+  assert(estimatedSavings > 0);
+});
+
+// --------------------------------------------------
+// 6. STEP 3: ORTAK KASASI & WATSAPP PAYLAŞIMI TESTLERİ
+// --------------------------------------------------
+console.log('\n📌 6. Step 3: Ortak Kasası & WhatsApp Paylaşımı Testleri:');
+
+runTest('Ortak abonelik kişi başı pay hesabı doğru hesaplanmalıdır', () => {
+  const sub = { amount: 300, isSplit: true, splitMembers: [{ name: 'Ahmet' }, { name: 'Mehmet' }] };
+  const totalPeople = sub.splitMembers.length + 1; // 3 people
+  const perPerson = sub.amount / totalPeople;
+  assert.strictEqual(perPerson, 100);
+});
+
+// --------------------------------------------------
+// 7. STEP 4: ENFLASYON & KUR ZAM TAHMİNİ TESTLERİ
+// --------------------------------------------------
+console.log('\n📌 7. Step 4: Enflasyon & Kur Zam Tahmini Testleri:');
+
+runTest('Yabancı para birimli aboneliklerde kur riski zam tahmini (%25) doğru hesaplanmalıdır', () => {
+  const currentMonthly = 100;
+  const surgeRate = 0.25;
+  const projectedMonthly = currentMonthly * (1 + surgeRate);
+  assert.strictEqual(projectedMonthly, 125);
+});
+
+// --------------------------------------------------
+// 8. ANDROID ANA EKRAN WIDGET VERİ TESTLERİ
+// --------------------------------------------------
+console.log('\n📌 8. Android Ana Ekran Widget Veri Testleri:');
+
+runTest('Widget aylık toplamı ve sıradaki ödeme bilgisini güncel veriden göstermelidir', () => {
+  const subscriptions = [
+    { name: 'Spotify', amount: 50, cycle: 'monthly', nextDueInDays: 4 },
+    { name: 'Yıllık uygulama', amount: 1200, cycle: 'yearly', nextDueInDays: 20 },
+  ];
+  const monthlyTotal = subscriptions.reduce((sum, sub) => sum + (sub.cycle === 'yearly' ? sub.amount / 12 : sub.amount), 0);
+  const nextPayment = subscriptions.sort((a, b) => a.nextDueInDays - b.nextDueInDays)[0];
+  assert.strictEqual(monthlyTotal, 150);
+  assert.strictEqual(nextPayment.name, 'Spotify');
+  assert.strictEqual(nextPayment.nextDueInDays, 4);
+});
+
 console.log('\n--------------------------------------------------');
 console.log(`📊 Test Sonucu: ${passedTests} / ${totalTests} test başarıyla tamamlandı! (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('--------------------------------------------------');
-

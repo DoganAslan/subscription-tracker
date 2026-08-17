@@ -7,7 +7,7 @@ const safeFinancialRound = (num: number): number => {
 
 export const calculateMonthlyCosts = (sub: any, activeCurrency: string) => {
   // 1. If paused, it contributes 0 to active cashflow
-  if (sub.isPaused || sub.status === 'paused') return { gross: 0, net: 0 };
+  if (sub.status === 'paused') return { gross: 0, net: 0 };
 
   // 2. Base Conversion (Prioritize sub.amount over sub.price to prevent multiplied values)
   const rawAmount = sub.amount !== undefined && sub.amount !== null 
@@ -76,4 +76,3 @@ export const calculateMonthlyCosts = (sub: any, activeCurrency: string) => {
     net: Math.max(0, safeFinancialRound(netMonthly)) 
   };
 };
-

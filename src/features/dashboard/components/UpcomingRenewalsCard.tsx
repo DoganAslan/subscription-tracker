@@ -1,6 +1,6 @@
-import i18n, { t } from '@/locales/i18n';
+import { t } from '@/locales/i18n';
 import React from 'react';
-import { View, Text, useColorScheme } from 'react-native';
+import { View, Text } from 'react-native';
 import { Subscription } from '@/services/firebase/types';
 import { useTheme } from '@/context/ThemeContext';
 

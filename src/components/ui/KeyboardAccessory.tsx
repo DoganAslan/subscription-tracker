@@ -1,4 +1,4 @@
-import i18n, { t } from '@/locales/i18n';
+import { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, InputAccessoryView, Platform, Keyboard } from 'react-native';
 

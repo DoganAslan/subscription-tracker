@@ -44,7 +44,7 @@ export const CardBreakdownCard: React.FC<CardBreakdownCardProps> = ({ cards, sub
 
     // Distribute subscriptions
     subscriptions.forEach(sub => {
-      if (sub.isPaused) return;
+      if (sub.status === 'paused') return;
       const amount = typeof sub.amount === 'number' ? sub.amount : parseFloat(sub.amount) || 0;
       const converted = convertCurrency(amount, sub.currency || 'TRY', baseCurrency);
       grandTotal += converted;
@@ -78,15 +78,15 @@ export const CardBreakdownCard: React.FC<CardBreakdownCardProps> = ({ cards, sub
     <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Section Header */}
       <View style={styles.headerRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={[styles.headerIconBox, { backgroundColor: 'rgba(99, 102, 241, 0.12)' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8, overflow: 'hidden' }}>
+          <View style={[styles.headerIconBox, { backgroundColor: 'rgba(99, 102, 241, 0.12)', flexShrink: 0 }]}>
             <Ionicons name="card-outline" size={18} color="#6366F1" />
           </View>
-          <View>
-            <Text style={[styles.title, { color: colors.text }]}>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={[styles.title, { color: colors.text }]}>
               {t.analytics?.cardBreakdown || 'Card Spending Breakdown'}
             </Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            <Text numberOfLines={1} style={[styles.subtitle, { color: colors.textSecondary }]}>
               Monthly spending per payment card
             </Text>
           </View>
@@ -94,7 +94,7 @@ export const CardBreakdownCard: React.FC<CardBreakdownCardProps> = ({ cards, sub
 
         <TouchableOpacity 
           onPress={() => router.push('/(tabs)/wallet')}
-          style={[styles.manageBtn, { backgroundColor: colors.border }]}
+          style={[styles.manageBtn, { backgroundColor: colors.border, flexShrink: 0 }]}
         >
           <Text style={[styles.manageBtnText, { color: colors.text }]}>{t.tabs?.wallet || 'Wallet'}</Text>
           <Ionicons name="chevron-forward" size={12} color={colors.text} />
@@ -360,4 +360,3 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
-

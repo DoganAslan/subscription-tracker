@@ -1,11 +1,12 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useMemo } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
 import { useTheme } from '@/context/ThemeContext';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { SUPPORTED_CURRENCIES, convertCurrency } from '@/utils/currency';
-import { triggerHaptic } from '@/utils/haptics';
+
+import { useTranslation } from '@/context/LanguageContext';
 
 interface Props {
   subscriptions: Subscription[];
@@ -13,6 +14,8 @@ interface Props {
 
 export function AiRecommendationsCard({ subscriptions }: Props) {
   const { colors } = useTheme();
+  const { currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
   const currencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || baseCurrency;
 
@@ -34,9 +37,11 @@ export function AiRecommendationsCard({ subscriptions }: Props) {
           icon: 'flame',
           color: '#EF4444',
           bg: 'rgba(239, 68, 68, 0.12)',
-          title: `Multiple ${cat} Subscriptions (${count})`,
-          desc: `You have ${count} active services in "${cat}". Consolidating or pausing unused ones could save up to 30% monthly.`,
-          savingsText: 'Potential Savings: ~30%',
+          title: isTurkish ? `Çoklu ${cat} Aboneliği (${count})` : `Multiple ${cat} Subscriptions (${count})`,
+          desc: isTurkish
+            ? `"${cat}" kategorisinde ${count} aktif servisiniz var. Kullanmadıklarınızı duraklatarak aylık %30'a varan tasarruf sağlayabilirsiniz.`
+            : `You have ${count} active services in "${cat}". Consolidating or pausing unused ones could save up to 30% monthly.`,
+          savingsText: isTurkish ? 'Potansiyel Tasarruf: ~%30' : 'Potential Savings: ~30%',
         });
       }
     });
@@ -51,14 +56,16 @@ export function AiRecommendationsCard({ subscriptions }: Props) {
         icon: 'calendar',
         color: '#10B981',
         bg: 'rgba(16, 185, 129, 0.12)',
-        title: 'Switch to Annual Billing',
-        desc: `Switching "${sample.name}" to annual payment typically gives a 15-20% discount.`,
-        savingsText: `Save ~${currencySymbol}${annualSaved.toFixed(0)}/yr`,
+        title: isTurkish ? 'Yıllık Ödemeye Geçiş Yapın' : 'Switch to Annual Billing',
+        desc: isTurkish
+          ? `"${sample.name}" servisini yıllık plana geçirmek genelde %15-20 indirim sağlar.`
+          : `Switching "${sample.name}" to annual payment typically gives a 15-20% discount.`,
+        savingsText: isTurkish ? `Yılda ~${currencySymbol}${annualSaved.toFixed(0)} Tasarruf` : `Save ~${currencySymbol}${annualSaved.toFixed(0)}/yr`,
       });
     }
 
     // 3. Check active free trials
-    const activeTrials = subscriptions.filter(s => s.isFreeTrial || s.isTrial);
+    const activeTrials = subscriptions.filter(s => s.isTrial);
     if (activeTrials.length > 0) {
       const trial = activeTrials[0];
       list.push({
@@ -66,8 +73,10 @@ export function AiRecommendationsCard({ subscriptions }: Props) {
         icon: 'time',
         color: '#F59E0B',
         bg: 'rgba(245, 158, 11, 0.12)',
-        title: `Free Trial Active: ${trial.name}`,
-        desc: `Remember to evaluate "${trial.name}" before the trial period ends to avoid unexpected recurring charges.`,
+        title: isTurkish ? `Ücretsiz Deneme Aktif: ${trial.name}` : `Free Trial Active: ${trial.name}`,
+        desc: isTurkish
+          ? `Sürpriz çekimleri önlemek için deneme süresi bitmeden "${trial.name}" servisini değerlendirmeyi unutmayın.`
+          : `Remember to evaluate "${trial.name}" before the trial period ends to avoid unexpected recurring charges.`,
       });
     }
 
@@ -79,8 +88,10 @@ export function AiRecommendationsCard({ subscriptions }: Props) {
         icon: 'globe',
         color: '#8B5CF6',
         bg: 'rgba(139, 92, 246, 0.12)',
-        title: 'Foreign Currency Exposure',
-        desc: `You have ${foreignSubs.length} subscription(s) in non-native currencies. Exchange rate fluctuations can alter your total monthly budget.`,
+        title: isTurkish ? 'Döviz Kuru Riski Maruziyeti' : 'Foreign Currency Exposure',
+        desc: isTurkish
+          ? `Kendi para biriminiz dışında ${foreignSubs.length} aboneliğiniz var. Kur dalgalanmaları bütçenizi etkileyebilir.`
+          : `You have ${foreignSubs.length} subscription(s) in non-native currencies. Exchange rate fluctuations can alter your total monthly budget.`,
       });
     }
 
@@ -91,26 +102,30 @@ export function AiRecommendationsCard({ subscriptions }: Props) {
         icon: 'sparkles',
         color: '#6366F1',
         bg: 'rgba(99, 102, 241, 0.12)',
-        title: 'Great Budget Management!',
-        desc: 'Your subscription portfolio looks well-optimized. Keep tracking usage scores to catch underused services early.',
+        title: isTurkish ? 'Harika Bütçe Yönetimi!' : 'Great Budget Management!',
+        desc: isTurkish
+          ? 'Abonelik portföyünüz oldukça optimize görünüyor. Az kullanılan servisleri tespit etmek için kullanım puanlarını takip edin.'
+          : 'Your subscription portfolio looks well-optimized. Keep tracking usage scores to catch underused services early.',
       });
     }
 
     return list;
-  }, [subscriptions, baseCurrency, currencySymbol]);
+  }, [subscriptions, baseCurrency, currencySymbol, isTurkish]);
 
   return (
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Title */}
       <View style={styles.headerRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={styles.aiBadgeIcon}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8, overflow: 'hidden' }}>
+          <View style={[styles.aiBadgeIcon, { flexShrink: 0 }]}>
             <Ionicons name="hardware-chip-outline" size={18} color="#8B5CF6" />
           </View>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>AI Smart Recommendations</Text>
+          <Text numberOfLines={1} style={[styles.cardTitle, { color: colors.text, flexShrink: 1 }]}>
+            {isTurkish ? 'YZ Akıllı Tavsiyeleri' : 'AI Smart Recommendations'}
+          </Text>
         </View>
 
-        <View style={styles.aiSparklePill}>
+        <View style={[styles.aiSparklePill, { flexShrink: 0 }]}>
           <Ionicons name="sparkles" size={12} color="#8B5CF6" style={{ marginRight: 4 }} />
           <Text style={styles.aiSparkleText}>AI Engine</Text>
         </View>
@@ -218,4 +233,3 @@ const styles = StyleSheet.create({
     color: '#10B981',
   },
 });
-

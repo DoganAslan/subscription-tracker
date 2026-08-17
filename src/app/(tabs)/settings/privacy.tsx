@@ -8,7 +8,6 @@ import Markdown from 'react-native-markdown-display';
 import { useTranslation } from '@/context/LanguageContext';
 
 import privacyPoliciesRaw from '@/constants/privacyPolicies.json';
-import { t } from '@/locales/i18n';
 
 const privacyPolicies: Record<string, string> = privacyPoliciesRaw;
 const languages = Object.keys(privacyPolicies);
@@ -16,8 +15,8 @@ const languages = Object.keys(privacyPolicies);
 export default function PrivacyPolicyScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { i18n } = useTranslation();
-  const currentLang = i18n.language || 'en';
+  const { currentLanguage } = useTranslation();
+  const currentLang = currentLanguage || 'en';
   const [activeLang, setActiveLang] = useState(languages.includes(currentLang) ? currentLang : 'en');
 
   const markdownContent = privacyPolicies[activeLang] || privacyPolicies['en'];
@@ -122,7 +121,6 @@ const styles = StyleSheet.create({
   langText: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'Hanken Grotesk',
   },
   activeLangText: {
     color: '#FFFFFF',
@@ -143,36 +141,32 @@ const styles = StyleSheet.create({
 const markdownStyles = {
   body: {
     color: '#9CA3AF',
-    fontFamily: 'Hanken Grotesk',
     fontSize: 15,
     lineHeight: 24,
   },
   heading1: {
     color: '#FFFFFF',
-    fontFamily: 'Hanken Grotesk',
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
     marginBottom: 8,
     marginTop: 0,
   },
   heading2: {
     color: '#FFFFFF',
-    fontFamily: 'Hanken Grotesk',
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     marginTop: 24,
     marginBottom: 12,
   },
   strong: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontWeight: 'bold' as const,
   },
   em: {
     color: '#6B7280',
-    fontStyle: 'italic',
+    fontStyle: 'italic' as const,
     fontSize: 14,
     marginBottom: 24,
-    display: 'flex',
   },
   blockquote: {
     backgroundColor: '#1F2937',
@@ -185,9 +179,6 @@ const markdownStyles = {
   },
   link: {
     color: '#3B82F6',
-    textDecorationLine: 'underline',
+    textDecorationLine: 'underline' as const,
   }
 };
-
-
-

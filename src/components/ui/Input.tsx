@@ -1,14 +1,12 @@
-import { t } from '@/locales/i18n';
 import React, { forwardRef, useState } from 'react';
 import { TextInput, View, Text, TextInputProps, StyleSheet } from 'react-native';
+import { useTheme } from '@/context/ThemeContext';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   containerStyle?: object;
 }
-
-import { useTheme } from '@/context/ThemeContext';
 
 export const Input = forwardRef<TextInput, InputProps>(({ label, error, containerStyle, onFocus, onBlur, ...props }, ref) => {
   const { colors } = useTheme();
@@ -39,7 +37,7 @@ export const Input = forwardRef<TextInput, InputProps>(({ label, error, containe
           isFocused && dynamicStyles.inputFocused,
           error ? dynamicStyles.inputError : null
         ]}
-        placeholderTextColor={colors.textSecondary}
+        placeholderTextColor={colors.textSecondary + 'A0'}
         {...props}
       />
       {!!error && (
@@ -53,32 +51,32 @@ Input.displayName = 'Input';
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: {
-    marginBottom: 20,
+    marginBottom: 18,
     width: '100%',
   },
   label: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '800',
     color: colors.textSecondary,
     marginBottom: 8,
-    letterSpacing: 0.6,
-    fontFamily: 'Geist',
+    letterSpacing: 0.8,
   },
   input: {
     width: '100%',
     backgroundColor: colors.surface,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 15,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
-    fontSize: 16,
-    fontFamily: 'Inter',
+    fontSize: 15,
+    fontWeight: '600',
   },
   inputFocused: {
-    borderColor: '#3B82F6', // Soft blue highlight
+    borderColor: colors.primary,
     borderWidth: 1.5,
+    backgroundColor: colors.surface,
   },
   inputError: {
     borderColor: colors.danger,
@@ -87,9 +85,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.danger,
     fontSize: 12,
     marginTop: 6,
-    fontWeight: '500',
+    fontWeight: '600',
   }
 });
-
-
-

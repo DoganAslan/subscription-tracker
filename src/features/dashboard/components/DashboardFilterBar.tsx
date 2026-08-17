@@ -1,4 +1,4 @@
-import i18n, { t } from '@/locales/i18n';
+import { t } from '@/locales/i18n';
 import React from 'react';
 import { View, TextInput, ScrollView, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,7 +55,7 @@ export function DashboardFilterBar({
             onPress={() => setSelectedCategory(category)}
           >
             <Text style={[styles.chipText, selectedCategory === category && styles.activeChipText]}>
-              {category === 'All' ? t.global?.all || 'All' : (t.categories as any)?.[category] || category}
+              {(t.categories as any)?.[category] || category}
             </Text>
           </TouchableOpacity>
         ))}
@@ -134,6 +134,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF'
   }
 });
-
 
 

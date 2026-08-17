@@ -2,34 +2,54 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { Platform } from 'react-native';
 import { t } from '@/locales/i18n';
 
-export const authenticateUser = async (): Promise<boolean> => {
+export type BiometricAvailability = {
+  available: boolean;
+  reason?: 'web' | 'no_hardware' | 'not_enrolled' | 'not_biometric';
+};
+
+export const getBiometricAvailability = async (): Promise<BiometricAvailability> => {
   if (Platform.OS === 'web') {
-    console.log('[Web Mock] Biometric prompt simulated & automatically approved on browser target.');
-    return true;
+    return { available: false, reason: 'web' };
   }
 
-  try {
-    const hasHardware = await LocalAuthentication.hasHardwareAsync();
-    const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+  const [hasHardware, isEnrolled, enrolledLevel] = await Promise.all([
+    LocalAuthentication.hasHardwareAsync(),
+    LocalAuthentication.isEnrolledAsync(),
+    LocalAuthentication.getEnrolledLevelAsync(),
+  ]);
 
-    if (!hasHardware || !isEnrolled) {
-      console.warn('[Biometrics] Device lacks hardware or enrolled biometrics. Auto-unlocking fallback.');
-      return true; // Fallback so user isn't locked out permanently
+  if (!hasHardware) return { available: false, reason: 'no_hardware' };
+  if (!isEnrolled) return { available: false, reason: 'not_enrolled' };
+
+  return enrolledLevel >= LocalAuthentication.SecurityLevel.BIOMETRIC_WEAK
+    ? { available: true }
+    : { available: false, reason: 'not_biometric' };
+};
+
+export const authenticateUser = async (): Promise<boolean> => {
+  if (Platform.OS === 'web') return false;
+
+  try {
+    const availability = await getBiometricAvailability();
+    if (!availability.available) {
+      console.warn('[Biometrics] Authentication unavailable:', availability.reason);
+      return false;
     }
 
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: (t.global as any)?.biometricPrompt || 'Unlock SubMate',
-      fallbackLabel: (t.global as any)?.usePassword || 'Use Password',
-      disableDeviceFallback: false,
-      cancelLabel: t.common?.cancel || 'Cancel',
+      promptMessage: (t.global as any)?.biometricPrompt || 'SubMate kilidini aç',
+      promptDescription: (t.global as any)?.biometricDescription || 'Finansal verilerini güvenle aç',
+      fallbackLabel: '',
+      disableDeviceFallback: true,
+      cancelLabel: t.common?.cancel || 'İptal',
+      biometricsSecurityLevel: 'strong',
     });
 
     return result.success;
   } catch (error) {
     console.error('[Biometric Fatal Error]:', error);
-    return true; // Safe fail-open principle for app recovery
+    return false;
   }
 };
-
 
 

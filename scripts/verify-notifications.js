@@ -79,9 +79,12 @@ function calculateTrigger(renewalDateInput, cycle = 'monthly') {
   triggerDate.setDate(triggerDate.getDate() - 2);
   triggerDate.setHours(9, 0, 0, 0);
 
+  let isImmediateTest = false;
+
   if (triggerDate.getTime() <= Date.now()) {
     if (renewalDate.getTime() > Date.now()) {
-      return { status: 'immediate', triggerDate: new Date(Date.now() + 5000) };
+      isImmediateTest = true;
+      triggerDate = new Date(Date.now() + 5000);
     } else {
       // Auto-advance to next cycle
       const advancedDate = getNextRenewalDate(new Date(renewalDate.getTime() + 86400000), cycle);
@@ -92,14 +95,33 @@ function calculateTrigger(renewalDateInput, cycle = 'monthly') {
 
       if (triggerDate.getTime() <= Date.now()) {
         if (renewalDate.getTime() > Date.now()) {
-          return { status: 'immediate', triggerDate: new Date(Date.now() + 5000) };
+          isImmediateTest = true;
+          triggerDate = new Date(Date.now() + 5000);
+        } else {
+          return { status: 'expired' };
         }
-        return { status: 'expired' };
       }
-      return { status: 'scheduled', triggerDate };
     }
   }
-  return { status: 'scheduled', triggerDate };
+
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  const renMidnight = new Date(renewalDate);
+  renMidnight.setHours(0, 0, 0, 0);
+  const diffMs = renMidnight.getTime() - todayMidnight.getTime();
+  const daysLeft = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+
+  let title = '⏳ Ödeme Hatırlatıcı';
+  let body = `Abonelik yenilenmesine ${daysLeft} gün kaldı!`;
+  if (daysLeft === 0) {
+    title = '💳 Bugün Ödemeniz Var!';
+    body = 'Aboneliğinizin ödemesi bugün gerçekleşiyor.';
+  } else if (daysLeft === 1) {
+    title = '⏳ Yarın Ödemeniz Var';
+    body = 'Aboneliğinizin yenilenmesine 1 gün kaldı (yarın).';
+  }
+
+  return { status: isImmediateTest ? 'immediate' : 'scheduled', triggerDate, daysLeft, title, body };
 }
 
 function calculateDoomTrigger(contractEndDate) {

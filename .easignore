@@ -2,4 +2,6 @@ node_modules/
 .git/
 android/
 ios/
-
+.gradle-user-home/
+.npm-cache/
+.eas-session/

@@ -1,10 +1,8 @@
 import { initializeApp, getApp, getApps } from 'firebase/app';
-import { initializeAuth, getReactNativePersistence, Auth } from 'firebase/auth';
+import { initializeAuth, getReactNativePersistence, getAuth, Auth } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { getFirestore, initializeFirestore, persistentLocalCache, Firestore } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Constants from 'expo-constants';
-import { t } from '@/locales/i18n';
 
 const firebaseConfig = {
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -22,14 +20,22 @@ const firebaseConfig = {
 // Initialize Firebase App
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Initialize Auth conditionally to support SSR and Web
+// Initialize Auth conditionally to support Native and Web
 let auth: Auth;
-if (Platform.OS === 'ios' || Platform.OS === 'android') {
-  auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage)
-  });
+if (getApps().length > 1) {
+  auth = getAuth(app);
 } else {
-  auth = initializeAuth(app);
+  try {
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      auth = initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage)
+      });
+    } else {
+      auth = getAuth(app);
+    }
+  } catch (e) {
+    auth = getAuth(app);
+  }
 }
 
 // Initialize Firestore
@@ -53,7 +59,3 @@ if (Platform.OS !== 'web') {
 }
 
 export { app, auth, db };
-
-
-
-

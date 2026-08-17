@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, ScrollView, Text, TouchableOpacity, Modal, FlatList, KeyboardAvoidingView, Platform, StyleSheet, Switch, TextInput, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Text, TouchableOpacity, Modal, FlatList, Platform, StyleSheet, Switch, TextInput, Alert, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { analyzeReceiptImage } from '@/services/ai/gemini';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
@@ -17,6 +17,8 @@ import { useCards } from '@/features/cards/hooks/useCards';
 import { sanitizePriceInput, sanitizeTextInput } from '@/utils/sanitizers';
 import { dispatchWhatsAppReminder } from '@/utils/whatsapp';
 import { Ionicons } from '@expo/vector-icons';
+import { CategoryBadge } from '@/components/ui/CategoryBadge';
+import { getCategoryLabel, getBillingCycleLabel } from '@/utils/categoryMeta';
 import { SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useBudgetStore } from '@/store/useBudgetStore';
@@ -47,6 +49,21 @@ const formatLocalizedDate = (date: Date, localeCode: string): string => {
   } catch (e) {
     return date.toISOString().split('T')[0];
   }
+};
+
+const toFormDate = (value: unknown, fallback: Date): Date => {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+
+  if (value && typeof value === 'object' && 'toDate' in value) {
+    const toDate = (value as { toDate?: unknown }).toDate;
+    if (typeof toDate === 'function') {
+      const parsed = toDate.call(value);
+      if (parsed instanceof Date && !Number.isNaN(parsed.getTime())) return parsed;
+    }
+  }
+
+  const parsed = value ? new Date(String(value)) : null;
+  return parsed && !Number.isNaN(parsed.getTime()) ? parsed : fallback;
 };
 
 
@@ -109,6 +126,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
   const { colors } = useTheme();
   const { t, currentLanguage } = useTranslation();
   const activeLang = currentLanguage || 'en';
+  const isTurkish = activeLang === 'tr';
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
   const { data: existingSubscriptions } = useSubscriptions();
@@ -116,6 +134,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
 
   const isEdit = !!initialData;
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(isEdit);
 
   const webRenewalDateInputRef = React.useRef<any>(null);
   const triggerWebRenewalCalendar = () => {
@@ -158,14 +177,12 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
       amount: initialData?.amount || 0,
       currency: initialData?.currency || 'USD',
       billingCycle: initialData?.billingCycle || 'monthly',
-      renewalDate: initialData?.renewalDate?.toDate() || new Date(),
+      renewalDate: toFormDate(initialData?.renewalDate, new Date()),
       reminderOffset: initialData?.reminderOffset || '1_day',
-      isTrial: initialData?.isTrial || false,
-      trialEndDate: initialData?.trialEndDate?.toDate() || new Date(),
+      isTrial: initialData?.isTrial ?? initialData?.isFreeTrial ?? false,
+      trialEndDate: toFormDate(initialData?.trialEndDate, new Date()),
       hasContract: initialData?.hasContract || false,
-      contractEndDate: initialData?.contractEndDate 
-        ? (typeof initialData.contractEndDate.toDate === 'function' ? initialData.contractEndDate.toDate() : new Date(initialData.contractEndDate))
-        : new Date(Date.now() + 365 * 86400000),
+      contractEndDate: toFormDate(initialData?.contractEndDate, new Date(Date.now() + 365 * 86400000)),
       notes: initialData?.notes || '',
       status: initialData?.status || 'active',
       cardId: initialData?.cardId || null,
@@ -181,7 +198,6 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
     }
   }, [externalAmount]);
 
-  const isPaused = watch('status') === 'paused';
   const isTrial = watch('isTrial');
   const hasContract = watch('hasContract');
   const isSplit = watch('isSplit');
@@ -197,7 +213,10 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
     try {
       const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permissionResult.granted) {
-        Alert.alert("Permission Refused", "You need to grant camera roll permissions to scan receipts.");
+        Alert.alert(
+          isTurkish ? 'İzin gerekli' : 'Permission required',
+          isTurkish ? 'Fatura görselini taramak için fotoğraf galerisi izni vermelisin.' : 'You need to grant photo library permission to scan receipts.'
+        );
         return;
       }
 
@@ -205,7 +224,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         base64: true,
-        quality: 0.5,
+        quality: 0.35,
       });
 
       if (result.canceled || !result.assets || !result.assets[0].base64) {
@@ -228,12 +247,17 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         if (parsedData.billingCycle) setValue('billingCycle', parsedData.billingCycle);
       } else {
         triggerHaptic('error');
-        Alert.alert("Analysis Failed", "Could not extract subscription details from this image.");
+        Alert.alert(
+          isTurkish ? 'Fatura okunamadı' : 'Receipt could not be read',
+          isTurkish
+            ? 'Görselin net olduğundan emin olup tekrar dene. Büyük faturaların analizi biraz daha uzun sürebilir.'
+            : 'Make sure the image is clear and try again. Large receipts can take a little longer to analyze.'
+        );
       }
       
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "An unexpected error occurred during analysis.");
+      Alert.alert(isTurkish ? 'Hata' : 'Error', isTurkish ? 'Analiz sırasında beklenmeyen bir hata oluştu.' : 'An unexpected error occurred during analysis.');
     } finally {
       setIsAiScanning(false);
     }
@@ -252,17 +276,29 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             onPress={handleAiScan}
             disabled={isAiScanning}
             style={dynamicStyles.aiScanButton}
+            activeOpacity={0.85}
           >
             {isAiScanning ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <Ionicons name="scan-outline" size={20} color="#FFFFFF" />
-                  <Text style={dynamicStyles.aiScanText}>{t.features?.aiScannerAutoFill || 'Auto-Fill with AI Scanner'}</Text>
-                  <Ionicons name="sparkles" size={16} color="#FBBF24" />
-                </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12, width: '100%', overflow: 'hidden' }}>
+                <Ionicons name="scan-outline" size={20} color="#FFFFFF" style={{ flexShrink: 0 }} />
+                <Text style={[dynamicStyles.aiScanText, { flexShrink: 1, textAlign: 'center' }]} numberOfLines={1} ellipsizeMode="tail">
+                  {isTurkish ? 'Fatura görselinden AI ile doldur' : 'Fill from a receipt with AI'}
+                </Text>
+                <Ionicons name="sparkles" size={16} color="#FBBF24" style={{ flexShrink: 0 }} />
+              </View>
             )}
           </TouchableOpacity>
+        )}
+
+        {!isEdit && (
+          <View style={dynamicStyles.basicInfoHeading}>
+            <Text style={dynamicStyles.basicInfoTitle}>{isTurkish ? 'Temel bilgiler' : 'The essentials'}</Text>
+            <Text style={dynamicStyles.basicInfoDescription}>
+              {isTurkish ? 'Bu dört bilgiyle aboneliğini takip etmeye başlayabilirsin.' : 'These details are enough to start tracking.'}
+            </Text>
+          </View>
         )}
 
         {/* HERO AMOUNT ELEMENT (REDESIGNED) */}
@@ -313,73 +349,16 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
 
         <Controller
           control={control}
-          name="cardId"
-          render={({ field: { value, onChange } }) => {
-            const selectedCard = cards.find(c => c.id === value);
-            return (
-              <TouchableOpacity 
-                activeOpacity={0.8} 
-                onPress={() => setIsCardModalVisible(true)}
-                style={{ marginBottom: 16 }}
-              >
-                <View pointerEvents="none">
-                  <Input 
-                    label="Payment Method / Link Card" 
-                    placeholder={t.global.selectACard} 
-                    value={selectedCard ? `💳 ${selectedCard.type.toUpperCase()} - ${selectedCard.name} (•••• ${selectedCard.lastFourDigits || '****'})` : 'None / No Card'} 
-                    error={errors.cardId?.message} 
-                    editable={false}
-                  />
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-        />
-
-        <Controller
-          control={control}
           name="name"
           render={({ field: { onChange, onBlur, value } }) => (
-            <View>
-              <Input 
-                label={t.subs.name} 
-                placeholder={t.global.egNetflix} 
-                onBlur={onBlur} 
-                onChangeText={(text) => onChange(sanitizeTextInput(text, 30))} 
-                value={value} 
-                error={errors.name?.message} 
-              />
-              
-              {/* PREDEFINED SERVICES ROW */}
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
-                style={dynamicStyles.brandsScroll}
-                contentContainerStyle={{ paddingBottom: 8 }}
-              >
-                <View style={dynamicStyles.brandsContainer}>
-                  {POPULAR_BRANDS.map((brand) => {
-                    const isSelected = value?.toLowerCase() === brand.name.toLowerCase();
-                    return (
-                    <TouchableOpacity
-                      key={brand.name}
-                      style={[
-                        dynamicStyles.brandTextChip,
-                        isSelected && { backgroundColor: '#1E3A8A', borderColor: '#3B82F6', borderWidth: 1.5 }
-                      ]}
-                      onPress={() => {
-                        onChange(brand.name);
-                        if (!watch('category')) {
-                          control._formValues.category = brand.category;
-                        }
-                      }}
-                    >
-                      <Text style={[dynamicStyles.brandTextChipText, isSelected && { color: '#FFF', fontWeight: 'bold' }]}>{brand.name}</Text>
-                    </TouchableOpacity>
-                  )})}
-                </View>
-              </ScrollView>
-            </View>
+            <Input 
+              label={t.subs.name} 
+              placeholder={t.global.egNetflix} 
+              onBlur={onBlur} 
+              onChangeText={(text) => onChange(sanitizeTextInput(text, 30))} 
+              value={value ?? ''} 
+              error={errors.name?.message} 
+            />
           )}
         />
         
@@ -395,13 +374,38 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                 <Input 
                   label={t.subs.category} 
                   placeholder={t.global.selectACategory} 
-                  value={(t.categories as any)?.[value] || value} 
+                  value={value ? getCategoryLabel(value, isTurkish) : ''} 
                   error={errors.category?.message} 
                   editable={false}
                 />
               </View>
             </TouchableOpacity>
           )}
+        />
+
+        <Controller
+          control={control}
+          name="cardId"
+          render={({ field: { value } }) => {
+            const selectedCard = cards.find(c => c.id === value);
+            return (
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => setIsCardModalVisible(true)}
+                style={{ marginBottom: 16 }}
+              >
+                <View pointerEvents="none">
+                  <Input
+                    label={isTurkish ? 'Ödeme kartı (isteğe bağlı)' : 'Payment card (optional)'}
+                    placeholder={t.global.selectACard}
+                    value={selectedCard ? `💳 ${selectedCard.type.toUpperCase()} - ${selectedCard.name} (•••• ${selectedCard.lastFourDigits || '****'})` : (isTurkish ? 'Kart bağlama' : 'No card linked')}
+                    error={errors.cardId?.message}
+                    editable={false}
+                  />
+                </View>
+              </TouchableOpacity>
+            );
+          }}
         />
         
         <View style={dynamicStyles.reminderSection}>
@@ -424,7 +428,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       style={[dynamicStyles.cycleChip, isSel && dynamicStyles.cycleChipSelected]}
                     >
                       <Text style={[dynamicStyles.cycleChipText, isSel && dynamicStyles.cycleChipTextSelected]}>
-                        {cycle.label}
+                        {getBillingCycleLabel(cycle.value, isTurkish)}
                       </Text>
                     </TouchableOpacity>
                   );
@@ -521,6 +525,28 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             )}
           />
         )}
+
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => setIsAdvancedOpen((open) => !open)}
+          style={dynamicStyles.advancedToggle}
+        >
+          <View style={dynamicStyles.advancedToggleCopy}>
+            <Ionicons name="options-outline" size={20} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={dynamicStyles.advancedToggleTitle}>
+                {isTurkish ? 'Gelişmiş seçenekler' : 'Advanced options'}
+              </Text>
+              <Text style={dynamicStyles.advancedToggleDescription}>
+                {isTurkish ? 'Hatırlatma, deneme, sözleşme ve paylaşım' : 'Reminders, trials, contracts and sharing'}
+              </Text>
+            </View>
+          </View>
+          <Ionicons name={isAdvancedOpen ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        {isAdvancedOpen && (
+          <View>
         <View style={dynamicStyles.reminderSection}>
           <Text style={dynamicStyles.reminderLabel}>{t.global.reminderOffset}</Text>
           <Controller
@@ -529,10 +555,10 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             render={({ field: { onChange, value } }) => (
               <View style={dynamicStyles.chipRow}>
                 {[
-                  { label: 'None', value: 'none' },
-                  { label: '1 Day', value: '1_day' },
-                  { label: '3 Days', value: '3_days' },
-                  { label: '1 Week', value: '1_week' },
+                  { label: isTurkish ? 'Yok' : 'None', value: 'none' },
+                  { label: isTurkish ? '1 gün' : '1 day', value: '1_day' },
+                  { label: isTurkish ? '3 gün' : '3 days', value: '3_days' },
+                  { label: isTurkish ? '1 hafta' : '1 week', value: '1_week' },
                 ].map((opt) => {
                   const isSel = value === opt.value;
                   return (
@@ -561,7 +587,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
               placeholder={t.global.egSharedWithFamily} 
               onBlur={onBlur} 
               onChangeText={onChange} 
-              value={value} 
+              value={value ?? ''} 
               error={errors.notes?.message} 
               multiline 
               containerStyle={{ minHeight: 100 }}
@@ -586,7 +612,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                   triggerHaptic('medium');
                   onChange(val);
                 }}
-                value={value}
+                value={Boolean(value)}
               />
             )}
           />
@@ -598,7 +624,9 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
             name="trialEndDate"
             render={({ field: { onChange, value } }) => (
               <View style={{ width: '100%', marginBottom: 16 }}>
-                <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>İlk Para Çekilme Tarihi</Text>
+                <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>
+                  {isTurkish ? 'İlk para çekilme tarihi' : 'First payment date'}
+                </Text>
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={() => {
@@ -697,7 +725,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                   triggerHaptic('medium');
                   onChange(val);
                 }}
-                value={value}
+                value={Boolean(value)}
               />
             )}
           />
@@ -824,7 +852,8 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
           {isSplit && (
             <View style={{ marginTop: 12, backgroundColor: colors.surface, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}>
               {/* Auto-Divide Button */}
-              <TouchableOpacity
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primary + '15', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, marginBottom: 16, overflow: 'hidden' }}
                 onPress={() => {
                   triggerHaptic('medium');
                   const currentAmount = watch('amount') || 0;
@@ -836,20 +865,10 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                     });
                   }
                 }}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: 'rgba(59, 130, 246, 0.12)',
-                  padding: 12,
-                  borderRadius: 12,
-                  marginBottom: 16,
-                }}
-                activeOpacity={0.8}
               >
-                <Ionicons name="calculator-outline" size={18} color={colors.primary} style={{ marginRight: 6 }} />
-                <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 13 }}>
-                  ⚡ Auto-Divide Equally ({splitFields.length + 1} People)
+                <Ionicons name="calculator-outline" size={18} color={colors.primary} style={{ marginRight: 6, flexShrink: 0 }} />
+                <Text style={{ color: colors.primary, fontWeight: '800', fontSize: 13, flexShrink: 1, textAlign: 'center' }}>
+                  {isTurkish ? `⚡ Eşit böl (${splitFields.length + 1} kişi)` : `⚡ Split equally (${splitFields.length + 1} people)`}
                 </Text>
               </TouchableOpacity>
 
@@ -887,7 +906,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                   />
 
                   <TouchableOpacity 
-                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#10B98120', padding: 12, borderRadius: 8, marginTop: 8 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#10B98120', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, marginTop: 8, overflow: 'hidden' }}
                     onPress={() => {
                       const member = watch(`splitMembers.${index}`);
                       const subName = watch('name');
@@ -895,22 +914,24 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       dispatchWhatsAppReminder(member as any, subName, currency);
                     }}
                   >
-                    <Ionicons name="logo-whatsapp" size={20} color="#10B981" style={{ marginRight: 8 }} />
-                    <Text style={{ color: '#10B981', fontWeight: 'bold' }}>{t.form.sendReminder}</Text>
+                    <Ionicons name="logo-whatsapp" size={20} color="#10B981" style={{ marginRight: 8, flexShrink: 0 }} />
+                    <Text style={{ color: '#10B981', fontWeight: 'bold', flexShrink: 1, textAlign: 'center' }}>{t.form.sendReminder}</Text>
                   </TouchableOpacity>
                 </View>
               ))}
 
               <TouchableOpacity 
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 12, borderWidth: 1, borderColor: colors.primary, borderRadius: 8, borderStyle: 'dashed' }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 16, borderWidth: 1, borderColor: colors.primary, borderRadius: 8, borderStyle: 'dashed', overflow: 'hidden' }}
                 onPress={() => appendSplit({ id: Date.now().toString(), name: '', phone: '', shareAmount: 0, isPaid: false })}
               >
-                <Ionicons name="add" size={20} color={colors.primary} style={{ marginRight: 4 }} />
-                <Text style={{ color: colors.primary, fontWeight: 'bold' }}>{t.form.addPartner}</Text>
+                <Ionicons name="add" size={20} color={colors.primary} style={{ marginRight: 4, flexShrink: 0 }} />
+                <Text style={{ color: colors.primary, fontWeight: 'bold', flexShrink: 1, textAlign: 'center' }}>{t.form.addPartner}</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
+          </View>
+        )}
 
         <View style={dynamicStyles.buttonGroup}>
           <Button 
@@ -934,8 +955,10 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                 const projectedTotal = currentTotal + newCosts.gross;
 
                 if (projectedTotal > monthlyBudget) {
-                  const title = "Budget Warning";
-                  const msg = `This subscription will put you over your monthly budget of ${monthlyBudget} ${baseCurrency}. Save anyway?`;
+                  const title = isTurkish ? 'Bütçe uyarısı' : 'Budget warning';
+                  const msg = isTurkish
+                    ? `Bu abonelik aylık ${monthlyBudget} ${baseCurrency} bütçe limitini aşmana neden olur. Yine de kaydedilsin mi?`
+                    : `This subscription will put you over your monthly budget of ${monthlyBudget} ${baseCurrency}. Save anyway?`;
                   
                   if (Platform.OS === 'web') {
                     if (window.confirm(`${title}\n\n${msg}`)) {
@@ -946,8 +969,8 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       title,
                       msg,
                       [
-                        { text: "Cancel", style: "cancel" },
-                        { text: "Save Anyway", style: "destructive", onPress: () => onSubmit(data) }
+                        { text: isTurkish ? 'İptal' : 'Cancel', style: "cancel" },
+                        { text: isTurkish ? 'Yine de kaydet' : 'Save anyway', style: "destructive", onPress: () => onSubmit(data) }
                       ]
                     );
                   }
@@ -1010,9 +1033,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                       ]}
                     >
                       <View style={{ flex: 1, paddingRight: 16 }}>
-                        <Text style={[dynamicStyles.modalRowText, value === item.name && dynamicStyles.modalRowTextSelected]}>
-                          {(t.categories as any)?.[item.name] || item.name}
-                        </Text>
+                        <CategoryBadge category={item.name} size="md" />
                         {!!item.hint && (
                           <Text style={dynamicStyles.modalRowHint}>
                             {item.hint}
@@ -1052,7 +1073,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
               name="cardId"
               render={({ field: { onChange, value } }) => (
                 <FlatList
-                  data={[{ id: null, name: 'None / No Card' }, ...cards]}
+                  data={[{ id: null, name: isTurkish ? 'Kart bağlama' : 'No card linked' }, ...cards]}
                   keyExtractor={item => item.id || 'none'}
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={{ paddingBottom: 40 }}
@@ -1163,31 +1184,48 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
+  basicInfoHeading: {
+    marginBottom: 12,
+  },
+  basicInfoTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  basicInfoDescription: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    marginTop: 3,
+  },
   heroContainerRedesigned: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 32,
-    marginTop: 16,
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 20,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
   },
   postTrialLabel: {
     color: colors.primary, 
-    fontSize: 12, 
-    fontWeight: 'bold', 
-    marginBottom: 8, 
-    letterSpacing: 1
+    fontSize: 11, 
+    fontWeight: '800', 
+    marginBottom: 4, 
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   heroInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 20,
+    paddingVertical: 12,
+    width: '100%',
   },
   heroInputRedesigned: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: colors.primary,
-    fontFamily: 'Hanken Grotesk',
+    fontSize: 44,
+    fontWeight: '800',
+    color: colors.text,
     textAlign: 'center',
     marginRight: 12,
     minWidth: 120,
@@ -1195,15 +1233,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   currencySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.border,
-    paddingHorizontal: 12,
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    borderWidth: 1,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 16,
   },
   currencyText: {
     color: colors.text,
-    fontWeight: '600',
-    fontSize: 16,
+    fontWeight: '800',
+    fontSize: 14,
     marginRight: 4,
   },
   currencyChevron: {
@@ -1266,8 +1306,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   chip: {
     paddingVertical: 10,
     paddingHorizontal: 16,
-    backgroundColor: colors.border,
-    borderRadius: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -1276,18 +1316,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.primary,
   },
   chipText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.textSecondary,
   },
   chipTextSelected: {
     color: '#FFFFFF',
+    fontWeight: '800',
   },
   cycleChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
     backgroundColor: colors.surface,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -1296,8 +1337,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.primary,
   },
   cycleChipText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '700',
     color: colors.textSecondary,
   },
   cycleChipTextSelected: {
@@ -1327,6 +1368,33 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   buttonGroup: {
     marginTop: 8,
+  },
+  advancedToggle: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 16,
+    borderWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    padding: 16,
+  },
+  advancedToggleCopy: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  advancedToggleTitle: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  advancedToggleDescription: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
   },
   modalOverlay: {
     flex: 1,
@@ -1393,6 +1461,4 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: 'bold',
   }
 });
-
-
 

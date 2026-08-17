@@ -1,9 +1,7 @@
-import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ToastConfig } from 'react-native-toast-message';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { t } from '@/locales/i18n';
 
 const CustomSuccessToast = (props: any) => {
   const { colors, isDark } = useTheme();

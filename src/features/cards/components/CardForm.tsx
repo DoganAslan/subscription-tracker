@@ -1,6 +1,6 @@
 import i18n, { t } from '@/locales/i18n';
-import React, { useState } from 'react';
-import { View, ScrollView, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Modal, FlatList } from 'react-native';
+import { useState } from 'react';
+import { View, ScrollView, Text, TouchableOpacity, StyleSheet, Modal, FlatList } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { triggerHaptic } from '@/utils/haptics';
@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/Button';
 import { cardSchema, CardFormData } from '../schemas/card.schema';
 import { Card } from '@/services/firebase/types';
 import { useTheme } from '@/context/ThemeContext';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { CardWidget } from './CardWidget';
+import { Timestamp } from 'firebase/firestore';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 import { useTranslation } from '@/context/LanguageContext';
@@ -103,10 +104,10 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
             expiryYear: watchedYear || 2099,
             color: watchedColor || PREMIUM_COLORS[0].hex,
             currency: watchedCurrency || 'TRY',
-            limit: 0,
+            monthlyLimit: 0,
             isPinned: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now(),
           }}
           subscriptions={[]}
           style={{ marginHorizontal: 4 }}
@@ -482,4 +483,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-

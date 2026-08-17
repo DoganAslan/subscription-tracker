@@ -57,16 +57,16 @@ export const SavingBankWidget = () => {
         <View style={styles.glow} />
 
         <View style={styles.topRow}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, marginRight: 8, overflow: 'hidden' }}>
             <LinearGradient
               colors={['#10B981', '#059669']}
-              style={styles.iconBg}
+              style={[styles.iconBg, { flexShrink: 0 }]}
             >
               <Ionicons name="wallet-outline" size={24} color="#FFFFFF" />
             </LinearGradient>
-            <View>
-              <Text style={[styles.widgetLabel, { color: colors.textSecondary }]}>{t.walletPage?.savingsBank || 'SAVINGS BANK'}</Text>
-              <Text style={[styles.totalAmountText, { color: '#10B981' }]}>
+            <View style={{ flex: 1 }}>
+              <Text numberOfLines={1} style={[styles.widgetLabel, { color: colors.textSecondary }]}>{t.walletPage?.savingsBank || 'SAVINGS BANK'}</Text>
+              <Text numberOfLines={1} style={[styles.totalAmountText, { color: '#10B981' }]}>
                 +{currencySymbol}{totalSaved.toFixed(2)}
               </Text>
             </View>
@@ -77,11 +77,11 @@ export const SavingBankWidget = () => {
               triggerHaptic('selection');
               setIsModalVisible(true);
             }}
-            style={styles.setGoalBtn}
+            style={[styles.setGoalBtn, { flexShrink: 0 }]}
             activeOpacity={0.8}
           >
-            <Ionicons name="trophy-outline" size={14} color="#10B981" style={{ marginRight: 4 }} />
-            <Text style={styles.setGoalText}>
+            <Ionicons name="trophy-outline" size={14} color="#10B981" style={{ marginRight: 4, flexShrink: 0 }} />
+            <Text numberOfLines={1} style={styles.setGoalText}>
               {activeGoal ? (t.walletPage?.editGoal || 'Hedef Düzenle') : (t.walletPage?.setGoal || 'Hedef Belirle')}
             </Text>
           </TouchableOpacity>
@@ -202,11 +202,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 12,
+    overflow: 'hidden',
   },
   setGoalText: {
     color: '#10B981',
     fontSize: 12,
     fontWeight: '800',
+    flexShrink: 1,
   },
   goalBox: {
     marginTop: 14,

@@ -23,13 +23,13 @@ export const useSavingsStore = create<SavingsState>()(
       goals: [],
       totalSaved: 0,
       
-      addSavings: (amount: number, currency: string) => set((state) => {
+      addSavings: (amount: number) => set((state) => {
         // For a V1 MVP of this feature, we'll just add the raw amount.
         // In a production app, we would convert foreign currency to base currency first.
         return { totalSaved: state.totalSaved + amount };
       }),
 
-      setGoal: (title: string, targetAmount: number) => set((state) => ({
+      setGoal: (title: string, targetAmount: number) => set(() => ({
         goals: [
           {
             id: Math.random().toString(36).substring(7),

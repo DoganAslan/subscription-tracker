@@ -1,4 +1,3 @@
-import { t } from '@/locales/i18n';
 export const CANCELLATION_URLS: Record<string, string> = {
   'netflix': 'https://www.netflix.com/cancelplan',
   'spotify': 'https://www.spotify.com/account/cancel/',

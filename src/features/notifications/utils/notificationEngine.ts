@@ -14,9 +14,9 @@ export function getUpcomingAlerts(subscriptions: Subscription[]): Alert[] {
   const now = new Date();
 
   for (const sub of subscriptions) {
-    if (!sub.renewDate) continue;
+    if (!sub.renewalDate) continue;
 
-    const renewDate = parseSafeDate(sub.renewDate);
+    const renewDate = parseSafeDate(sub.renewalDate);
     const daysUntil = calculateDaysLeft(renewDate, now);
 
     if (daysUntil === 1) {
@@ -24,7 +24,7 @@ export function getUpcomingAlerts(subscriptions: Subscription[]): Alert[] {
         id: sub.id as string,
         subscriptionName: sub.name,
         title: "Upcoming Payment: " + sub.name,
-        body: "Your subscription for " + sub.name + " (" + sub.price + " " + (sub.currency || 'TRY') + ") is renewing tomorrow.",
+        body: "Your subscription for " + sub.name + " (" + sub.amount + " " + (sub.currency || 'TRY') + ") is renewing tomorrow.",
         isShared: !!sub.isSplit
       });
     }
@@ -32,6 +32,5 @@ export function getUpcomingAlerts(subscriptions: Subscription[]): Alert[] {
 
   return alerts;
 }
-
 
 

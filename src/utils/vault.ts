@@ -1,9 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sharing from 'expo-sharing';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
 import { Platform, Alert } from 'react-native';
-import { t } from '@/locales/i18n';
 
 const KNOWN_KEYS = [
   '@submate_biometric_enabled',
@@ -95,6 +94,5 @@ export const importVaultBackup = async (onSuccessReload: () => void) => {
     Alert.alert('Hata', 'Dosya okunamadı veya bozuk bir JSON şeması.');
   }
 };
-
 
 

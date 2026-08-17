@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { t } from '@/locales/i18n';
 
 export type ToastType = 'success' | 'error' | 'info';
 

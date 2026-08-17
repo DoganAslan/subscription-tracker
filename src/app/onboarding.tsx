@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, Animated, StyleSheet, Platform, FlatList } from 'react-native';
+import { useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, Dimensions, StyleSheet, Platform, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
-import { t } from '@/locales/i18n';
+import { useTranslation } from '@/context/LanguageContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -32,11 +32,37 @@ const SLIDES = [
   },
 ];
 
+const TURKISH_SLIDES = [
+  {
+    id: '1',
+    title: 'FİNANSAL KONTROL',
+    subtitle: 'Aktif abonelikleri, yenileme tarihlerini ve döviz etkilerini tek panelden takip et.',
+    icon: 'pulse',
+    color: '#3B82F6',
+  },
+  {
+    id: '2',
+    title: 'ATIL ABONELİKLERİ BUL',
+    subtitle: 'Unutulan denemeleri ve gereksiz harcamaları tespit et; iptal sayfalarına kolayca ulaş.',
+    icon: 'skull',
+    color: '#8B5CF6',
+  },
+  {
+    id: '3',
+    title: 'BÖLÜŞ VE TOPLA',
+    subtitle: 'Ortak masrafları otomatik hesapla, WhatsApp ile ödeme hatırlatıcıları gönder.',
+    icon: 'share-social',
+    color: '#10B981',
+  },
+];
+
 export default function OnboardingScreen() {
   const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollX = useRef(new Animated.Value(0)).current;
   const slidesRef = useRef<any>(null);
+  const { currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
+  const slides = isTurkish ? TURKISH_SLIDES : SLIDES;
 
   const { completeOnboarding } = useOnboardingStore();
 
@@ -54,7 +80,7 @@ export default function OnboardingScreen() {
   };
 
   const handleNext = () => {
-    if (currentIndex < SLIDES.length - 1) {
+    if (currentIndex < slides.length - 1) {
       const nextIndex = currentIndex + 1;
       
       // 1. STATE'I ZORLA GÜNCELLE: Tarayıcının momentum scroll insiyatifine bırakmıyoruz
@@ -74,7 +100,7 @@ export default function OnboardingScreen() {
     <View style={styles.container}>
       
       {/* BACKGROUND GLOW */}
-      <View pointerEvents="none" style={[styles.glowOrb, { backgroundColor: SLIDES[currentIndex].color }]} />
+      <View pointerEvents="none" style={[styles.glowOrb, { backgroundColor: slides[currentIndex].color }]} />
 
       {/* HEADER CONTROLS */}
       <View style={styles.header}>
@@ -83,7 +109,7 @@ export default function OnboardingScreen() {
           <Text style={styles.brandText}>SUBMATE v2.0</Text>
         </View>
         <TouchableOpacity onPress={handleLaunchApp} style={styles.interactiveArea}>
-          <Text style={styles.skipText}>SKIP</Text>
+          <Text style={styles.skipText}>{isTurkish ? 'GEÇ' : 'SKIP'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -91,7 +117,7 @@ export default function OnboardingScreen() {
       <View style={styles.sliderContainer}>
         <FlatList
           ref={slidesRef}
-          data={SLIDES}
+          data={slides}
           horizontal
           pagingEnabled
           scrollEnabled={Platform.OS !== 'web'} // Web'de mouse ile kaydırmanın çakışmasını önler
@@ -114,7 +140,7 @@ export default function OnboardingScreen() {
       {/* FOOTER CONTROLS */}
       <View style={styles.footer}>
         <View style={styles.pagination}>
-          {SLIDES.map((_, i) => (
+          {slides.map((_, i) => (
             <View
               key={i}
               style={[
@@ -122,7 +148,7 @@ export default function OnboardingScreen() {
                 { 
                   width: i === currentIndex ? 32 : 8, 
                   opacity: i === currentIndex ? 1 : 0.3, 
-                  backgroundColor: SLIDES[currentIndex].color 
+                  backgroundColor: slides[currentIndex].color 
                 }
               ]}
             />
@@ -132,10 +158,12 @@ export default function OnboardingScreen() {
         <TouchableOpacity 
           activeOpacity={0.8} 
           onPress={handleNext}
-          style={[styles.button, { backgroundColor: SLIDES[currentIndex].color }]}
+          style={[styles.button, { backgroundColor: slides[currentIndex].color }]}
         >
           <Text style={styles.buttonText}>
-            {currentIndex === SLIDES.length - 1 ? 'LAUNCH SYSTEM 🚀' : 'INITIALIZE NEXT'}
+            {currentIndex === slides.length - 1
+              ? (isTurkish ? 'UYGULAMAYI AÇ 🚀' : 'LAUNCH SYSTEM 🚀')
+              : (isTurkish ? 'DEVAM ET' : 'INITIALIZE NEXT')}
           </Text>
           <Ionicons name="arrow-forward" size={20} color="#FFF" />
         </TouchableOpacity>
@@ -183,6 +211,5 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
   interactiveArea: { padding: 10 }
 });
-
 
 

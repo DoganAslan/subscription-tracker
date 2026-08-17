@@ -1,6 +1,5 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import {
-  ScrollView,
   FlatList,
   Text,
   SafeAreaView,
@@ -9,9 +8,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
-  InteractionManager,
   TextInput,
   Image,
+  Modal,
+  StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -21,36 +21,50 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useCards } from '@/features/cards/hooks/useCards';
-import { useAnalytics } from '@/hooks/useAnalytics';
-import { useTheme } from '@/context/ThemeContext';
-import { useTranslation } from '@/context/LanguageContext';
-import { useCurrencyStore } from '@/store/useCurrencyStore';
-import { useAuthStore } from '@/store/useAuthStore';
-import { useProfileStore } from '@/store/useProfileStore';
-
 import { SubscriptionCard } from '@/features/subscriptions/components/SubscriptionCard';
 import { SubscriptionSkeleton } from '@/features/subscriptions/components/SubscriptionSkeleton';
 import { FloatingActionButton } from '@/components/FloatingActionButton';
 import { DoomBanner } from '@/components/DoomBanner';
-import { CardWidget } from '@/components/CardWidget';
 import { CategoryBreakdownCard } from '@/features/dashboard/components/CategoryBreakdownCard';
-
-import { convertCurrency, getMarketRatesWithDynamicCache, ExchangeRates, SUPPORTED_CURRENCIES } from '@/utils/currency';
+import { ProfileDrawerModal } from '@/components/ProfileDrawerModal';
+import { SubmateWrappedModal } from '@/features/analytics/components/SubmateWrappedModal';
+import { AiChatModal } from '@/features/ai/components/AiChatModal';
+import { AiSummaryCard } from '@/features/ai/components/AiSummaryCard';
+import { getSavedQuickActions, QuickActionItem, ALL_QUICK_ACTIONS } from '@/features/dashboard/services/quickActionsStore';
+import { exportVaultBackup } from '@/utils/vault';
+import { exportCsvReport } from '@/utils/reportExporter';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { calculateMonthlyCosts } from '@/utils/calculations';
-import { calculateDoomStatus, getTrialHoursLeft } from '@/utils/date';
+import { getSavedHeroGradient, saveHeroGradient, HERO_GRADIENT_PRESETS } from '@/utils/heroTheme';
+import { useTheme } from '@/context/ThemeContext';
+import { useTranslation } from '@/context/LanguageContext';
+import { SpringButton } from '@/components/SpringButton';
+import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useProfileStore } from '@/store/useProfileStore';
 import { triggerHaptic } from '@/utils/haptics';
-import { requestNotificationPermissions } from '@/utils/notifications';
+import { requestNotificationPermissions } from '@/services/notificationService';
+import { updateWidgetData } from '@/services/background/widgetSync';
+import { getMarketRatesWithDynamicCache, ExchangeRates, SUPPORTED_CURRENCIES } from '@/utils/currency';
+import { calculateDoomStatus, getTrialHoursLeft } from '@/utils/date';
 
 const PROFILE_NAME_KEY = '@profile_name';
 
 export default function DashboardScreen() {
-  const [liveRates, setLiveRates] = useState<ExchangeRates | null>(null);
+  const [, setLiveRates] = useState<ExchangeRates | null>(null);
   const [showBalance, setShowBalance] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [userName, setUserName] = useState<string>('');
+  const [heroColors, setHeroColors] = useState<[string, string, string]>(['#2563EB', '#1D4ED8', '#1E40AF']);
+  const [isHeroThemeModalVisible, setHeroThemeModalVisible] = useState(false);
+  const [quickActions, setQuickActions] = useState<QuickActionItem[]>(ALL_QUICK_ACTIONS);
+  const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
+  const [isWrappedModalOpen, setIsWrappedModalOpen] = useState(false);
+  const [isAiChatVisible, setIsAiChatVisible] = useState(false);
 
-  const { t } = useTranslation();
-  const { data: subscriptions, isLoading, isError, refetch, isRefetching } = useSubscriptions();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
+  const { data: subscriptions, isLoading, refetch, isRefetching } = useSubscriptions();
   const { data: realCards = [] } = useCards();
   const { baseCurrency, setBaseCurrency } = useCurrencyStore();
   const user = useAuthStore(state => state.user);
@@ -59,17 +73,26 @@ export default function DashboardScreen() {
   const { colors, isDark } = useTheme();
 
   const insets = useSafeAreaInsets();
-  const paddingTop = Math.max(insets.top + 8, Platform.OS === 'web' ? 16 : 12);
+  const paddingTop = Math.max(insets.top + 6, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 6 : 16);
 
   useEffect(() => {
     requestNotificationPermissions();
     getMarketRatesWithDynamicCache().then(setLiveRates).catch(console.error);
+    getSavedHeroGradient().then(setHeroColors);
+    getSavedQuickActions().then(setQuickActions);
 
     AsyncStorage.getItem(PROFILE_NAME_KEY).then(savedName => {
       if (savedName) setUserName(savedName);
-      else setUserName(user?.displayName || 'Tega');
+      else setUserName(user?.displayName || '');
     });
   }, [user]);
+
+  // Keep every installed Android home-screen widget in sync whenever the
+  // subscription list or the user's display currency changes.
+  useEffect(() => {
+    if (!subscriptions) return;
+    updateWidgetData(subscriptions, baseCurrency).catch(() => undefined);
+  }, [subscriptions, baseCurrency]);
 
   const activeCurrency = baseCurrency || 'USD';
   const currencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === activeCurrency)?.symbol || activeCurrency;
@@ -94,7 +117,7 @@ export default function DashboardScreen() {
   const upcomingPayments = useMemo(() => {
     if (!subscriptions) return [];
     return [...subscriptions]
-      .filter(sub => !sub.isPaused)
+      .filter(sub => sub.status !== 'paused')
       .sort((a, b) => {
         const dateA = a.renewalDate?.toMillis ? a.renewalDate.toMillis() : 0;
         const dateB = b.renewalDate?.toMillis ? b.renewalDate.toMillis() : 0;
@@ -111,7 +134,7 @@ export default function DashboardScreen() {
     let gross = 0;
     if (Array.isArray(subscriptions)) {
       subscriptions.forEach(sub => {
-        if (sub.isPaused || sub.status === 'paused') return;
+        if (sub.status === 'paused') return;
         const costs = calculateMonthlyCosts(sub, activeCurrency);
         gross += costs.gross;
       });
@@ -147,12 +170,17 @@ export default function DashboardScreen() {
   // Greeting helper
   const getGreeting = () => {
     const hour = new Date().getHours();
+    if (isTurkish) {
+      if (hour < 12) return 'Günaydın';
+      if (hour < 18) return 'İyi günler';
+      return 'İyi akşamlar';
+    }
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
   };
 
-  const formattedWhole = Math.floor(totalMonthlySpend).toLocaleString('en-US');
+  const formattedWhole = Math.floor(totalMonthlySpend).toLocaleString(isTurkish ? 'tr-TR' : 'en-US');
   const formattedDecimals = (totalMonthlySpend % 1).toFixed(2).substring(1); // e.g. .34
 
   const categoryBreakdown = useMemo(() => {
@@ -197,7 +225,10 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 style={styles.profileRow}
                 activeOpacity={0.8}
-                onPress={() => router.push('/(tabs)/settings')}
+                onPress={() => {
+                  triggerHaptic('impactLight');
+                  setIsProfileDrawerOpen(true);
+                }}
               >
                 {profileImage || user?.photoURL ? (
                   <Image source={{ uri: profileImage || user?.photoURL || '' }} style={styles.avatar} />
@@ -228,7 +259,7 @@ export default function DashboardScreen() {
               <Ionicons name="search-outline" size={20} color={colors.textSecondary} style={{ marginRight: 10 }} />
               <TextInput
                 style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search subscriptions, transactions..."
+                placeholder={isTurkish ? 'Abonelik veya işlem ara...' : 'Search subscriptions, transactions...'}
                 placeholderTextColor={colors.textSecondary}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
@@ -246,10 +277,10 @@ export default function DashboardScreen() {
               <View style={[styles.searchResultsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 <View style={styles.searchResultsHeader}>
                   <Text style={[styles.searchResultsTitle, { color: colors.text }]}>
-                    Search Results ({filteredSubscriptions.length})
+                    {isTurkish ? `Arama Sonuçları (${filteredSubscriptions.length})` : `Search Results (${filteredSubscriptions.length})`}
                   </Text>
                   <TouchableOpacity onPress={() => setSearchQuery('')}>
-                    <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>Clear</Text>
+                    <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '700' }}>{isTurkish ? 'Temizle' : 'Clear'}</Text>
                   </TouchableOpacity>
                 </View>
 
@@ -262,9 +293,11 @@ export default function DashboardScreen() {
                 ) : (
                   <View style={styles.noSearchBox}>
                     <Ionicons name="search-outline" size={32} color={colors.textSecondary} style={{ marginBottom: 6 }} />
-                    <Text style={[styles.noSearchTitle, { color: colors.text }]}>No matching subscriptions</Text>
+                    <Text style={[styles.noSearchTitle, { color: colors.text }]}>
+                      {isTurkish ? 'Eşleşen abonelik yok' : 'No matching subscriptions'}
+                    </Text>
                     <Text style={[styles.noSearchSubtitle, { color: colors.textSecondary }]}>
-                      We couldn't find anything matching "{searchQuery}"
+                      {isTurkish ? `“${searchQuery}” ile eşleşen bir kayıt bulamadık.` : `We couldn't find anything matching “${searchQuery}”.`}
                     </Text>
                   </View>
                 )}
@@ -273,20 +306,20 @@ export default function DashboardScreen() {
 
             {/* 3. HERO BALANCE GRADIENT CARD */}
             <LinearGradient
-              colors={['#2563EB', '#1D4ED8', '#1E40AF']}
+              colors={heroColors}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.heroCard}
             >
               {/* Card Header Row */}
               <View style={styles.heroCardHeader}>
-                <Text style={styles.heroCardTitle}>Total Monthly Spend</Text>
+                <Text style={styles.heroCardTitle}>{isTurkish ? 'Toplam aylık harcama' : 'Total monthly spend'}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                   <TouchableOpacity onPress={() => setShowBalance(!showBalance)} activeOpacity={0.7}>
                     <Ionicons name={showBalance ? 'eye-outline' : 'eye-off-outline'} size={20} color="#E0E7FF" />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => router.push('/(tabs)/settings')} activeOpacity={0.7}>
-                    <Ionicons name="ellipsis-horizontal" size={20} color="#E0E7FF" />
+                  <TouchableOpacity onPress={() => setHeroThemeModalVisible(true)} activeOpacity={0.7}>
+                    <Ionicons name="color-palette-outline" size={20} color="#E0E7FF" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -308,82 +341,62 @@ export default function DashboardScreen() {
               <View style={styles.heroBadgeRow}>
                 <View style={styles.heroBadge}>
                   <Ionicons name="arrow-up" size={12} color="#10B981" />
-                  <Text style={styles.heroBadgeText}>8.2% this month</Text>
+                  <Text style={styles.heroBadgeText}>{isTurkish ? 'Bu ay %8,2' : '8.2% this month'}</Text>
                 </View>
-              </View>
-
-              {/* Currency Selectors */}
-              <View style={styles.currencyPillsRow}>
-                {['USD', 'EUR', 'GBP', 'TRY'].map(curr => {
-                  const isActive = activeCurrency === curr;
-                  return (
-                    <TouchableOpacity
-                      key={curr}
-                      onPress={() => {
-                        triggerHaptic('light');
-                        setBaseCurrency(curr);
-                      }}
-                      style={[
-                        styles.currencyPill,
-                        isActive ? styles.currencyPillActive : styles.currencyPillInactive,
-                      ]}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.currencyPillText, isActive ? styles.currencyPillTextActive : styles.currencyPillTextInactive]}>
-                        {curr === 'USD' ? '🇺🇸 ' : curr === 'EUR' ? '🇪🇺 ' : curr === 'GBP' ? '🇬🇧 ' : '🇹🇷 '}
-                        {curr}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
               </View>
             </LinearGradient>
 
-            {/* 4. QUICK ACTION GRID */}
+            <AiSummaryCard
+              subscriptions={subscriptions || []}
+              onPress={() => setIsAiChatVisible(true)}
+            />
+
+            {/* 4. CURATED QUICK ACTIONS */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, marginBottom: 8 }}>
+              <Text style={{ fontSize: 12, fontWeight: '800', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                {isTurkish ? 'Hızlı İşlemler' : 'Quick Actions'}
+              </Text>
+            </View>
+
+            {/* QUICK ACTIONS GRID */}
             <View style={styles.quickActionsGrid}>
-              <TouchableOpacity
-                style={[styles.quickActionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                activeOpacity={0.8}
-                onPress={() => router.push('/(tabs)/subscriptions/add')}
-              >
-                <View style={[styles.quickActionIconBg, { backgroundColor: 'rgba(37, 99, 235, 0.12)' }]}>
-                  <Ionicons name="add" size={22} color="#2563EB" />
-                </View>
-                <Text style={[styles.quickActionText, { color: colors.text }]}>Add Sub</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.quickActionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                activeOpacity={0.8}
-                onPress={() => router.push('/(tabs)/subscriptions')}
-              >
-                <View style={[styles.quickActionIconBg, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
-                  <Ionicons name="swap-horizontal" size={20} color="#10B981" />
-                </View>
-                <Text style={[styles.quickActionText, { color: colors.text }]}>Split Share</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.quickActionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                activeOpacity={0.8}
-                onPress={() => router.push('/(tabs)/wallet')}
-              >
-                <View style={[styles.quickActionIconBg, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
-                  <Ionicons name="card" size={20} color="#F59E0B" />
-                </View>
-                <Text style={[styles.quickActionText, { color: colors.text }]}>Cards</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.quickActionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
-                activeOpacity={0.8}
-                onPress={() => router.push('/(tabs)/analytics')}
-              >
-                <View style={[styles.quickActionIconBg, { backgroundColor: 'rgba(139, 92, 246, 0.12)' }]}>
-                  <Ionicons name="stats-chart" size={20} color="#8B5CF6" />
-                </View>
-                <Text style={[styles.quickActionText, { color: colors.text }]}>Analytics</Text>
-              </TouchableOpacity>
+              {quickActions
+                .filter(item => item.enabled && ['add-sub', 'cards', 'split-share'].includes(item.id))
+                .map(item => {
+                  const title = isTurkish ? item.titleTr : item.titleEn;
+                  return (
+                    <SpringButton
+                      key={item.id}
+                      style={[styles.quickActionButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                      onPress={() => {
+                        triggerHaptic('impactLight');
+                        if (item.actionType === 'route' && item.routePath) {
+                          router.push(item.routePath as any);
+                        } else if (item.actionType === 'action_vault') {
+                          exportVaultBackup();
+                        } else if (item.actionType === 'action_csv') {
+                          const itemsList = (subscriptions || []).map(s => ({
+                            name: s.name,
+                            category: s.category,
+                            amount: s.amount,
+                            currency: s.currency,
+                            billingCycle: s.billingCycle,
+                            status: s.status ?? 'active',
+                            notes: s.notes,
+                          }));
+                          exportCsvReport(itemsList, baseCurrency);
+                        }
+                      }}
+                    >
+                      <View style={[styles.quickActionIconBg, { backgroundColor: item.badgeColorBg, flexShrink: 0 }]}>
+                        <Ionicons name={item.icon as any} size={20} color={item.color} />
+                      </View>
+                      <Text numberOfLines={1} style={[styles.quickActionText, { color: colors.text }]}>
+                        {title}
+                      </Text>
+                    </SpringButton>
+                  );
+                })}
             </View>
 
             {/* 5. DOOM BANNERS & TRIALS */}
@@ -404,9 +417,9 @@ export default function DashboardScreen() {
             {/* 6. SPENDING OVERVIEW & DONUT CARD */}
             <View style={[styles.overviewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.overviewHeader}>
-                <Text style={[styles.overviewTitle, { color: colors.text }]}>Spending Overview</Text>
+                <Text style={[styles.overviewTitle, { color: colors.text }]}>{isTurkish ? 'Harcama özeti' : 'Spending overview'}</Text>
                 <View style={styles.monthBadge}>
-                  <Text style={styles.monthBadgeText}>This Month</Text>
+                  <Text style={styles.monthBadgeText}>{isTurkish ? 'Bu ay' : 'This month'}</Text>
                   <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
                 </View>
               </View>
@@ -418,7 +431,7 @@ export default function DashboardScreen() {
                     {currencySymbol}{formattedWhole}{formattedDecimals}
                   </Text>
                   <Text style={[styles.overviewLimitText, { color: colors.textSecondary }]}>
-                    of {currencySymbol}3,500 limit
+                    {isTurkish ? `${currencySymbol}3.500 limitin` : `of ${currencySymbol}3,500 limit`}
                   </Text>
 
                   {/* Progress Bar */}
@@ -434,7 +447,7 @@ export default function DashboardScreen() {
                     />
                   </View>
                   <Text style={{ fontSize: 12, fontWeight: '700', color: '#2563EB', marginTop: 4 }}>
-                    {Math.min(100, Math.round((totalMonthlySpend / 3500) * 100))}% Used
+                    {isTurkish ? `%${Math.min(100, Math.round((totalMonthlySpend / 3500) * 100))} kullanıldı` : `${Math.min(100, Math.round((totalMonthlySpend / 3500) * 100))}% used`}
                   </Text>
                 </View>
 
@@ -456,14 +469,15 @@ export default function DashboardScreen() {
             </View>
 
             <CategoryBreakdownCard breakdown={metrics.categoryBreakdown} monthlyTotal={metrics.monthlyTotal} subscriptions={subscriptions} />
-
             {/* 7. RECENT TRANSACTIONS / SEARCH RESULTS HEADER */}
             <View style={styles.sectionHeader}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                {isSearching ? `Search Results (${filteredSubscriptions.length})` : 'Recent Transactions'}
+                {isSearching
+                  ? (isTurkish ? `Arama Sonuçları (${filteredSubscriptions.length})` : `Search Results (${filteredSubscriptions.length})`)
+                  : (isTurkish ? 'Son İşlemler' : 'Recent Transactions')}
               </Text>
               <TouchableOpacity onPress={() => router.push('/(tabs)/subscriptions')} activeOpacity={0.7}>
-                <Text style={styles.seeAllText}>See all</Text>
+                <Text style={styles.seeAllText}>{isTurkish ? 'Tümünü Gör' : 'See all'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -472,38 +486,107 @@ export default function DashboardScreen() {
           isSearching ? (
             <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="search-outline" size={44} color={colors.textSecondary} style={{ marginBottom: 10 }} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Results Found</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                {isTurkish ? 'Sonuç Bulunamadı' : 'No Results Found'}
+              </Text>
               <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                No subscriptions match "{searchQuery}"
+                {isTurkish ? `"${searchQuery}" ile eşleşen abonelik bulunamadı` : `No subscriptions match "${searchQuery}"`}
               </Text>
               <TouchableOpacity
                 style={styles.emptyButton}
                 onPress={() => setSearchQuery('')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.emptyButtonText}>Clear Search</Text>
+                <Text style={styles.emptyButtonText}>{isTurkish ? 'Aramayı Temizle' : 'Clear Search'}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="receipt-outline" size={48} color={colors.textSecondary} style={{ marginBottom: 12 }} />
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No Subscriptions Found</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                {isTurkish ? 'Henüz Abonelik Yok' : 'No Subscriptions Found'}
+              </Text>
               <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-                Tap the button below to add your first subscription!
+                {isTurkish ? 'İlk aboneliğinizi eklemek için aşağıdaki butona dokunun!' : 'Tap the button below to add your first subscription!'}
               </Text>
               <TouchableOpacity
                 style={styles.emptyButton}
                 onPress={() => router.push('/(tabs)/subscriptions/add')}
                 activeOpacity={0.8}
               >
-                <Text style={styles.emptyButtonText}>+ Add Subscription</Text>
+                <Text style={styles.emptyButtonText}>{isTurkish ? '+ Abonelik Ekle' : '+ Add Subscription'}</Text>
               </TouchableOpacity>
             </View>
           )
         }
       />
 
-      <FloatingActionButton onPress={() => router.push('/(tabs)/subscriptions/add')} />
+      <FloatingActionButton
+        color="#8B5CF6"
+        icon="sparkles"
+        label={isTurkish ? 'SubMate AI’a sor' : 'Ask SubMate AI'}
+        onPress={() => setIsAiChatVisible(true)}
+      />
+
+      <AiChatModal visible={isAiChatVisible} onClose={() => setIsAiChatVisible(false)} />
+
+      {/* HERO THEME PICKER MODAL */}
+      <Modal visible={isHeroThemeModalVisible} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.65)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: colors.surface, borderRadius: 20, padding: 20, width: '100%', maxWidth: 360, borderWidth: 1, borderColor: colors.border }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="color-palette-outline" size={22} color={colors.primary} />
+                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>{isTurkish ? 'Kart teması seç' : 'Choose card theme'}</Text>
+              </View>
+              <TouchableOpacity onPress={() => setHeroThemeModalVisible(false)}>
+                <Ionicons name="close" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ gap: 10 }}>
+              {HERO_GRADIENT_PRESETS.map((preset) => (
+                <TouchableOpacity
+                  key={preset.id}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    triggerHaptic('selection');
+                    saveHeroGradient(preset.id).then((c) => {
+                      setHeroColors(c);
+                      setHeroThemeModalVisible(false);
+                    });
+                  }}
+                  style={{ borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: colors.border }}
+                >
+                  <LinearGradient colors={preset.colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={{ padding: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 14 }}>{preset.nameTr}</Text>
+                    <Ionicons name="sparkles" size={16} color="#FFFFFF" />
+                  </LinearGradient>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Side Profile Drawer Modal */}
+      <ProfileDrawerModal
+        visible={isProfileDrawerOpen}
+        onClose={() => setIsProfileDrawerOpen(false)}
+        userName={userName}
+        userEmail={user?.email || undefined}
+        userPhoto={profileImage || user?.photoURL || undefined}
+        subscriptions={subscriptions || []}
+        onOpenWrapped={() => setIsWrappedModalOpen(true)}
+      />
+
+      {/* SubMate Annual Wrapped Modal */}
+      <SubmateWrappedModal
+        visible={isWrappedModalOpen}
+        onClose={() => setIsWrappedModalOpen(false)}
+        subscriptions={subscriptions || []}
+        baseCurrency={baseCurrency}
+      />
     </View>
   );
 }
@@ -625,7 +708,7 @@ const styles = StyleSheet.create({
   heroBadgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 0,
   },
   heroBadge: {
     flexDirection: 'row',
@@ -676,10 +759,12 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 16,
     paddingVertical: 14,
+    paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     gap: 6,
+    overflow: 'hidden',
   },
   quickActionIconBg: {
     width: 40,
@@ -687,10 +772,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   quickActionText: {
     fontSize: 12,
     fontWeight: '700',
+    flexShrink: 1,
+    textAlign: 'center',
   },
   overviewCard: {
     borderRadius: 20,
@@ -845,4 +933,3 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 });
-

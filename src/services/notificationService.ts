@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { getNextRenewalDate } from '@/features/dashboard/utils/calculations';
+import i18n from '@/locales/i18n';
 
 // Configure how notifications appear when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -15,6 +16,7 @@ Notifications.setNotificationHandler({
 });
 
 const getNotifId = (subId: string): string => `sub_remind_${subId}`;
+const getContractDoomNotifId = (subId: string): string => `sub_contract_doom_${subId}`;
 
 export const setupNotificationChannel = async () => {
   if (Platform.OS === 'android') {
@@ -107,8 +109,18 @@ export const cancelSubReminder = async (subId: string): Promise<void> => {
   }
 };
 
+export const cancelContractDoomReminder = async (subId: string): Promise<void> => {
+  if (Platform.OS === 'web') return;
+
+  try {
+    await Notifications.cancelScheduledNotificationAsync(getContractDoomNotifId(subId));
+  } catch {
+    // The notification may not have been scheduled yet.
+  }
+};
+
 export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Date): Promise<boolean> => {
-  if (Platform.OS === 'web' || subscription.isPaused === true) return false;
+  if (Platform.OS === 'web' || subscription?.status === 'paused') return false;
 
   const hasPermission = await requestNotificationPermissions();
   if (!hasPermission) return false;
@@ -126,14 +138,12 @@ export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Da
   triggerDate.setDate(triggerDate.getDate() - 2);
   triggerDate.setHours(9, 0, 0, 0);
 
-  let isImmediateTest = false;
 
   // If trigger date has passed, check if renewal is still in the future
   if (triggerDate.getTime() <= Date.now()) {
     if (renewalDate.getTime() > Date.now()) {
       // Send quick reminder in 5 seconds
       triggerDate = new Date(Date.now() + 5000);
-      isImmediateTest = true;
     } else {
       // The renewal date is in the past! Advance to the NEXT renewal date cycle
       const cycle = subscription.billingCycle || 'monthly';
@@ -146,7 +156,6 @@ export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Da
       if (triggerDate.getTime() <= Date.now()) {
         if (renewalDate.getTime() > Date.now()) {
           triggerDate = new Date(Date.now() + 5000);
-          isImmediateTest = true;
         } else {
           return false;
         }
@@ -155,8 +164,38 @@ export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Da
   }
 
   const notifIdentifier = getNotifId(subscription.id);
-  const title = isImmediateTest ? '🔔 Abonelik Yaklaşıyor' : '⏳ Ödeme Hatırlatıcı';
-  const body = `${subscription.name} yenilenmesine 2 gün kaldı!`;
+
+  // Calculate exact days remaining for dynamic text
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+
+  const renMidnight = new Date(renewalDate);
+  renMidnight.setHours(0, 0, 0, 0);
+
+  const diffMs = renMidnight.getTime() - todayMidnight.getTime();
+  const daysLeft = Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
+
+  const isEnglish = (i18n.language || 'tr').startsWith('en');
+
+  let title = '⏳ Ödeme Hatırlatıcı';
+  let body = `${subscription.name} yenilenmesine ${daysLeft} gün kaldı!`;
+
+  if (daysLeft === 0) {
+    title = isEnglish ? '💳 Payment Due Today!' : '💳 Bugün Ödemeniz Var!';
+    body = isEnglish
+      ? `Your ${subscription.name} subscription payment is due today.`
+      : `${subscription.name} aboneliğinizin ödemesi bugün gerçekleşiyor.`;
+  } else if (daysLeft === 1) {
+    title = isEnglish ? '⏳ Payment Due Tomorrow' : '⏳ Yarın Ödemeniz Var';
+    body = isEnglish
+      ? `Your ${subscription.name} subscription renews tomorrow (1 day).`
+      : `${subscription.name} aboneliğinizin yenilenmesine 1 gün kaldı (yarın).`;
+  } else {
+    title = isEnglish ? '⏳ Payment Reminder' : '⏳ Ödeme Hatırlatıcı';
+    body = isEnglish
+      ? `Your ${subscription.name} subscription renews in ${daysLeft} days.`
+      : `${subscription.name} yenilenmesine ${daysLeft} gün kaldı!`;
+  }
 
   // Strategy 1: Try Date trigger first
   try {
@@ -231,10 +270,10 @@ export const scheduleContractDoomReminder = async (subscription: any): Promise<b
     }
   }
 
-  const doomIdentifier = `sub_contract_doom_${subscription.id}`;
+  const doomIdentifier = getContractDoomNotifId(subscription.id);
 
   try {
-    await Notifications.cancelScheduledNotificationAsync(doomIdentifier).catch(() => {});
+    await cancelContractDoomReminder(subscription.id);
 
     const title = isImmediateTest ? '⚠️ Taahhüt Bitiş Uyarısı' : '⚠️ Taahhüt Bitiş Uyarısı';
     const body = `${subscription.name} aboneliğinizin taahhüdü 7 gün sonra bitiyor. Fiyat artışına dikkat edin!`;
@@ -287,7 +326,7 @@ export const resyncAllReminders = async (subscriptions: any[]): Promise<void> =>
 
     if (subscriptions && Array.isArray(subscriptions)) {
       for (const sub of subscriptions) {
-        if (!sub.isPaused && sub.renewalDate) {
+        if (sub.status !== 'paused' && sub.renewalDate) {
           const rawDate = typeof sub.renewalDate?.toDate === 'function'
             ? sub.renewalDate.toDate()
             : new Date(sub.renewalDate);
@@ -303,4 +342,3 @@ export const resyncAllReminders = async (subscriptions: any[]): Promise<void> =>
     console.error('Failed to resync reminders:', error);
   }
 };
-

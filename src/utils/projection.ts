@@ -1,5 +1,4 @@
 import { ExchangeRates } from './currency';
-import { t } from '@/locales/i18n';
 
 export interface MonthBarData {
   monthName: string;
@@ -29,7 +28,7 @@ export const generate6MonthProjection = (
   const subs = Array.isArray(subscriptions) ? subscriptions : [];
 
   subs.forEach(sub => {
-    if (!sub || sub.isPaused) return; // Skip paused subscriptions
+    if (!sub || sub.status === 'paused') return; // Skip paused subscriptions
 
     // Calculate core normalized monthly cost in sub's own currency
     let monthlyCostInSubCurrency = 0;

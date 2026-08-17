@@ -1,5 +1,4 @@
 import { Card, Subscription } from '@/services/firebase/types';
-import { t } from '@/locales/i18n';
 
 /**
  * Calculates the total cost of all active subscriptions linked to a specific card for the current month.
@@ -38,7 +37,7 @@ export function getCardExpenses(cardId: string, subscriptions: Subscription[]): 
 }
 
 /**
- * Safety check logic that flags a card as "Unhealthy" if totalExpenses > card.limit.
+ * Safety check logic that flags a card as "Unhealthy" if totalExpenses exceeds its monthly limit.
  * Also checks if the card is expired or nearing expiration.
  */
 export function getCardHealthStatus(card: Card, subscriptions: Subscription[]): {
@@ -48,7 +47,7 @@ export function getCardHealthStatus(card: Card, subscriptions: Subscription[]): 
 } {
   const totalExpenses = getCardExpenses(card.id!, subscriptions);
   
-  if (totalExpenses > card.limit) {
+  if (card.monthlyLimit != null && totalExpenses > card.monthlyLimit) {
     return { isHealthy: false, totalExpenses, reason: 'limit_exceeded' };
   }
   
@@ -68,6 +67,5 @@ export function getCardHealthStatus(card: Card, subscriptions: Subscription[]): 
   
   return { isHealthy: true, totalExpenses };
 }
-
 
 

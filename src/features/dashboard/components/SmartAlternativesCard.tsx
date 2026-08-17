@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, LayoutAnimation, UIManager, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, UIManager, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
-import { getSmartAlternatives, RecommendedTip } from '../utils/alternativesDb';
+import { getSmartAlternatives } from '../utils/alternativesDb';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { triggerHaptic } from '@/utils/haptics';

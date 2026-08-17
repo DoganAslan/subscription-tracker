@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
@@ -15,7 +14,8 @@ interface Props {
 
 export function UsageTrackerCard({ subscription, onTrackUsage }: Props) {
   const { colors } = useTheme();
-  const { t } = useTranslation();
+  const { currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
   const currencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || baseCurrency;
 
@@ -25,15 +25,15 @@ export function UsageTrackerCard({ subscription, onTrackUsage }: Props) {
 
   const getUsageBadge = () => {
     if (usageCount >= 10) {
-      return { label: '🔥 High Value', color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' };
+      return { label: isTurkish ? '🔥 Yüksek değer' : '🔥 High value', color: '#10B981', bg: 'rgba(16, 185, 129, 0.12)' };
     }
     if (usageCount >= 3) {
-      return { label: '⚖️ Moderate Use', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)' };
+      return { label: isTurkish ? '⚖️ Orta kullanım' : '⚖️ Moderate use', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.12)' };
     }
     if (usageCount > 0) {
-      return { label: '⚠️ Low Usage', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' };
+      return { label: isTurkish ? '⚠️ Az kullanım' : '⚠️ Low usage', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.12)' };
     }
-    return { label: '💤 Not Logged Yet', color: colors.textSecondary, bg: colors.border };
+    return { label: isTurkish ? '💤 Henüz kayıt yok' : '💤 Not logged yet', color: colors.textSecondary, bg: colors.border };
   };
 
   const badge = getUsageBadge();
@@ -44,7 +44,7 @@ export function UsageTrackerCard({ subscription, onTrackUsage }: Props) {
   };
 
   const formattedLastUsed = subscription.lastUsedDate
-    ? new Date(subscription.lastUsedDate).toLocaleDateString(undefined, {
+    ? new Date(subscription.lastUsedDate).toLocaleDateString(isTurkish ? 'tr-TR' : 'en-US', {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -56,27 +56,27 @@ export function UsageTrackerCard({ subscription, onTrackUsage }: Props) {
     <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       {/* Title & Badge Header */}
       <View style={styles.headerRow}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={styles.iconCircle}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, marginRight: 8, overflow: 'hidden' }}>
+          <View style={[styles.iconCircle, { flexShrink: 0 }]}>
             <Ionicons name="analytics" size={18} color="#10B981" />
           </View>
-          <Text style={[styles.cardTitle, { color: colors.text }]}>Usage Tracker</Text>
+          <Text numberOfLines={1} style={[styles.cardTitle, { color: colors.text, flexShrink: 1 }]}>{isTurkish ? 'Kullanım takibi' : 'Usage tracker'}</Text>
         </View>
 
-        <View style={[styles.badgePill, { backgroundColor: badge.bg }]}>
-          <Text style={[styles.badgeText, { color: badge.color }]}>{badge.label}</Text>
+        <View style={[styles.badgePill, { backgroundColor: badge.bg, flexShrink: 0 }]}>
+          <Text numberOfLines={1} style={[styles.badgeText, { color: badge.color }]}>{badge.label}</Text>
         </View>
       </View>
 
       {/* Metrics Row */}
       <View style={styles.metricsGrid}>
         <View style={[styles.metricBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Times Logged</Text>
+          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Kayıt sayısı' : 'Times logged'}</Text>
           <Text style={[styles.metricValue, { color: colors.text }]}>{usageCount}</Text>
         </View>
 
         <View style={[styles.metricBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
-          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>Cost Per Use</Text>
+          <Text style={[styles.metricLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Kullanım başı maliyet' : 'Cost per use'}</Text>
           <Text style={[styles.metricValue, { color: '#10B981' }]}>
             {currencySymbol}{costPerUse.toFixed(2)}
           </Text>
@@ -90,13 +90,13 @@ export function UsageTrackerCard({ subscription, onTrackUsage }: Props) {
         style={styles.logButton}
       >
         <Ionicons name="flash" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-        <Text style={styles.logButtonText}>I Used This Today (+1)</Text>
+        <Text style={styles.logButtonText}>{isTurkish ? 'Bugün kullandım (+1)' : 'I used this today (+1)'}</Text>
       </TouchableOpacity>
 
       {/* Last Logged Subtext */}
       {formattedLastUsed && (
         <Text style={[styles.lastLoggedText, { color: colors.textSecondary }]}>
-          Last logged: {formattedLastUsed}
+          {isTurkish ? 'Son kayıt: ' : 'Last logged: '}{formattedLastUsed}
         </Text>
       )}
     </View>
@@ -110,12 +110,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginTop: 16,
     marginBottom: 24,
+    overflow: 'hidden',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 14,
+    overflow: 'hidden',
   },
   iconCircle: {
     width: 32,
@@ -162,9 +164,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#10B981',
     borderRadius: 14,
     paddingVertical: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
     shadowColor: '#10B981',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
@@ -175,6 +179,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '800',
+    flexShrink: 1,
+    textAlign: 'center',
   },
   lastLoggedText: {
     fontSize: 11,
@@ -183,4 +189,3 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
 });
-

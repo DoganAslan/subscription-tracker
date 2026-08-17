@@ -1,4 +1,4 @@
-import i18n, { t } from '@/locales/i18n';
+import { t } from '@/locales/i18n';
 import React, { useState, useRef } from 'react';
 import { View, TextInput, Text, Animated, StyleSheet, Pressable, Platform } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
@@ -10,7 +10,7 @@ interface HeroInputProps {
 }
 
 export function HeroInput({ amount, onChangeAmount, currency }: HeroInputProps) {
-  const [isFocused, setIsFocused] = useState(false);
+  const [, setIsFocused] = useState(false);
   const bgColorAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
   const { colors } = useTheme();

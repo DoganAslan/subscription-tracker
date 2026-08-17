@@ -5,14 +5,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
-import { getMonthlyCost } from '@/features/dashboard/utils/calculations';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { convertCurrency, SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { triggerHaptic } from '@/utils/haptics';
+import { Subscription } from '@/services/firebase/types';
 
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEK_DAYS = {
+  en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  tr: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+};
 
 const getCategoryMeta = (cat: string) => {
   const c = String(cat || '').toLowerCase();
@@ -37,12 +40,67 @@ const getCategoryMeta = (cat: string) => {
   return { icon: 'sparkles-outline', color: '#6366F1', bg: 'rgba(99, 102, 241, 0.12)' };
 };
 
+const MONTHS_PER_CYCLE: Record<string, number> = {
+  monthly: 1,
+  quarterly: 3,
+  biannually: 6,
+  yearly: 12,
+  biennially: 24,
+};
+
+const toDate = (value: unknown): Date | null => {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+  if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
+    const date = (value as { toDate: () => Date }).toDate();
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const date = new Date(value as string | number);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const daysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
+
+const utcDay = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate());
+
+/** Returns every real renewal date for a subscription within the displayed month. */
+const getRecurringDatesForMonth = (subscription: Subscription, year: number, month: number): Date[] => {
+  const renewalDate = toDate(subscription.renewalDate);
+  if (!renewalDate || subscription.status === 'paused') return [];
+
+  if (subscription.billingCycle === 'weekly') {
+    const monthStart = new Date(year, month, 1);
+    const monthEnd = new Date(year, month, daysInMonth(year, month));
+    const firstEligible = monthStart < renewalDate ? renewalDate : monthStart;
+    const daysFromAnchor = Math.floor((utcDay(firstEligible) - utcDay(renewalDate)) / 86_400_000);
+    const firstOffset = ((daysFromAnchor % 7) + 7) % 7;
+    const firstDue = new Date(firstEligible);
+    firstDue.setDate(firstDue.getDate() + (firstOffset === 0 ? 0 : 7 - firstOffset));
+
+    const dates: Date[] = [];
+    for (let dueDate = firstDue; dueDate <= monthEnd; dueDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate() + 7)) {
+      dates.push(dueDate);
+    }
+    return dates;
+  }
+
+  const monthsPerCycle = MONTHS_PER_CYCLE[subscription.billingCycle || 'monthly'];
+  if (!monthsPerCycle) return [];
+
+  const monthDifference = (year - renewalDate.getFullYear()) * 12 + (month - renewalDate.getMonth());
+  if (monthDifference < 0 || monthDifference % monthsPerCycle !== 0) return [];
+
+  const dueDay = Math.min(renewalDate.getDate(), daysInMonth(year, month));
+  return [new Date(year, month, dueDay)];
+};
+
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
+  const weekDays = isTurkish ? WEEK_DAYS.tr : WEEK_DAYS.en;
   
   const { data: subscriptions } = useSubscriptions();
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
@@ -80,50 +138,40 @@ export default function CalendarScreen() {
     return days;
   }, [firstDay, daysInMonth]);
 
-  // Which days have payments this month?
+  // Which days have recurring payments this month?
   const paymentDaysMap = useMemo(() => {
     const map = new Map<number, number>(); // day -> count
     if (!subscriptions) return map;
 
     subscriptions.forEach(sub => {
-      if (sub.status === 'paused') return;
-      if (sub.renewalDate) {
-        const ren = sub.renewalDate.toDate();
-        if (ren.getMonth() === currentMonthIndex && ren.getFullYear() === currentYear) {
-          const day = ren.getDate();
-          map.set(day, (map.get(day) || 0) + 1);
-        }
-      }
+      getRecurringDatesForMonth(sub, currentYear, currentMonthIndex).forEach((dueDate) => {
+        const day = dueDate.getDate();
+        map.set(day, (map.get(day) || 0) + 1);
+      });
     });
     return map;
   }, [subscriptions, currentMonthIndex, currentYear]);
 
-  // Calculate monthly total
+  // Calculate the actual charges scheduled in the displayed month.
   const monthlyTotal = useMemo(() => {
     if (!subscriptions) return 0;
     let sum = 0;
     subscriptions.forEach(sub => {
-      if (sub.status === 'paused') return;
+      const occurrences = getRecurringDatesForMonth(sub, currentYear, currentMonthIndex);
       const amountInBase = convertCurrency(sub.amount, sub.currency || 'USD', baseCurrency);
-      sum += getMonthlyCost(amountInBase, sub.billingCycle);
+      sum += amountInBase * occurrences.length;
     });
     return sum;
-  }, [subscriptions, baseCurrency]);
+  }, [subscriptions, baseCurrency, currentMonthIndex, currentYear]);
 
   const activeCount = subscriptions?.filter(s => s.status !== 'paused').length || 0;
 
-  // Filter subscriptions due on the exactly selected day
+  // Filter subscriptions due on the selected day, including recurring renewals.
   const dailySubscriptions = useMemo(() => {
     if (!subscriptions) return [];
     return subscriptions.filter(s => {
-      if (s.status === 'paused') return false;
-      if (!s.renewalDate) return false;
-      const ren = s.renewalDate.toDate();
-      return (
-        ren.getDate() === selectedDate.getDate() &&
-        ren.getMonth() === selectedDate.getMonth() &&
-        ren.getFullYear() === selectedDate.getFullYear()
-      );
+      return getRecurringDatesForMonth(s, selectedDate.getFullYear(), selectedDate.getMonth())
+        .some(dueDate => dueDate.getDate() === selectedDate.getDate());
     });
   }, [subscriptions, selectedDate]);
 
@@ -160,11 +208,11 @@ export default function CalendarScreen() {
       >
         {/* Title Header */}
         <View style={styles.headerRow}>
-          <Text style={[styles.pageTitle, { color: colors.text }]}>Renewal Calendar</Text>
+          <Text style={[styles.pageTitle, { color: colors.text }]}>{isTurkish ? 'Yenileme takvimi' : 'Renewal calendar'}</Text>
           <View style={[styles.activePill, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
             <Ionicons name="calendar-outline" size={14} color="#3B82F6" style={{ marginRight: 4 }} />
             <Text style={{ fontSize: 12, fontWeight: '800', color: '#3B82F6' }}>
-              {activeCount} Active
+              {activeCount} {isTurkish ? 'aktif' : 'active'}
             </Text>
           </View>
         </View>
@@ -189,7 +237,7 @@ export default function CalendarScreen() {
 
           <View style={styles.totalRow}>
             <View>
-              <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>Monthly Due</Text>
+              <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Bu ay ödenecek' : 'Monthly due'}</Text>
               <Text style={[styles.totalAmount, { color: colors.text }]}>
                 {currencySymbol}{monthlyTotal.toFixed(2)}
               </Text>
@@ -200,14 +248,14 @@ export default function CalendarScreen() {
               style={[styles.todayBtn, { backgroundColor: colors.primary }]}
               activeOpacity={0.8}
             >
-              <Text style={styles.todayBtnText}>Today</Text>
+              <Text style={styles.todayBtnText}>{isTurkish ? 'Bugün' : 'Today'}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* 2. Days Header (Mon-Sun) */}
         <View style={styles.weekHeaderRow}>
-          {DAYS.map(day => (
+          {weekDays.map(day => (
             <Text key={day} style={[styles.weekHeaderText, { color: colors.textSecondary }]}>{day}</Text>
           ))}
         </View>
@@ -258,16 +306,16 @@ export default function CalendarScreen() {
           <View style={styles.dailyHeaderRow}>
             <Ionicons name="time-outline" size={18} color={colors.primary} style={{ marginRight: 6 }} />
             <Text style={[styles.dailyHeaderText, { color: colors.text }]}>
-              {selectedDate.getDate()} {localizedMonthName} • Payments ({dailySubscriptions.length})
+              {selectedDate.getDate()} {localizedMonthName} • {isTurkish ? `Ödemeler (${dailySubscriptions.length})` : `Payments (${dailySubscriptions.length})`}
             </Text>
           </View>
 
           {dailySubscriptions.length === 0 ? (
             <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="checkmark-circle-outline" size={36} color="#10B981" style={{ marginBottom: 6 }} />
-              <Text style={[styles.emptyTextTitle, { color: colors.text }]}>No Renewals Due Today</Text>
+              <Text style={[styles.emptyTextTitle, { color: colors.text }]}>{isTurkish ? 'Bugün yenilenecek ödeme yok' : 'No renewals due today'}</Text>
               <Text style={[styles.emptyTextSub, { color: colors.textSecondary }]}>
-                No recurring subscription payments scheduled for this date.
+                {isTurkish ? 'Bu tarih için planlanmış düzenli abonelik ödemesi bulunmuyor.' : 'No recurring subscription payments are scheduled for this date.'}
               </Text>
             </View>
           ) : (
@@ -280,7 +328,7 @@ export default function CalendarScreen() {
                 return (
                   <TouchableOpacity
                     key={sub.id}
-                    onPress={() => handleOpenSubscription(sub.id)}
+                    onPress={() => sub.id && handleOpenSubscription(sub.id)}
                     activeOpacity={0.75}
                     style={[styles.subItemCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
                   >
@@ -540,4 +588,3 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 });
-

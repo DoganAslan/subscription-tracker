@@ -1,4 +1,3 @@
-import i18n, { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,11 +10,14 @@ import { CardFormData } from '@/features/cards/schemas/card.schema';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { triggerHaptic } from '@/utils/haptics';
+import { useTranslation } from '@/context/LanguageContext';
 
 export default function EditCardScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { colors } = useTheme();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
 
   const { data: cards, isLoading: isLoadingCard } = useCards();
   const { mutate: updateCard, isPending: isUpdating } = useUpdateCard();
@@ -105,7 +107,7 @@ export default function EditCardScreen() {
         <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity onPress={handleGoBack} style={styles.backButton} activeOpacity={0.7}>
             <Ionicons name="chevron-back" size={20} color={colors.primary} />
-            <Text style={[styles.backButtonText, { color: colors.primary }]}>Cancel</Text>
+            <Text style={[styles.backButtonText, { color: colors.primary }]}>{isTurkish ? 'İptal' : 'Cancel'}</Text>
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]}>{t.global?.editCard || 'Edit Card'}</Text>
           <View style={{ width: 70 }} />
@@ -116,7 +118,7 @@ export default function EditCardScreen() {
             initialData={card}
             onSubmit={handleSubmit} 
             isLoading={isUpdating || isDeleting} 
-            submitLabel="Update Card"
+            submitLabel={isTurkish ? 'Kartı güncelle' : 'Update card'}
             onDelete={() => handleDeleteTrigger(id, card.name)}
           />
         </View>
@@ -148,4 +150,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-

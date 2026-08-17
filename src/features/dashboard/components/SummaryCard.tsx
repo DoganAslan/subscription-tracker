@@ -1,4 +1,4 @@
-import i18n, { t } from '@/locales/i18n';
+import { t } from '@/locales/i18n';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
@@ -46,23 +46,23 @@ export const SummaryCard = React.memo(function SummaryCard({ monthlyTotal, month
       <View style={styles.cardsWrapper}>
         {/* Card A (Left - Gross Spend) */}
         <View style={[styles.glassCard, styles.leftCard]}>
-          <Text style={styles.label}>{t.global.grossCommitted}</Text>
+          <Text numberOfLines={1} style={styles.label}>{t.global.grossCommitted}</Text>
           <View style={{ marginBottom: 6 }}>
-            <Text style={styles.primaryAmount}>{monthlyGross.toFixed(2)} {baseCurrency} <Text style={styles.moSuffix}>{t.global.Mo}</Text></Text>
+            <Text numberOfLines={1} style={styles.primaryAmount}>{monthlyGross.toFixed(2)} {baseCurrency} <Text style={styles.moSuffix}>{t.global.Mo}</Text></Text>
           </View>
           <View>
-            <Text style={styles.secondaryAmount}>{annualGross.toFixed(2)} {baseCurrency} <Text style={styles.yrSuffix}>{t.global.Yr}</Text></Text>
+            <Text numberOfLines={1} style={styles.secondaryAmount}>{annualGross.toFixed(2)} {baseCurrency} <Text style={styles.yrSuffix}>{t.global.Yr}</Text></Text>
           </View>
         </View>
 
         {/* Card B (Right - Net Burden) */}
         <View style={[styles.glassCard, styles.rightCard]}>
-          <Text style={[styles.label, styles.netLabel]}>{t.global.netOutofpocket}</Text>
+          <Text numberOfLines={1} style={[styles.label, styles.netLabel]}>{t.global.netOutofpocket}</Text>
           <View style={{ marginBottom: 6 }}>
-            <Text style={styles.netPrimaryAmount}>{monthlyNet.toFixed(2)} {baseCurrency} <Text style={[styles.moSuffix, { color: '#A7F3D0' }]}>{t.global.Mo}</Text></Text>
+            <Text numberOfLines={1} style={styles.netPrimaryAmount}>{monthlyNet.toFixed(2)} {baseCurrency} <Text style={[styles.moSuffix, { color: '#A7F3D0' }]}>{t.global.Mo}</Text></Text>
           </View>
           <View>
-            <Text style={styles.netSecondaryAmount}>{annualNet.toFixed(2)} {baseCurrency} <Text style={[styles.yrSuffix, { color: '#A7F3D0' }]}>{t.global.Yr}</Text></Text>
+            <Text numberOfLines={1} style={styles.netSecondaryAmount}>{annualNet.toFixed(2)} {baseCurrency} <Text style={[styles.yrSuffix, { color: '#A7F3D0' }]}>{t.global.Yr}</Text></Text>
           </View>
         </View>
       </View>
@@ -145,6 +145,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: 'transparent',
+    overflow: 'hidden',
+    minWidth: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,

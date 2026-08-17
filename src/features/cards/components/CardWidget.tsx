@@ -1,10 +1,10 @@
 import { useTranslation } from '@/context/LanguageContext';
-import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, Platform, TouchableOpacity, Dimensions } from 'react-native';
 import { Card, Subscription } from '@/services/firebase/types';
-import { useTheme } from '@/context/ThemeContext';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+
+import { analyzeCardHealth } from '../services/cardWatchdog';
 
 interface Props {
   card: Card;
@@ -14,7 +14,7 @@ interface Props {
   onTogglePin?: () => void;
 }
 
-const { width } = Dimensions.get('window');
+Dimensions.get('window');
 
 const getCardGradients = (type: string, fallbackColor: string): [string, string] => {
   // Always use the card's own color as the base gradient
@@ -47,9 +47,11 @@ const getCardGradients = (type: string, fallbackColor: string): [string, string]
 };
 
 export function CardWidget({ card, subscriptions, style, showPinToggle, onTogglePin }: Props) {
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
 
   const linkedSubs = subscriptions?.filter(s => s.cardId === card.id) || [];
+  const health = analyzeCardHealth(card, subscriptions);
 
   const renderCardLogo = () => {
     const containerStyle = { width: 60, height: 32, justifyContent: 'center' as const, alignItems: 'flex-end' as const };
@@ -99,11 +101,16 @@ export function CardWidget({ card, subscriptions, style, showPinToggle, onToggle
           <Text style={styles.cardName} numberOfLines={1}>{card.name}</Text>
           
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {health.isExpiringSoon && (
+              <View style={{ backgroundColor: '#EF4444', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 }}>
+                <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: '900' }}>{isTurkish ? 'SÜRESİ DOLUYOR' : 'EXPIRING'}</Text>
+              </View>
+            )}
             {showPinToggle && (
               <TouchableOpacity onPress={onTogglePin} style={styles.pinButton} activeOpacity={0.8}>
                 <Ionicons name={card.isPinned ? "star" : "star-outline"} size={14} color={card.isPinned ? "#F59E0B" : "#FFFFFF"} style={{ marginRight: 3 }} />
                 <Text style={{ color: card.isPinned ? '#F59E0B' : '#FFFFFF', fontSize: 10, fontWeight: '800' }}>
-                  {card.isPinned ? "FEATURED" : "PIN"}
+                  {card.isPinned ? (isTurkish ? 'ÖNE ÇIKAN' : 'FEATURED') : (isTurkish ? 'SABİTLE' : 'PIN')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -132,6 +139,29 @@ export function CardWidget({ card, subscriptions, style, showPinToggle, onToggle
           )}
         </View>
 
+        {/* Card Limit Watchdog Progress Bar */}
+        {card.monthlyLimit && card.monthlyLimit > 0 ? (
+          <View style={{ marginTop: 8, marginBottom: 4 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: '700' }}>
+                Limit: {health.totalMonthlySpent.toFixed(0)} / {card.monthlyLimit} {card.currency || 'TRY'} ({health.usedPercentage}%)
+              </Text>
+              {health.isNearLimit && (
+                <Text style={{ color: '#FDE047', fontSize: 10, fontWeight: '800' }}>⚠️ %80+ Yük</Text>
+              )}
+            </View>
+            <View style={{ width: '100%', height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' }}>
+              <View
+                style={{
+                  height: '100%',
+                  width: `${health.usedPercentage}%`,
+                  backgroundColor: health.isOverLimit ? '#EF4444' : health.isNearLimit ? '#FDE047' : '#10B981',
+                }}
+              />
+            </View>
+          </View>
+        ) : null}
+
         {/* Card Number Row */}
         <View style={styles.middleRow}>
           <Text style={styles.cardNumber}>
@@ -144,7 +174,9 @@ export function CardWidget({ card, subscriptions, style, showPinToggle, onToggle
           <View style={styles.footerCol}>
             <Text style={styles.label}>{t.global?.exp || 'VALID THRU'}</Text>
             <Text style={styles.value}>
-              {card.expiryMonth.toString().padStart(2, '0')}/{card.expiryYear.toString().slice(-2)}
+              {health.expiryFormatted !== '--'
+                ? health.expiryFormatted
+                : `${card.expiryMonth.toString().padStart(2, '0')}/${card.expiryYear.toString().slice(-2)}`}
             </Text>
           </View>
           <View style={[styles.footerCol, { alignItems: 'flex-end', justifyContent: 'center' }]}>
@@ -291,4 +323,3 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
 });
-

@@ -8,12 +8,17 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { loginSchema, LoginFormData } from '../schemas/auth.schema';
 import { useAuthMutations } from '../hooks/useAuthMutations';
+import { useGoogleSignIn } from '../hooks/useGoogleSignIn';
 import { AuthService } from '@/services/firebase/auth';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
+import i18n from '@/locales/i18n';
+
+import { triggerHaptic } from '@/utils/haptics';
 
 export function LoginForm() {
   const { loginMutation } = useAuthMutations();
+  const { startGoogleSignIn, isSigningIn } = useGoogleSignIn();
   const { colors } = useTheme();
 
   const [isResetModalVisible, setResetModalVisible] = useState(false);
@@ -22,29 +27,36 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [activeLegalModal, setActiveLegalModal] = useState<'privacy' | 'terms' | null>(null);
 
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
 
   const handleForgotPassword = async () => {
     const cleanEmail = resetEmail?.trim();
     if (!cleanEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
-      Alert.alert('Hata', t('auth.invalidEmailFormat', 'Geçerli bir e-posta girin.'));
+      Alert.alert(
+        isTurkish ? 'Hata' : 'Error',
+        i18n.t('auth.invalidEmailFormat', isTurkish ? 'Geçerli bir e-posta girin.' : 'Enter a valid email address.')
+      );
       return;
     }
 
     try {
       await AuthService.sendPasswordResetEmail(cleanEmail);
-      Alert.alert('Başarılı', t('auth.resetEmailSentSuccess', 'Sıfırlama bağlantısı gönderildi.'));
+      Alert.alert(
+        isTurkish ? 'Başarılı' : 'Success',
+        i18n.t('auth.resetEmailSentSuccess', isTurkish ? 'Sıfırlama bağlantısı gönderildi.' : 'A reset link has been sent.')
+      );
       setResetModalVisible(false);
       setResetEmail('');
     } catch (error: any) {
       const rawCode = error?.code || error?.message || 'unknown_error';
-      let userFriendlyMsg = t('auth.genericError', 'Bir hata oluştu.');
-      if (rawCode.includes('user-not-found')) userFriendlyMsg = t('auth.userNotFound', 'Kullanıcı bulunamadı.');
-      else if (rawCode.includes('invalid-email')) userFriendlyMsg = t('auth.invalidEmailFormat', 'Geçersiz e-posta formatı.');
-      else if (rawCode.includes('too-many-requests')) userFriendlyMsg = t('auth.tooManyRequests', 'Çok fazla deneme yaptınız, bekleyin.');
-      else if (rawCode.includes('network')) userFriendlyMsg = 'Ağ bağlantısı hatası.';
+      let userFriendlyMsg = i18n.t('auth.genericError', isTurkish ? 'Bir hata oluştu.' : 'Something went wrong.');
+      if (rawCode.includes('user-not-found')) userFriendlyMsg = i18n.t('auth.userNotFound', isTurkish ? 'Kullanıcı bulunamadı.' : 'User not found.');
+      else if (rawCode.includes('invalid-email')) userFriendlyMsg = i18n.t('auth.invalidEmailFormat', isTurkish ? 'Geçersiz e-posta formatı.' : 'Invalid email format.');
+      else if (rawCode.includes('too-many-requests')) userFriendlyMsg = i18n.t('auth.tooManyRequests', isTurkish ? 'Çok fazla deneme yaptınız, bekleyin.' : 'Too many attempts. Please wait and try again.');
+      else if (rawCode.includes('network')) userFriendlyMsg = isTurkish ? 'Ağ bağlantısı hatası.' : 'Network connection error.';
 
-      Alert.alert('İşlem Başarısız', `${userFriendlyMsg}\n(Kod: ${rawCode})`);
+      Alert.alert(isTurkish ? 'İşlem başarısız' : 'Action failed', `${userFriendlyMsg}\n${isTurkish ? 'Kod' : 'Code'}: ${rawCode}`);
     }
   };
 
@@ -154,13 +166,43 @@ export function LoginForm() {
         style={styles.button}
       />
 
+      {/* OR DIVIDER & GOOGLE SIGN IN BUTTON */}
+      <View style={styles.dividerRow}>
+        <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+        <View style={[styles.dividerBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.dividerText, { color: colors.textSecondary }]}>
+            {isTurkish ? 'VEYA' : 'OR'}
+          </Text>
+        </View>
+        <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+      </View>
+
+      <TouchableOpacity
+        style={[styles.googleButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
+        onPress={() => {
+          triggerHaptic('impactLight');
+          void startGoogleSignIn();
+        }}
+        activeOpacity={0.85}
+        disabled={isSigningIn}
+      >
+        <View style={styles.googleIconCircle}>
+          <Ionicons name="logo-google" size={16} color="#EA4335" />
+        </View>
+        <Text style={[styles.googleButtonText, { color: colors.text }]}>
+          {isSigningIn
+            ? (isTurkish ? 'Bağlanılıyor...' : 'Connecting...')
+            : (isTurkish ? 'Google ile Devam Et' : 'Continue with Google')}
+        </Text>
+      </TouchableOpacity>
+
       {/* RESET PASSWORD MODAL */}
       <Modal visible={isResetModalVisible} animationType="fade" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Reset Password</Text>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>{isTurkish ? 'Şifreyi sıfırla' : 'Reset password'}</Text>
             <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
-              Enter your registered email address and we will send you a link to reset your password.
+              {isTurkish ? 'Kayıtlı e-posta adresini gir; şifreni sıfırlaman için bağlantı gönderelim.' : 'Enter your registered email address and we will send you a reset link.'}
             </Text>
 
             <TextInput
@@ -176,13 +218,13 @@ export function LoginForm() {
 
             <View style={styles.modalButtons}>
               <Button
-                title="Cancel"
+                title={isTurkish ? 'İptal' : 'Cancel'}
                 variant="secondary"
                 onPress={() => setResetModalVisible(false)}
                 style={{ flex: 1, marginRight: 8 }}
               />
               <Button
-                title="Send Link"
+                title={isTurkish ? 'Bağlantı gönder' : 'Send link'}
                 onPress={handleForgotPassword}
                 style={{ flex: 1, marginLeft: 8 }}
               />
@@ -349,5 +391,57 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginHorizontal: 8,
+  },
+  dividerText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  googleIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#EA4335',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  googleButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
 });
-

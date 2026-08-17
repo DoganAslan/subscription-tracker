@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { t } from '@/locales/i18n';
 
 export const DoomBanner: React.FC<{ subName: string; daysLeft: number; severity: 'warning' | 'critical'; onPress: () => void }> = ({
   subName, daysLeft, severity, onPress

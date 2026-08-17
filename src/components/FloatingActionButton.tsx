@@ -1,18 +1,23 @@
 import React from 'react';
-import { StyleSheet, Animated, Pressable, View, Platform } from 'react-native';
+import { StyleSheet, Animated, Pressable, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '@/context/ThemeContext';
-import { t } from '@/locales/i18n';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FABProps {
   onPress: () => void;
   style?: object;
+  icon?: React.ComponentProps<typeof Ionicons>['name'];
+  label?: string;
+  color?: string;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-export function FloatingActionButton({ onPress, style }: FABProps) {
+export function FloatingActionButton({ onPress, style, icon = 'add', label, color }: FABProps) {
+  const insets = useSafeAreaInsets();
+  const fabBottom = Math.max(insets.bottom + 84, 90);
   const scaleValue = React.useRef(new Animated.Value(1)).current;
   const { colors } = useTheme();
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
@@ -44,9 +49,16 @@ export function FloatingActionButton({ onPress, style }: FABProps) {
       onPressIn={handlePressIn} 
       onPressOut={handlePressOut}
       onPress={handlePress}
-      style={[dynamicStyles.fab, style, { transform: [{ scale: scaleValue }] }]}
+      style={[
+        dynamicStyles.fab,
+        label && dynamicStyles.fabWithLabel,
+        { bottom: fabBottom, backgroundColor: color || colors.primary },
+        style,
+        { transform: [{ scale: scaleValue }] },
+      ]}
     >
-      <Ionicons name="add" size={32} color="#FFFFFF" />
+      <Ionicons name={icon} size={label ? 20 : 32} color="#FFFFFF" />
+      {label ? <Animated.Text style={dynamicStyles.label}>{label}</Animated.Text> : null}
     </AnimatedPressable>
   );
 }
@@ -54,7 +66,6 @@ export function FloatingActionButton({ onPress, style }: FABProps) {
 const getStyles = (colors: any) => StyleSheet.create({
   fab: {
     position: 'absolute',
-    bottom: 90,
     right: 24,
     width: 60,
     height: 60,
@@ -75,8 +86,17 @@ const getStyles = (colors: any) => StyleSheet.create({
       }
     }),
     zIndex: 999,
-  }
+  },
+  fabWithLabel: {
+    flexDirection: 'row',
+    gap: 8,
+    minWidth: 60,
+    paddingHorizontal: 18,
+    width: 'auto',
+  },
+  label: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '800',
+  },
 });
-
-
-

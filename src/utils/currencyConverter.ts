@@ -60,7 +60,10 @@ class CurrencyService {
     }
 
     try {
-      const response = await fetch(API_URL);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const response = await fetch(API_URL, { signal: controller.signal });
+      clearTimeout(timeoutId);
       const data = await response.json();
       
       if (data && data.rates) {

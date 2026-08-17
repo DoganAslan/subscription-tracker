@@ -1,12 +1,11 @@
-import i18n, { t } from '@/locales/i18n';
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { t } from '@/locales/i18n';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSecurityStore } from '@/store/useSecurityStore';
 import { useSessionStore } from '@/store/useSessionStore';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/context/ThemeContext';
-import { authenticateBiometric } from '@/utils/biometrics';
+import { authenticateUser } from '@/utils/biometrics';
 
 interface Props {
   children: React.ReactNode;
@@ -22,13 +21,7 @@ export function AppLockGuard({ children }: Props) {
   // but keeping isBiometricsEnabled respects user settings.
   const isUnlocked = !isBiometricsEnabled || isSessionUnlocked;
 
-  useEffect(() => {
-    if (!isUnlocked && !isPromptingAuth.current) {
-      triggerGate();
-    }
-  }, [isUnlocked]);
-
-  const triggerGate = async () => {
+  async function triggerGate() {
     console.log("[AUTH] triggerGate called");
     triggerHaptic('light');
     
@@ -37,7 +30,7 @@ export function AppLockGuard({ children }: Props) {
     try {
       isPromptingAuth.current = true;
       
-      const success = await authenticateBiometric();
+      const success = await authenticateUser();
       if (success) {
         setSessionUnlocked(true);
       }
@@ -48,11 +41,17 @@ export function AppLockGuard({ children }: Props) {
         isPromptingAuth.current = false;
       }, 500);
     }
-  };
+  }
+
+  useEffect(() => {
+    if (!isUnlocked && !isPromptingAuth.current) {
+      triggerGate();
+    }
+  }, [isUnlocked]);
 
   if (!isUnlocked) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center', padding: 24, zIndex: 9999, ...StyleSheet.absoluteFillObject }}>
+      <View style={{ flex: 1, backgroundColor: '#0F172A', justifyContent: 'center', alignItems: 'center', padding: 24, zIndex: 9999, ...StyleSheet.absoluteFill }}>
         <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#1E293B', justifyContent: 'center', alignItems: 'center', marginBottom: 20, borderWidth: 1, borderColor: '#3B82F6' }}>
           <Ionicons name="shield-checkmark-outline" size={44} color="#3B82F6" />
         </View>
@@ -76,6 +75,4 @@ export function AppLockGuard({ children }: Props) {
 
   return <>{children}</>;
 }
-
-
 

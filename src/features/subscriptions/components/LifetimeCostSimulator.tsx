@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, LayoutAnimation, UIManager, Platform } from 'react-native';
+import { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, UIManager, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
 import { useTheme } from '@/context/ThemeContext';
@@ -155,6 +155,10 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 24,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
   yearButton: {
     flex: 1,
     paddingVertical: 8,
@@ -194,6 +198,5 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     color: '#F43F5E',
   }
 });
-
 
 

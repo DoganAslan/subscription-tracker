@@ -9,7 +9,6 @@ import {
   Modal,
   TextInput,
   Platform,
-  ActivityIndicator,
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,7 +22,6 @@ import { AuthService } from '@/services/firebase/auth';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from '@/context/LanguageContext';
-import * as Notifications from 'expo-notifications';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 
 export default function AccountSettingsScreen() {
@@ -37,9 +35,10 @@ export default function AccountSettingsScreen() {
   // Modal States
   const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-  const [reauthModalVisible, setReauthModalVisible] = useState(false);
+  const [, setReauthModalVisible] = useState(false);
   const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
   const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
 
   // Form States
   const [newEmail, setNewEmail] = useState('');
@@ -50,8 +49,6 @@ export default function AccountSettingsScreen() {
   const [deletePassword, setDeletePassword] = useState('');
 
   // Password Visibility States
-  const [showCurrentPass, setShowCurrentPass] = useState(false);
-  const [showNewPass, setShowNewPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
 
   // Track what action to retry after re-auth
@@ -310,7 +307,7 @@ export default function AccountSettingsScreen() {
                 style={{ flexDirection: 'row', alignItems: 'center' }}
               >
                 <Ionicons name="eye-outline" size={16} color={colors.primary} style={{ marginRight: 4 }} />
-                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.primary }}>Reveal ID</Text>
+                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.primary }}>{isTurkish ? 'Kimliği göster' : 'Reveal ID'}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -648,4 +645,3 @@ const getStyles = (colors: any) =>
       marginTop: 8,
     },
   });
-

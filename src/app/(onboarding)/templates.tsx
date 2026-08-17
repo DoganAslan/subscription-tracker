@@ -1,9 +1,8 @@
-import i18n, { t } from '@/locales/i18n';
-import React, { useState, useMemo } from 'react';
+import { t } from '@/locales/i18n';
+import { useState, useMemo } from 'react';
 import { 
   View, Text, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, 
-  TextInput, KeyboardAvoidingView, Platform, Modal, FlatList, useColorScheme
-} from 'react-native';
+  TextInput, KeyboardAvoidingView, Platform, Modal, FlatList} from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { subscriptionTemplates, SubscriptionTemplate } from '@/features/onboarding/data/templates';
@@ -45,7 +44,7 @@ export default function TemplatesScreen() {
   const [currencySearch, setCurrencySearch] = useState('');
   
   const router = useRouter();
-  const { completeOnboarding } = useOnboardingStore();
+  useOnboardingStore();
   const { mutateAsync: addSubscription } = useAddSubscription();
 
   const { colors } = useTheme();
@@ -128,8 +127,14 @@ export default function TemplatesScreen() {
           renewalDate: renewalDate,
           status: 'active',
           reminderOffset: '1_day',
-          isFreeTrial: false,
-          notes: 'Imported from template'
+          isTrial: false,
+          trialEndDate: null,
+          hasContract: false,
+          contractEndDate: null,
+          notes: 'Imported from template',
+          isSplit: false,
+          splitMembers: [],
+          priceHistory: [],
         });
       }
       try {

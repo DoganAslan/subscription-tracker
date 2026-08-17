@@ -4,7 +4,6 @@ import { Card } from '@/services/firebase/types';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/store/useAuthStore';
 import { triggerHaptic } from '@/utils/haptics';
-import { t } from '@/locales/i18n';
 
 // React Query Keys
 export const cardKeys = {

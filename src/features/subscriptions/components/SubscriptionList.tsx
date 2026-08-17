@@ -1,18 +1,20 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { FlatList, RefreshControl, View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSubscriptions } from '../hooks/useSubscriptions';
 import { SubscriptionCard } from './SubscriptionCard';
+import { SharedVaultCard } from './SharedVaultCard';
 import { AppLoader } from '@/components/common/AppLoader';
 import { useTranslation } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
-import { convertCurrency, SUPPORTED_CURRENCIES } from '@/utils/currency';
+import { SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { calculateMonthlyCosts } from '@/utils/calculations';
 import { triggerHaptic } from '@/utils/haptics';
 
 export function SubscriptionList() {
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const { colors } = useTheme();
   const { data: subscriptions, isLoading, isError, refetch, isRefetching } = useSubscriptions();
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
@@ -29,7 +31,7 @@ export function SubscriptionList() {
       // 1. Status filter
       if (activeFilter === 'active' && sub.status === 'paused') return false;
       if (activeFilter === 'paused' && sub.status !== 'paused') return false;
-      if (activeFilter === 'trials' && !sub.isFreeTrial && !sub.isTrial) return false;
+      if (activeFilter === 'trials' && !sub.isTrial) return false;
       if (activeFilter === 'splits' && !sub.isSplit) return false;
 
       // 2. Search query filter
@@ -64,7 +66,7 @@ export function SubscriptionList() {
     return (
       <View style={[styles.errorContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
         <Ionicons name="alert-circle-outline" size={40} color="#EF4444" style={{ marginBottom: 8 }} />
-        <Text style={[styles.errorTitle, { color: colors.text }]}>{t.common.error}</Text>
+        <Text style={[styles.errorTitle, { color: colors.text }]}>{(t.common as any)?.error || 'Error'}</Text>
         <Text style={[styles.errorSubtitle, { color: colors.textSecondary }]}>{t.home.failedToLoad}</Text>
       </View>
     );
@@ -89,7 +91,7 @@ export function SubscriptionList() {
           {/* STATS HEADER CARD */}
           <View style={[styles.summaryBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Total Monthly Spend</Text>
+              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Toplam aylık harcama' : 'Total monthly spend'}</Text>
               <Text style={[styles.summaryAmount, { color: colors.text }]}>
                 {currencySymbol}{totalSpend.toFixed(2)}
               </Text>
@@ -98,7 +100,7 @@ export function SubscriptionList() {
             <View style={[styles.countBadge, { backgroundColor: 'rgba(37, 99, 235, 0.12)' }]}>
               <Ionicons name="cube-outline" size={16} color="#2563EB" style={{ marginRight: 4 }} />
               <Text style={{ fontSize: 13, fontWeight: '800', color: '#2563EB' }}>
-                {subscriptions?.length || 0} Subscriptions
+                {subscriptions?.length || 0} {isTurkish ? 'abonelik' : 'subscriptions'}
               </Text>
             </View>
           </View>
@@ -108,7 +110,7 @@ export function SubscriptionList() {
             <Ionicons name="search-outline" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
             <TextInput
               style={[styles.searchInput, { color: colors.text }]}
-              placeholder="Search subscriptions..."
+              placeholder={isTurkish ? 'Abonelik ara...' : 'Search subscriptions...'}
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -124,11 +126,11 @@ export function SubscriptionList() {
           {/* FILTER PILLS ROW */}
           <View style={styles.filterRow}>
             {[
-              { id: 'all', label: 'All' },
-              { id: 'active', label: 'Active' },
-              { id: 'paused', label: 'Paused' },
-              { id: 'trials', label: 'Free Trials' },
-              { id: 'splits', label: 'Splits 👥' },
+              { id: 'all', label: isTurkish ? 'Tümü' : 'All' },
+              { id: 'active', label: isTurkish ? 'Aktif' : 'Active' },
+              { id: 'paused', label: isTurkish ? 'Duraklatılan' : 'Paused' },
+              { id: 'trials', label: isTurkish ? 'Ücretsiz Deneme' : 'Free Trials' },
+              { id: 'splits', label: isTurkish ? 'Ortak 👥' : 'Splits 👥' },
             ].map(tab => {
               const isActive = activeFilter === tab.id;
               return (
@@ -159,6 +161,9 @@ export function SubscriptionList() {
               );
             })}
           </View>
+
+          {/* Shared Vault Family Card */}
+          <SharedVaultCard subscriptions={subscriptions || []} />
         </View>
       }
       ListEmptyComponent={
@@ -267,4 +272,3 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 });
-

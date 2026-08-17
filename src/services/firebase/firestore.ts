@@ -2,7 +2,6 @@ import { getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, query, whe
 import { db } from './config';
 import { getSubscriptionsCollection, getSubscriptionDoc, getCardsCollection, getCardDoc } from './collections';
 import { Subscription, Card } from './types';
-import { t } from '@/locales/i18n';
 
 export const UserService = {
   // Fetch user profile document from Firestore
@@ -41,10 +40,15 @@ export const SubscriptionService = {
     if (!userId) throw new Error("User not authenticated");
     const q = query(getSubscriptionsCollection(), where('userId', '==', userId));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as Subscription[];
+    return snapshot.docs.map(doc => {
+      const data = doc.data() as Subscription;
+      return {
+        id: doc.id,
+        ...data,
+        status: data.status ?? (data.isPaused ? 'paused' : 'active'),
+        isTrial: data.isTrial ?? data.isFreeTrial ?? false,
+      };
+    });
   },
 
   // Add a new subscription
@@ -54,7 +58,7 @@ export const SubscriptionService = {
       userId, // Inject userId for security rules
       status: data.status || 'active', // default value instead of null if possible
       reminderOffset: data.reminderOffset || null,
-      isFreeTrial: data.isFreeTrial || false,
+      isTrial: data.isTrial ?? data.isFreeTrial ?? false,
       trialEndDate: data.trialEndDate || null,
       notes: data.notes || '',
       createdAt: serverTimestamp(),
@@ -73,7 +77,7 @@ export const SubscriptionService = {
   },
 
   // Update a subscription
-  updateSubscription: async (userId: string, subscriptionId: string, data: Partial<Subscription>) => {
+  updateSubscription: async (_userId: string, subscriptionId: string, data: Partial<Subscription>) => {
     const docRef = getSubscriptionDoc(subscriptionId);
     
     const payload = {
@@ -92,7 +96,7 @@ export const SubscriptionService = {
   },
 
   // Delete a single subscription
-  deleteSubscription: async (userId: string, subscriptionId: string) => {
+  deleteSubscription: async (_userId: string, subscriptionId: string) => {
     const docRef = getSubscriptionDoc(subscriptionId);
     await deleteDoc(docRef);
   },
@@ -155,7 +159,7 @@ export const CardService = {
   },
 
   // Update a card
-  updateCard: async (userId: string, cardId: string, data: Partial<Card>) => {
+  updateCard: async (_userId: string, cardId: string, data: Partial<Card>) => {
     const docRef = getCardDoc(cardId);
     
     const payload = {
@@ -184,4 +188,3 @@ export const CardService = {
     await Promise.all(updatePromises);
   },
 };
-

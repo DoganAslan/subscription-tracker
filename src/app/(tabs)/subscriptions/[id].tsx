@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { triggerHaptic } from '@/utils/haptics';
-import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet, Share, Alert } from 'react-native';
+import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
 import { LifetimeCostSimulator } from '@/features/subscriptions/components/LifetimeCostSimulator';
 import { PauseSubscriptionCard } from '@/features/subscriptions/components/PauseSubscriptionCard';
 import { UsageTrackerCard } from '@/features/subscriptions/components/UsageTrackerCard';
+import { PaymentHistoryWidget } from '@/features/subscriptions/components/PaymentHistoryWidget';
 import { SplitTrackerCard } from '@/features/subscriptions/components/SplitTrackerCard';
 import { DeleteConfirmationModal } from '@/features/subscriptions/components/DeleteConfirmationModal';
 import { useSubscriptions, useUpdateSubscription, useDeleteSubscription, useTogglePauseSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
 import { AppLoader } from '@/components/common/AppLoader';
 import { SubscriptionFormData } from '@/features/subscriptions/schemas/subscription.schema';
+import { AiNegotiatorModal } from '@/features/ai/components/AiNegotiatorModal';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useSavingsStore } from '@/store/useSavingsStore';
@@ -28,12 +30,13 @@ export default function EditSubscriptionScreen() {
   const { mutate: updateSubscription, isPending: isUpdating } = useUpdateSubscription();
   const { mutate: togglePauseSubscription } = useTogglePauseSubscription();
   const { mutate: deleteSubscription, isPending: isDeleting } = useDeleteSubscription();
+  const addSavings = useSavingsStore(state => state.addSavings);
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [isNegotiatorModalVisible, setIsNegotiatorModalVisible] = useState(false);
 
   const { colors } = useTheme();
-  const { t, currentLanguage } = useTranslation();
-  const isEnglish = currentLanguage === 'en';
+  const { t } = useTranslation();
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
   const handleGoBack = () => {
@@ -64,8 +67,6 @@ export default function EditSubscriptionScreen() {
     handleGoBack();
   };
 
-  const addSavings = useSavingsStore(state => state.addSavings);
-
   const handleDelete = (didSaveMoney?: boolean) => {
     triggerHaptic('error');
     setIsDeleteModalVisible(false);
@@ -87,7 +88,7 @@ export default function EditSubscriptionScreen() {
         ...subscription,
         renewalDate: subscription.renewalDate.toDate(),
         trialEndDate: subscription.trialEndDate ? subscription.trialEndDate.toDate() : undefined,
-        contractEndDate: subscription.contractEndDate ? subscription.contractEndDate.toDate() : undefined,
+        contractEndDate: subscription.contractEndDate ? new Date(subscription.contractEndDate) : undefined,
         usageScore: (subscription.usageScore || 0) + 1,
         lastUsedDate: new Date().toISOString()
       } as any
@@ -123,7 +124,44 @@ export default function EditSubscriptionScreen() {
             subscription={subscription}
             onTrackUsage={handleTrackUsage}
           />
+          <PaymentHistoryWidget
+            subId={id as string}
+            subName={subscription.name}
+            defaultAmount={subscription.amount}
+            currency={subscription.currency}
+          />
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(139, 92, 246, 0.12)',
+              borderColor: 'rgba(139, 92, 246, 0.25)',
+              borderWidth: 1,
+              borderRadius: 16,
+              paddingVertical: 14,
+              marginTop: 10,
+              marginBottom: 10,
+              gap: 8,
+            }}
+            onPress={() => {
+              triggerHaptic('impactLight');
+              setIsNegotiatorModalVisible(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="sparkles" size={18} color="#8B5CF6" />
+            <Text style={{ fontSize: 13, fontWeight: '800', color: '#8B5CF6' }}>
+              ✨ SubMate AI ile değerlendir
+            </Text>
+          </TouchableOpacity>
         </SubscriptionForm>
+
+        <AiNegotiatorModal
+          visible={isNegotiatorModalVisible}
+          onClose={() => setIsNegotiatorModalVisible(false)}
+          subscription={subscription}
+        />
 
         <DeleteConfirmationModal
           visible={isDeleteModalVisible}
@@ -183,4 +221,3 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '600',
   },
 });
-

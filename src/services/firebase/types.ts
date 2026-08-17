@@ -26,6 +26,8 @@ export interface Card {
   lastFourDigits?: string; // Optional, just for user recognition (e.g., "4321")
   expiryMonth: number; // For card health checks
   expiryYear: number;
+  expiryDate?: string; // MM/YY format e.g. "08/28"
+  monthlyLimit?: number; // Spending limit on this card
   color: string; // Hex code for custom card UI styling
   currency: 'TRY' | 'USD' | 'EUR' | 'GBP'; // Native currency for the card
   isPinned?: boolean;
@@ -41,9 +43,12 @@ export interface Subscription {
   currency: string;
   billingCycle: BillingCycle;
   renewalDate: Timestamp;
-  status?: 'active' | 'paused' | null;
-  pauseEndDate?: Timestamp | null;
+  status?: 'active' | 'paused';
+  pauseStartDate?: string | null; // Scheduled pause start ISO string
+  pauseEndDate?: Timestamp | string | null;
+  autoResume?: boolean;
   reminderOffset?: 'none' | '1_day' | '3_days' | '1_week' | null;
+  /** Legacy field read only during migration; write `isTrial` for new data. */
   isFreeTrial?: boolean | null;
   trialEndDate?: Timestamp | null;
   contractEndDate?: Date | string | null;
@@ -52,7 +57,9 @@ export interface Subscription {
   lastUsedDate?: string;
   usageScore?: number;
   isTrial?: boolean;
-  trialEndDate?: string;
+  hasContract?: boolean | null;
+  /** Legacy field read only during migration; write `status` for new data. */
+  isPaused?: boolean;
   cardId?: string | null; // References Card.id
   assignedCardId?: string; // Links to CardWidget ID
   isSplit?: boolean;
@@ -79,6 +86,5 @@ export interface SubscriptionItem {
   trialEndDate?: string;
   notificationId?: string | null;
 }
-
 
 

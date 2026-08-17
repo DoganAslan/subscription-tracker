@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
 import { useTranslation } from '@/context/LanguageContext';
 import { useTheme } from '@/context/ThemeContext';
 import { triggerHaptic } from '@/utils/haptics';
-import { Timestamp } from 'firebase/firestore';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 interface Props {
   subscription: Subscription;
-  onUpdate: (data: Partial<Subscription>) => void;
+  onUpdate: (data: { status: 'active' | 'paused'; pauseEndDate?: Date | null }) => void;
 }
 
 export const PauseSubscriptionCard = ({ subscription, onUpdate }: Props) => {
@@ -20,7 +19,12 @@ export const PauseSubscriptionCard = ({ subscription, onUpdate }: Props) => {
   const isPaused = subscription.status === 'paused';
   const [isLoading, setIsLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date(new Date().setMonth(new Date().getMonth() + 1)));
+  const [selectedDate] = useState<Date>(new Date(new Date().setMonth(new Date().getMonth() + 1)));
+  const pauseEndDate = subscription.pauseEndDate
+    ? typeof subscription.pauseEndDate === 'string'
+      ? new Date(subscription.pauseEndDate)
+      : subscription.pauseEndDate.toDate()
+    : null;
 
   const handleTogglePause = () => {
     triggerHaptic('medium');
@@ -37,7 +41,7 @@ export const PauseSubscriptionCard = ({ subscription, onUpdate }: Props) => {
         const msg = t.features?.pauseSubscriptionDesc || 'Paused subscriptions will not be counted in your monthly expenses.';
         if (window.confirm(`${title}\n\n${msg}`)) {
           setIsLoading(true);
-          onUpdate({ status: 'paused', pauseEndDate: Timestamp.fromDate(selectedDate) });
+          onUpdate({ status: 'paused', pauseEndDate: selectedDate });
           setTimeout(() => setIsLoading(false), 500);
         }
       } else {
@@ -51,7 +55,7 @@ export const PauseSubscriptionCard = ({ subscription, onUpdate }: Props) => {
     if (event.type === 'set' && date) {
       triggerHaptic('success');
       setIsLoading(true);
-      onUpdate({ status: 'paused', pauseEndDate: Timestamp.fromDate(date) });
+      onUpdate({ status: 'paused', pauseEndDate: date });
       setTimeout(() => setIsLoading(false), 500);
     }
   };
@@ -70,7 +74,7 @@ export const PauseSubscriptionCard = ({ subscription, onUpdate }: Props) => {
           </Text>
           <Text style={dynamicStyles.description}>
             {isPaused 
-              ? (subscription.pauseEndDate ? `Paused until ${subscription.pauseEndDate.toDate().toLocaleDateString()}. Tap to resume early.` : 'Tap to resume tracking this subscription in your expenses.')
+              ? (pauseEndDate ? `Paused until ${pauseEndDate.toLocaleDateString()}. Tap to resume early.` : 'Tap to resume tracking this subscription in your expenses.')
               : (t.features?.pauseDesc || 'Temporarily exclude this from your expenses without deleting it.')}
           </Text>
         </View>
@@ -146,6 +150,10 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  buttonText: {
+    fontWeight: '600',
+    fontSize: 15,
+  },
   pauseButton: {
     backgroundColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#f1f5f9',
   },
@@ -163,6 +171,5 @@ const getStyles = (colors: any, isDark: boolean) => StyleSheet.create({
     fontSize: 15,
   }
 });
-
 
 

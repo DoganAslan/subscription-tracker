@@ -1,9 +1,7 @@
-import i18n, { t } from '@/locales/i18n';
 import { useMutation } from '@tanstack/react-query';
 import { AuthService } from '@/services/firebase/auth';
 import { LoginFormData, RegisterFormData } from '../schemas/auth.schema';
 import Toast from 'react-native-toast-message';
-import { Alert } from 'react-native';
 
 import { router } from 'expo-router';
 import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
@@ -20,8 +18,6 @@ export const useAuthMutations = () => {
     },
     onError: (error: any) => {
       console.error("DEBUG [Firebase Auth Error]:", error.code, error.message);
-      Alert.alert(t.global.giriHatas, t.global.kodErrorcodenmesajEr
-      );
       const message = error?.code === 'auth/invalid-credential' 
         ? 'Invalid email or password' 
         : error?.message || 'Failed to log in';
@@ -51,6 +47,3 @@ export const useAuthMutations = () => {
     registerMutation
   };
 };
-
-
-

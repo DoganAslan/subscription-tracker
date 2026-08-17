@@ -1,7 +1,5 @@
-import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useToastStore } from '@/store/useToastStore';
-import { t } from '@/locales/i18n';
 
 export function ToastContainer() {
   const toasts = useToastStore((state) => state.toasts);

@@ -1,5 +1,5 @@
 import { useTranslation } from '@/context/LanguageContext';
-import React, { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Platform, LayoutAnimation, UIManager } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCards, useUpdateCard } from '@/features/cards/hooks/useCards';
@@ -23,7 +23,8 @@ export default function WalletScreen() {
   const updateCardMutation = useUpdateCard();
   const { colors, isDark } = useTheme();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const insets = useSafeAreaInsets();
   const paddingTop = Math.max(insets.top + 8, Platform.OS === 'web' ? 16 : 12);
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
@@ -55,10 +56,10 @@ export default function WalletScreen() {
   };
 
   const getLinkedSubs = (cardId: string) =>
-    subscriptions.filter(s => s.cardId === cardId && !s.isPaused);
+    subscriptions.filter(s => s.cardId === cardId && s.status !== 'paused');
 
   const getCardMonthlyTotal = (cardId: string) => {
-    const subs = subscriptions.filter(s => s.cardId === cardId && !s.isPaused);
+    const subs = subscriptions.filter(s => s.cardId === cardId && s.status !== 'paused');
     return subs.reduce((sum, sub) => {
       const amount = typeof sub.amount === 'number' ? sub.amount : parseFloat(sub.amount) || 0;
       return sum + convertCurrency(amount, sub.currency || 'TRY', baseCurrency);
@@ -165,7 +166,7 @@ export default function WalletScreen() {
                       {linkedSubs.length > 0 && (
                         <View style={[styles.totalBadge, { backgroundColor: 'rgba(16,185,129,0.12)' }]}>
                           <Text style={[styles.totalBadgeText, { color: '#10B981' }]}>
-                            {currencySymbol}{monthlyTotal.toFixed(2)}/mo
+                            {currencySymbol}{monthlyTotal.toFixed(2)}{isTurkish ? '/ay' : '/mo'}
                           </Text>
                         </View>
                       )}
@@ -177,7 +178,7 @@ export default function WalletScreen() {
                       >
                         <Ionicons name="pencil-outline" size={14} color={colors.text} />
                         <Text style={[styles.editBtnText, { color: colors.text }]}>
-                          {t.common?.edit || 'Edit'}
+                          {(t.common as any)?.edit || 'Edit'}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -439,4 +440,3 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
-

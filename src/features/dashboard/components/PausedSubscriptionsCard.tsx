@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
@@ -10,7 +9,7 @@ interface Props {
 }
 
 export const PausedSubscriptionsCard = ({ subscriptions }: Props) => {
-  const { colors } = useTheme();
+  useTheme();
   const { t } = useTranslation();
   
   if (!subscriptions) return null;

@@ -1,4 +1,4 @@
-import i18n, { t } from '@/locales/i18n';
+import { t } from '@/locales/i18n';
 import React from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { Link } from 'expo-router';
@@ -73,6 +73,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
   },
 });
+
 
 
 
