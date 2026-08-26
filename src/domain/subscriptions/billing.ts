@@ -87,14 +87,14 @@ export function calculateSubscriptionCost(
     };
   }
 
-  const billingGross = roundMoney(convertAmount(
+  const billingGross = convertAmount(
     getSubscriptionAmount(subscription),
     subscription.currency,
     context.baseCurrency,
     context.rates,
-  ));
+  );
   const factor = MONTHLY_FACTOR_BY_CYCLE[subscription.billingCycle];
-  const monthlyGross = roundMoney(billingGross * factor);
+  const monthlyGross = billingGross * factor;
   const recoveredBillingAmount = Math.min(
     billingGross,
     convertAmount(
@@ -104,8 +104,13 @@ export function calculateSubscriptionCost(
       context.rates,
     ),
   );
-  const monthlyRecovered = Math.min(monthlyGross, roundMoney(recoveredBillingAmount * factor));
-  const monthlyNet = roundMoney(Math.max(0, monthlyGross - monthlyRecovered));
+  const monthlyRecovered = Math.min(monthlyGross, recoveredBillingAmount * factor);
+  const monthlyNet = Math.max(0, monthlyGross - monthlyRecovered);
 
-  return { billingGross, monthlyGross, monthlyRecovered, monthlyNet };
+  return {
+    billingGross: roundMoney(billingGross),
+    monthlyGross: roundMoney(monthlyGross),
+    monthlyRecovered: roundMoney(monthlyRecovered),
+    monthlyNet: roundMoney(monthlyNet),
+  };
 }

@@ -27,6 +27,17 @@ const subscription = (overrides: Partial<CostedSubscription> = {}): CostedSubscr
   ...overrides,
 });
 
+const invalidRateCases: Array<[string, SubscriptionCostContext['rates'], string, string]> = [
+  ['a missing source rate', { TRY: 1, USD: 0.03, EUR: 0.027 }, 'GBP', 'TRY'],
+  ['a zero source rate', { TRY: 1, USD: 0, EUR: 0.027 }, 'USD', 'TRY'],
+  ['a NaN source rate', { TRY: 1, USD: Number.NaN, EUR: 0.027 }, 'USD', 'TRY'],
+  ['an infinite source rate', { TRY: 1, USD: Number.POSITIVE_INFINITY, EUR: 0.027 }, 'USD', 'TRY'],
+  ['a missing target rate', { TRY: 1, USD: 0.03, EUR: 0.027 }, 'TRY', 'GBP'],
+  ['a zero target rate', { TRY: 1, USD: 0.03, EUR: 0 }, 'TRY', 'EUR'],
+  ['a NaN target rate', { TRY: 1, USD: 0.03, EUR: Number.NaN }, 'TRY', 'EUR'],
+  ['an infinite target rate', { TRY: 1, USD: 0.03, EUR: Number.POSITIVE_INFINITY }, 'TRY', 'EUR'],
+];
+
 describe('calculateSubscriptionCost', () => {
   it.each(Object.entries(expectedMonthly))('normalizes %s billing to its hand-derived monthly cost', (billingCycle, monthlyGross) => {
     const result = calculateSubscriptionCost(subscription({ billingCycle: billingCycle as CostedSubscription['billingCycle'] }), context);
@@ -65,5 +76,44 @@ describe('calculateSubscriptionCost', () => {
     const usdMonthly = subscription({ amount: 30, currency: 'USD' });
 
     expect(calculateSubscriptionCost(usdMonthly, context).monthlyGross).toBe(1000);
+  });
+
+  it('defers fractional currency-conversion rounding until weekly monthly normalization', () => {
+    const fractionalWeekly = subscription({ amount: 0.03015, currency: 'USD', billingCycle: 'weekly' });
+
+    expect(calculateSubscriptionCost(fractionalWeekly, context)).toEqual({
+      billingGross: 1.01,
+      monthlyGross: 4.36,
+      monthlyRecovered: 0,
+      monthlyNet: 4.36,
+    });
+  });
+
+  it('defers fractional split-recovery rounding until public fields are returned', () => {
+    const fractionalSplitWeekly = subscription({
+      amount: 0.0603,
+      currency: 'USD',
+      billingCycle: 'weekly',
+      isSplit: true,
+      splitMembers: [{ id: 'member-1', name: 'Alex', phone: '905555555555', shareAmount: 0.03015, isPaid: true }],
+    });
+
+    expect(calculateSubscriptionCost(fractionalSplitWeekly, context)).toEqual({
+      billingGross: 2.01,
+      monthlyGross: 8.71,
+      monthlyRecovered: 4.36,
+      monthlyNet: 4.36,
+    });
+  });
+
+  it.each(invalidRateCases)('uses the original finite amount with %s', (_description, rates, currency, baseCurrency) => {
+    const fallbackContext: SubscriptionCostContext = { baseCurrency, rates };
+
+    expect(calculateSubscriptionCost(subscription({ amount: 12.5, currency }), fallbackContext)).toEqual({
+      billingGross: 12.5,
+      monthlyGross: 12.5,
+      monthlyRecovered: 0,
+      monthlyNet: 12.5,
+    });
   });
 });
