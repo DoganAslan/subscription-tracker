@@ -103,17 +103,6 @@ export const ALL_QUICK_ACTIONS: QuickActionItem[] = [
     enabled: false,
   },
   {
-    id: 'simulator',
-    titleTr: 'Simülatör',
-    titleEn: 'Simulator',
-    icon: 'calculator',
-    color: '#06B6D4',
-    badgeColorBg: 'rgba(6, 182, 212, 0.12)',
-    actionType: 'route',
-    routePath: '/(tabs)/analytics',
-    enabled: false,
-  },
-  {
     id: 'vault',
     titleTr: 'JSON Yedekle',
     titleEn: 'Backup JSON',

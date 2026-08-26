@@ -43,18 +43,14 @@ export function sanitizeNumericAmount(val: number | string): number {
 }
 
 /**
- * Filters AI chat user inputs to neutralize potential Prompt Injection instructions.
+ * Normalizes AI chat input and applies a strict length boundary. Prompt-injection
+ * protection belongs to the server-side instruction hierarchy and data isolation;
+ * phrase-based client filters are not a security boundary.
  */
 export function sanitizeAiPrompt(prompt: string): string {
   if (typeof prompt !== 'string') return '';
-
-  let clean = sanitizeString(prompt, 500);
-
-  // Neutralize common system override phrases
-  clean = clean
-    .replace(/ignore previous instructions/gi, '[filtered instruction]')
-    .replace(/disregard all prior rules/gi, '[filtered instruction]')
-    .replace(/system prompt:/gi, '[filtered label]');
-
-  return clean;
+  return sanitizeString(prompt, 500)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+    .replace(/\s{3,}/g, ' ')
+    .trim();
 }

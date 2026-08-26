@@ -5,6 +5,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { ALL_QUICK_ACTIONS, QuickActionItem, saveQuickActionIds } from '../services/quickActionsStore';
 import { triggerHaptic } from '@/utils/haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
   visible: boolean;
@@ -17,6 +18,7 @@ export function QuickActionsEditorModal({ visible, onClose, currentActions, onSa
   const { colors } = useTheme();
   const { currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
+  const insets = useSafeAreaInsets();
 
   const [actions, setActions] = useState<QuickActionItem[]>([]);
 
@@ -43,17 +45,22 @@ export function QuickActionsEditorModal({ visible, onClose, currentActions, onSa
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, {
+        paddingTop: Math.max(20, insets.top + 12),
+        paddingBottom: Math.max(20, insets.bottom + 12),
+        paddingLeft: Math.max(20, insets.left + 12),
+        paddingRight: Math.max(20, insets.right + 12),
+      }]}>
         <View style={[styles.content, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Header */}
           <View style={styles.header}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={styles.headerIdentity}>
               <Ionicons name="options-outline" size={20} color="#3B82F6" />
-              <Text style={[styles.title, { color: colors.text }]}>
+              <Text numberOfLines={2} style={[styles.title, { color: colors.text }]}>
                 {isTurkish ? 'Hızlı Eylemleri Düzenle' : 'Customize Quick Actions'}
               </Text>
             </View>
-            <TouchableOpacity onPress={onClose}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -76,11 +83,11 @@ export function QuickActionsEditorModal({ visible, onClose, currentActions, onSa
                       { backgroundColor: colors.background, borderColor: colors.border },
                     ]}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                    <View style={styles.actionIdentity}>
                       <View style={[styles.iconBox, { backgroundColor: item.badgeColorBg }]}>
                         <Ionicons name={item.icon as any} size={18} color={item.color} />
                       </View>
-                      <Text style={[styles.actionText, { color: colors.text }]}>{title}</Text>
+                      <Text numberOfLines={2} style={[styles.actionText, { color: colors.text }]}>{title}</Text>
                     </View>
 
                     <Switch
@@ -112,7 +119,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.65)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   content: {
     width: '100%',
@@ -126,9 +132,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 6,
   },
+  headerIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 8 },
+  closeButton: { flexShrink: 0, padding: 4 },
   title: {
     fontSize: 16,
     fontWeight: '800',
+    flexShrink: 1,
   },
   subTitle: {
     fontSize: 12,
@@ -143,6 +152,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
   },
+  actionIdentity: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, marginRight: 8 },
   iconBox: {
     width: 34,
     height: 34,
@@ -153,6 +163,7 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 13,
     fontWeight: '700',
+    flexShrink: 1,
   },
   saveBtn: {
     flexDirection: 'row',

@@ -1,15 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
-import Markdown from 'react-native-markdown-display';
 import { useTranslation } from '@/context/LanguageContext';
+import { SafeMarkdownText } from '@/components/common/SafeMarkdownText';
 
-import termsPoliciesRaw from '@/constants/termsPolicies.json';
-
-const termsPolicies: Record<string, string> = termsPoliciesRaw;
+import { termsPolicies } from '@/constants/legalPolicies';
 const languages = Object.keys(termsPolicies);
 
 export default function TermsOfServiceScreen() {
@@ -29,8 +27,8 @@ export default function TermsOfServiceScreen() {
   return (
     <>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={styles.container}>
-        <View style={[styles.headerBar, { paddingTop: Math.max(insets.top, Platform.OS === 'ios' ? 50 : 20) }]}>
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <View style={styles.headerBar}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={28} color="#FFFFFF" />
           </TouchableOpacity>
@@ -69,11 +67,15 @@ export default function TermsOfServiceScreen() {
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 60 }]}
           showsVerticalScrollIndicator={false}
         >
-          <Markdown style={markdownStyles}>
-            {markdownContent}
-          </Markdown>
+          <SafeMarkdownText
+            text={markdownContent}
+            color="#9CA3AF"
+            headingColor="#FFFFFF"
+            mutedColor="#6B7280"
+            variant="document"
+          />
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </>
   );
 }
@@ -88,6 +90,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
+    paddingTop: 12,
     paddingBottom: 16,
     backgroundColor: '#0B0F19',
     zIndex: 10,
@@ -137,48 +140,3 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   }
 });
-
-const markdownStyles = {
-  body: {
-    color: '#9CA3AF',
-    fontSize: 15,
-    lineHeight: 24,
-  },
-  heading1: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: 'bold' as const,
-    marginBottom: 8,
-    marginTop: 0,
-  },
-  heading2: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600' as const,
-    marginTop: 24,
-    marginBottom: 12,
-  },
-  strong: {
-    color: '#FFFFFF',
-    fontWeight: 'bold' as const,
-  },
-  em: {
-    color: '#6B7280',
-    fontStyle: 'italic' as const,
-    fontSize: 14,
-    marginBottom: 24,
-  },
-  blockquote: {
-    backgroundColor: '#1F2937',
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 16,
-    borderWidth: 1,
-    borderColor: '#374151',
-    borderLeftWidth: 1,
-  },
-  link: {
-    color: '#3B82F6',
-    textDecorationLine: 'underline' as const,
-  }
-};

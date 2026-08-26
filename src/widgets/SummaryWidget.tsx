@@ -13,6 +13,7 @@ export interface SummaryWidgetProps {
     monthlyTotal: string;
     nextPayment: string;
     activeSubscriptions: string;
+    appName: string;
   };
 }
 
@@ -28,94 +29,102 @@ export function SummaryWidget({
     <FlexWidget
       style={{
         flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#0B0F19',
-        padding: 6,
+        backgroundColor: '#111C33',
+        padding: 14,
+        borderRadius: 22,
+        borderWidth: 1,
+        borderRightWidth: 2,
+        borderColor: '#29405F',
         height: 'match_parent',
         width: 'match_parent',
+        marginHorizontal: 8,
+        marginVertical: 4,
+        justifyContent: 'space-between',
+        overflow: 'hidden',
       }}
       clickAction="OPEN_APP"
     >
       <FlexWidget
-        style={{
-          flexDirection: 'column',
-          backgroundColor: '#1E293B',
-          padding: 12,
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: '#334155',
-          height: 'match_parent',
-          width: 'match_parent',
-          justifyContent: 'space-between',
-        }}
+        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         clickAction="OPEN_APP"
       >
-        <FlexWidget style={{ flexDirection: 'column' }} clickAction="OPEN_APP">
-          <TextWidget
-            text={`SUBMATE • ${labels.monthlyTotal}`}
-            style={{
-              fontSize: 10,
-              color: '#3B82F6',
-              fontWeight: 'bold',
-              letterSpacing: 0.5,
-            }}
-          />
-          <TextWidget
-            text={monthlyTotal || '₺0.00'}
-            style={{
-              fontSize: 22,
-              color: '#FFFFFF',
-              fontWeight: 'bold',
-              marginTop: 4,
-            }}
-          />
-        </FlexWidget>
-
-        <FlexWidget
+        <TextWidget
+          text={`✦ ${labels.appName}`}
           style={{
-            flexDirection: 'column',
-            marginTop: 6,
-            paddingTop: 6,
-            borderTopWidth: 1,
-            borderColor: '#334155',
+            fontSize: 11,
+            color: '#A78BFA',
+            fontWeight: 'bold',
+            letterSpacing: 0.7,
+            marginRight: 8,
           }}
-          clickAction="OPEN_APP"
-        >
-          <TextWidget
-            text={labels.nextPayment}
-            style={{
-              fontSize: 9,
-              color: '#94A3B8',
-              fontWeight: 'bold',
-            }}
-          />
-          <TextWidget
-            text={nextPaymentName}
-            style={{
-              fontSize: 12,
-              color: '#E2E8F0',
-              marginTop: 2,
-              fontWeight: 'bold',
-            }}
-          />
-          <TextWidget
-            text={`${nextPaymentDate} • ${nextPaymentMeta}`}
-            style={{
-              fontSize: 10,
-              color: '#94A3B8',
-              marginTop: 2,
-            }}
-          />
-        </FlexWidget>
-
+        />
         <TextWidget
           text={`${activeCount} ${labels.activeSubscriptions}`}
           style={{
             fontSize: 10,
-            color: '#38BDF8',
+            color: '#7DD3FC',
             fontWeight: 'bold',
-            marginTop: 8,
+          }}
+        />
+      </FlexWidget>
+
+      <FlexWidget style={{ flexDirection: 'column', marginTop: 7 }} clickAction="OPEN_APP">
+        <TextWidget
+          text={labels.monthlyTotal}
+          style={{
+            fontSize: 10,
+            color: '#94A3B8',
+            fontWeight: 'bold',
+            letterSpacing: 0.4,
+          }}
+        />
+        <TextWidget
+          text={monthlyTotal || '₺0.00'}
+          style={{
+            fontSize: 27,
+            color: '#F8FAFC',
+            fontWeight: 'bold',
+            marginTop: 2,
+          }}
+        />
+      </FlexWidget>
+
+      <FlexWidget
+        style={{
+          flexDirection: 'column',
+          backgroundColor: '#172554',
+          borderRadius: 13,
+          marginTop: 9,
+          padding: 9,
+          borderTopWidth: 1,
+          borderColor: '#355484',
+        }}
+        clickAction="OPEN_APP"
+      >
+        <TextWidget
+          text={labels.nextPayment}
+          style={{
+            fontSize: 9,
+            color: '#93C5FD',
+            fontWeight: 'bold',
+            letterSpacing: 0.3,
+          }}
+        />
+        <TextWidget
+          text={nextPaymentName}
+          style={{
+            fontSize: 12,
+            color: '#FFFFFF',
+            marginTop: 2,
+            fontWeight: 'bold',
+          }}
+        />
+        <TextWidget
+          text={`${nextPaymentDate} • ${nextPaymentMeta}`}
+          style={{
+            fontSize: 10,
+            color: '#BFDBFE',
+            marginTop: 2,
           }}
         />
       </FlexWidget>

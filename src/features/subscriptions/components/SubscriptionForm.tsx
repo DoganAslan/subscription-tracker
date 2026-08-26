@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, Text, TouchableOpacity, Modal, FlatList, Platform, StyleSheet, Switch, TextInput, Alert, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import { analyzeReceiptImage } from '@/services/ai/gemini';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +25,7 @@ import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscription
 import { useBudgetStore } from '@/store/useBudgetStore';
 import { calculateMonthlyCosts } from '@/utils/calculations';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 export const CATEGORIES = [
   { name: 'Entertainment', hint: 'Netflix, Disney+, Cable' },
   { name: 'Music & Audio', hint: 'Spotify, Apple Music, Audible' },
@@ -114,6 +116,7 @@ interface Props {
 }
 
 export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel, onDelete, hideHero, externalAmount, children }: Props) {
+  const insets = useSafeAreaInsets();
   const [isCategoryModalVisible, setIsCategoryModalVisible] = useState(false);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const [showRenewalPicker, setShowRenewalPicker] = useState(false);
@@ -223,21 +226,29 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        base64: true,
-        quality: 0.35,
+        quality: 0.8,
       });
 
-      if (result.canceled || !result.assets || !result.assets[0].base64) {
+      if (result.canceled || !result.assets?.[0]?.uri) {
         return;
       }
 
       setIsAiScanning(true);
       triggerHaptic('medium');
       
-      const base64Img = result.assets[0].base64;
-      const mimeType = result.assets[0].mimeType || 'image/jpeg';
+      const imageContext = ImageManipulator.manipulate(result.assets[0].uri);
+      imageContext.resize({ width: 1600, height: null });
+      const renderedImage = await imageContext.renderAsync();
+      const optimizedImage = await renderedImage.saveAsync({
+        base64: true,
+        compress: 0.72,
+        format: SaveFormat.JPEG,
+      });
+      if (!optimizedImage.base64) {
+        throw new Error('Receipt image optimization failed.');
+      }
       
-      const parsedData = await analyzeReceiptImage(base64Img, mimeType);
+      const parsedData = await analyzeReceiptImage(optimizedImage.base64, 'image/jpeg');
       
       if (parsedData) {
         triggerHaptic('success');
@@ -490,7 +501,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                 {Platform.OS === 'ios' && showRenewalPicker && (
                   <Modal transparent={true} animationType="slide" onRequestClose={() => setShowRenewalPicker(false)}>
                     <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                      <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+                      <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: Math.max(32, insets.bottom + 16), borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowRenewalPicker(false)}>
                             <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t.global.done}</Text>
@@ -672,7 +683,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                 {Platform.OS === 'ios' && showTrialPicker && (
                   <Modal transparent={true} animationType="slide" onRequestClose={() => setShowTrialPicker(false)}>
                     <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                      <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+                      <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: Math.max(32, insets.bottom + 16), borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowTrialPicker(false)}>
                             <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t.global.done}</Text>
@@ -785,7 +796,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                 {Platform.OS === 'ios' && showContractPicker && (
                   <Modal transparent={true} animationType="slide" onRequestClose={() => setShowContractPicker(false)}>
                     <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-                      <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+                      <View style={{ backgroundColor: colors.surface, padding: 16, paddingBottom: Math.max(32, insets.bottom + 16), borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
                         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 8 }}>
                           <TouchableOpacity onPress={() => setShowContractPicker(false)}>
                             <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 16 }}>{t.global.done}</Text>
@@ -1004,7 +1015,11 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         onRequestClose={() => setIsCategoryModalVisible(false)}
       >
         <View style={dynamicStyles.modalOverlay}>
-          <View style={dynamicStyles.modalContent}>
+          <View style={[dynamicStyles.modalContent, {
+            paddingBottom: Math.max(24, insets.bottom + 16),
+            paddingLeft: Math.max(24, insets.left + 16),
+            paddingRight: Math.max(24, insets.right + 16),
+          }]}>
             <View style={dynamicStyles.modalHeader}>
               <Text style={dynamicStyles.modalTitle}>{t.global.selectCategory}</Text>
               <TouchableOpacity onPress={() => setIsCategoryModalVisible(false)}>
@@ -1060,7 +1075,12 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         onRequestClose={() => setIsCardModalVisible(false)}
       >
         <View style={dynamicStyles.modalOverlay}>
-          <View style={[dynamicStyles.modalContent, { height: '50%' }]}>
+          <View style={[dynamicStyles.modalContent, {
+            height: '50%',
+            paddingBottom: Math.max(24, insets.bottom + 16),
+            paddingLeft: Math.max(24, insets.left + 16),
+            paddingRight: Math.max(24, insets.right + 16),
+          }]}>
             <View style={dynamicStyles.modalHeader}>
               <Text style={dynamicStyles.modalTitle}>{t.global.selectPaymentMethod}</Text>
               <TouchableOpacity onPress={() => setIsCardModalVisible(false)}>
@@ -1088,7 +1108,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
                         value === item.id && dynamicStyles.modalRowSelected
                       ]}
                     >
-                      <Text style={[dynamicStyles.modalRowText, value === item.id && dynamicStyles.modalRowTextSelected]}>
+                      <Text numberOfLines={2} style={[dynamicStyles.modalRowText, value === item.id && dynamicStyles.modalRowTextSelected]}>
                         {item.id ? `💳 ${item.type?.toUpperCase()} - ${item.name} (•••• ${item.lastFourDigits || '****'})` : item.name}
                       </Text>
                       {value === item.id && (
@@ -1111,7 +1131,12 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
         onRequestClose={() => setIsCurrencyModalVisible(false)}
       >
         <View style={dynamicStyles.modalOverlay}>
-          <View style={[dynamicStyles.modalContent, { height: '60%' }]}>
+          <View style={[dynamicStyles.modalContent, {
+            height: '60%',
+            paddingBottom: Math.max(24, insets.bottom + 16),
+            paddingLeft: Math.max(24, insets.left + 16),
+            paddingRight: Math.max(24, insets.right + 16),
+          }]}>
             <View style={dynamicStyles.modalHeader}>
               <Text style={dynamicStyles.modalTitle}>{t.global.selectCurrency}</Text>
               <TouchableOpacity onPress={() => setIsCurrencyModalVisible(false)}>
@@ -1420,6 +1445,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'Hanken Grotesk',
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
   },
   modalClose: {
     color: colors.primary,
@@ -1446,6 +1474,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     fontWeight: '600',
     marginBottom: 4,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
   },
   modalRowTextSelected: {
     color: colors.primary,
@@ -1459,6 +1490,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.primary,
     fontSize: 18,
     fontWeight: 'bold',
+    flexShrink: 0,
   }
 });
 

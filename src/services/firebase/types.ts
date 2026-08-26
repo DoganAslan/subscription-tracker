@@ -56,6 +56,7 @@ export interface Subscription {
   usageFrequency?: 'high' | 'medium' | 'low' | 'none';
   lastUsedDate?: string;
   usageScore?: number;
+  usageLogDates?: string[];
   isTrial?: boolean;
   hasContract?: boolean | null;
   /** Legacy field read only during migration; write `status` for new data. */
@@ -86,5 +87,4 @@ export interface SubscriptionItem {
   trialEndDate?: string;
   notificationId?: string | null;
 }
-
 

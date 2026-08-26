@@ -1,4 +1,4 @@
-import { getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, query, where, getDoc, setDoc } from 'firebase/firestore';
+import { getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, doc, query, where, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db } from './config';
 import { getSubscriptionsCollection, getSubscriptionDoc, getCardsCollection, getCardDoc } from './collections';
 import { Subscription, Card } from './types';
@@ -30,6 +30,7 @@ export const UserService = {
       }, { merge: true });
     } catch (e) {
       console.warn('[UserService] updateUserProfile error:', e);
+      throw e;
     }
   }
 };
@@ -49,6 +50,31 @@ export const SubscriptionService = {
         isTrial: data.isTrial ?? data.isFreeTrial ?? false,
       };
     });
+  },
+
+  // Keep analytics and every open subscription view synchronized with Firestore.
+  subscribeToSubscriptions: (
+    userId: string,
+    onData: (subscriptions: Subscription[]) => void,
+    onError?: (error: Error) => void,
+  ) => {
+    if (!userId) return () => {};
+    const q = query(getSubscriptionsCollection(), where('userId', '==', userId));
+    return onSnapshot(
+      q,
+      snapshot => {
+        onData(snapshot.docs.map(document => {
+          const data = document.data() as Subscription;
+          return {
+            id: document.id,
+            ...data,
+            status: data.status ?? (data.isPaused ? 'paused' : 'active'),
+            isTrial: data.isTrial ?? data.isFreeTrial ?? false,
+          };
+        }));
+      },
+      error => onError?.(error),
+    );
   },
 
   // Add a new subscription
@@ -186,5 +212,13 @@ export const CardService = {
     const snapshot = await getDocs(q);
     const updatePromises = snapshot.docs.map(docRef => updateDoc(docRef.ref, { cardId: null, updatedAt: serverTimestamp() }));
     await Promise.all(updatePromises);
+  },
+
+  // Delete all payment-card labels owned by a user during account deletion.
+  deleteAllCards: async (userId: string) => {
+    if (!userId) throw new Error('User not authenticated');
+    const q = query(getCardsCollection(), where('userId', '==', userId));
+    const snapshot = await getDocs(q);
+    await Promise.all(snapshot.docs.map(cardDocument => deleteDoc(cardDocument.ref)));
   },
 };

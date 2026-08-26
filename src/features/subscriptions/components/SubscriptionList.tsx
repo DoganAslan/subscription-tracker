@@ -90,9 +90,9 @@ export function SubscriptionList() {
         <View style={{ gap: 16, marginBottom: 16 }}>
           {/* STATS HEADER CARD */}
           <View style={[styles.summaryBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View>
-              <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Toplam aylık harcama' : 'Total monthly spend'}</Text>
-              <Text style={[styles.summaryAmount, { color: colors.text }]}>
+            <View style={styles.summaryCopy}>
+              <Text numberOfLines={1} style={[styles.summaryLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Toplam aylık harcama' : 'Total monthly spend'}</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.summaryAmount, { color: colors.text }]}>
                 {currencySymbol}{totalSpend.toFixed(2)}
               </Text>
             </View>
@@ -193,6 +193,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: 10,
+  },
+  summaryCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   summaryLabel: {
     fontSize: 12,
@@ -211,6 +216,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
   },
   searchContainer: {
     flexDirection: 'row',

@@ -1,14 +1,16 @@
 import { t } from '@/locales/i18n';
 import { useState, useMemo } from 'react';
-import { 
-  View, Text, SafeAreaView, ScrollView, TouchableOpacity, ActivityIndicator, 
-  TextInput, KeyboardAvoidingView, Platform, Modal, FlatList} from 'react-native';
+import {
+  View, Text, ScrollView, TouchableOpacity, ActivityIndicator,
+  TextInput, KeyboardAvoidingView, Platform, Modal, FlatList, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { subscriptionTemplates, SubscriptionTemplate } from '@/features/onboarding/data/templates';
 import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
 import { useAddSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useTheme } from '@/context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { getResponsiveGridItemWidth } from '@/utils/responsiveGrid';
 
 const CURRENCIES = [
   { code: 'TRY', label: 'TRY - Turkey' },
@@ -34,6 +36,7 @@ const CURRENCIES = [
 ];
 
 export default function TemplatesScreen() {
+  const { width } = useWindowDimensions();
   const [step, setStep] = useState<'selection' | 'pricing'>('selection');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pricingConfig, setPricingConfig] = useState<Record<string, { amount: string, currency: string }>>({});
@@ -244,7 +247,7 @@ export default function TemplatesScreen() {
     const canSave = selectedTemplates.every(tmpl => pricingConfig[tmpl.id]?.amount.trim().length > 0);
 
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: bgMain }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: bgMain }} edges={['top', 'bottom', 'left', 'right']}>
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{ flex: 1 }}
@@ -356,7 +359,7 @@ export default function TemplatesScreen() {
 
   // --- SELECTION STEP ---
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: bgMain }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: bgMain }} edges={['top', 'bottom', 'left', 'right']}>
       {/* Header Area */}
       <View style={{ padding: 24, borderBottomWidth: 1, borderColor: borderColor, backgroundColor: bgHeader }}>
         <Text style={{ fontSize: 24, fontWeight: '700', color: textPrimary, marginBottom: 8, lineHeight: 32 }}>{t.global.selectServices}</Text>
@@ -376,7 +379,7 @@ export default function TemplatesScreen() {
             </Text>
             
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
-              {items.map(item => {
+              {items.map((item, itemIndex) => {
                 const isSelected = selectedIds.has(item.id);
                 return (
                   <TouchableOpacity
@@ -384,7 +387,13 @@ export default function TemplatesScreen() {
                     onPress={() => toggleSelection(item.id)}
                     activeOpacity={0.7}
                     style={{
-                      width: '48%',
+                      width: getResponsiveGridItemWidth({
+                        screenWidth: width,
+                        itemIndex,
+                        itemCount: items.length,
+                        maxColumns: 2,
+                      }),
+                      minHeight: 58,
                       padding: 16,
                       borderRadius: 12,
                       borderWidth: 1,
@@ -427,6 +436,3 @@ export default function TemplatesScreen() {
     </SafeAreaView>
   );
 }
-
-
-

@@ -236,15 +236,28 @@ export function getCancellationGuide(subName: string, customUrl?: string): Cance
 
 export async function openCancellationUrl(url: string): Promise<void> {
   if (!url) return;
+  let parsedUrl: URL;
   try {
-    if (Platform.OS !== 'web' && await WebBrowser.openBrowserAsync(url)) {
+    parsedUrl = new URL(url);
+  } catch {
+    console.warn('Blocked an invalid cancellation URL.');
+    return;
+  }
+  if (parsedUrl.protocol !== 'https:') {
+    console.warn('Blocked a non-HTTPS cancellation URL.');
+    return;
+  }
+
+  const safeUrl = parsedUrl.toString();
+  try {
+    if (Platform.OS !== 'web' && await WebBrowser.openBrowserAsync(safeUrl)) {
       return;
     }
-    await Linking.openURL(url);
+    await Linking.openURL(safeUrl);
   } catch (error) {
     console.error('Failed to open URL:', error);
     try {
-      await Linking.openURL(url);
+      await Linking.openURL(safeUrl);
     } catch (e) {
       console.error('Fallback openURL failed:', e);
     }

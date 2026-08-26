@@ -9,12 +9,30 @@ export let CURRENCY_RATES: Record<string, number> = {
 
 const CACHE_KEY = '@submate_rates_v2';
 const CACHE_EXPIRY_KEY = '@submate_rates_expiry_v2';
+let inFlightRateRequest: Promise<ExchangeRates> | null = null;
 
-export const getMarketRatesWithDynamicCache = async (baseCurrency: string = 'TRY') => {
-  let finalRates = null;
+const sanitizeRates = (candidate: unknown): Record<string, number> | null => {
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
+  const validEntries: [string, number][] = [];
+  for (const [currency, rate] of Object.entries(candidate as Record<string, unknown>)) {
+    if (
+      /^[A-Z]{3}$/.test(currency)
+      && typeof rate === 'number'
+      && Number.isFinite(rate)
+      && rate > 0
+    ) {
+      validEntries.push([currency, rate]);
+    }
+  }
+  return validEntries.length > 0 ? Object.fromEntries(validEntries) : null;
+};
+
+const loadMarketRates = async (): Promise<ExchangeRates> => {
+  let finalRates: Record<string, number> | null = null;
+  let cachedRates: string | null = null;
   try {
     // 1. Check Local Cache & Dynamic Expiry Timestamp
-    const cachedRates = await AsyncStorage.getItem(CACHE_KEY);
+    cachedRates = await AsyncStorage.getItem(CACHE_KEY);
     const cachedExpiry = await AsyncStorage.getItem(CACHE_EXPIRY_KEY);
 
     const nowInSeconds = Math.floor(Date.now() / 1000);
@@ -24,43 +42,49 @@ export const getMarketRatesWithDynamicCache = async (baseCurrency: string = 'TRY
 
       // If current time is strictly BEFORE the server's next scheduled update, cache is 100% valid
       if (nowInSeconds < expiryTimestamp) {
-        const remainingMinutes = Math.round((expiryTimestamp - nowInSeconds) / 60);
-        console.log(`⚡ Serving dynamically cached rates. Next remote sync in: ${remainingMinutes} mins. Network bypassed.`);
-        finalRates = JSON.parse(cachedRates);
+        finalRates = sanitizeRates(JSON.parse(cachedRates));
       }
     }
 
     if (!finalRates) {
       // 2. Cache is expired or empty -> Fetch live from API with 4s timeout protection
-      console.log(`🌐 Cache expired or empty. Syncing with remote API updates for ${baseCurrency}...`);
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 4000);
-      const response = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`, { signal: controller.signal });
-      clearTimeout(timeoutId);
-      const data = await response.json();
+      let response: Response;
+      try {
+        response = await fetch('https://open.er-api.com/v6/latest/TRY', { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+      if (!response.ok) throw new Error(`Exchange-rate service returned ${response.status}`);
+      const data = await response.json() as { rates?: unknown; time_next_update_unix?: unknown };
+      const remoteRates = sanitizeRates(data.rates);
 
-      if (data && data.rates && data.time_next_update_unix) {
+      if (remoteRates && typeof data.time_next_update_unix === 'number') {
         // 3. EXTRACT DYNAMIC TTL FROM API METADATA
         // The server explicitly tells us exactly when the next data window opens
-        const remoteExpiryTimestamp = data.time_next_update_unix; 
+        const remoteExpiryTimestamp = data.time_next_update_unix;
         
         // 4. Save snapshots to hardware disk
-        await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(data.rates));
+        await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(remoteRates));
         await AsyncStorage.setItem(CACHE_EXPIRY_KEY, remoteExpiryTimestamp.toString());
-        
-        const dynamicWindowMinutes = Math.round((remoteExpiryTimestamp - nowInSeconds) / 60);
-        console.log(`💾 Saved fresh rates. Cache locked dynamically for the next ${dynamicWindowMinutes} minutes based on server window.`);
-        
-        finalRates = data.rates;
+
+        finalRates = remoteRates;
       } else if (cachedRates) {
         // 5. Fallback mechanisms if live fetch fails or is malformed
-        finalRates = JSON.parse(cachedRates);
+        finalRates = sanitizeRates(JSON.parse(cachedRates));
       }
     }
   } catch (error) {
-    console.warn("📴 Dynamic Engine: Offline mode triggered. Serving stale fallback cache.");
-    const staleCache = await AsyncStorage.getItem(CACHE_KEY);
-    if (staleCache) finalRates = JSON.parse(staleCache);
+    console.warn('Exchange-rate sync failed; cached rates will be used.', error);
+    const staleCache = cachedRates ?? await AsyncStorage.getItem(CACHE_KEY);
+    if (staleCache) {
+      try {
+        finalRates = sanitizeRates(JSON.parse(staleCache));
+      } catch {
+        finalRates = null;
+      }
+    }
   }
 
   // Doomsday absolute fallback to prevent division by zero rendering crashes
@@ -69,13 +93,24 @@ export const getMarketRatesWithDynamicCache = async (baseCurrency: string = 'TRY
   }
 
   // Atomically update memory map for local synchronous conversions
-  CURRENCY_RATES = { ...CURRENCY_RATES, ...finalRates };
-  return finalRates;
+  const mergedRates = { ...CURRENCY_RATES, ...finalRates } as ExchangeRates;
+  CURRENCY_RATES = mergedRates;
+  return mergedRates;
+};
+
+export const getMarketRatesWithDynamicCache = async (_baseCurrency: string = 'TRY'): Promise<ExchangeRates> => {
+  if (inFlightRateRequest) return inFlightRateRequest;
+  inFlightRateRequest = loadMarketRates();
+  try {
+    return await inFlightRateRequest;
+  } finally {
+    inFlightRateRequest = null;
+  }
 };
 
 // Legacy sync function export alias so anything importing it still works before being swapped
 export const syncLiveExchangeRates = async () => {
-  await getMarketRatesWithDynamicCache('TRY');
+  await getMarketRatesWithDynamicCache();
 };
 
 export const convertCurrency = (amount: number, from: string, to: string): number => {
@@ -124,6 +159,4 @@ export interface ExchangeRates {
 export const exactAdd = (a: number, b: number): number => {
   return Math.round((a + b) * 100) / 100;
 };
-
-
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
@@ -96,7 +96,6 @@ const getRecurringDatesForMonth = (subscription: Subscription, year: number, mon
 export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
   const { t, currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
@@ -197,10 +196,13 @@ export default function CalendarScreen() {
     router.push(`/(tabs)/subscriptions/${id}`);
   };
 
-  const paddingTop = Math.max(insets.top + 8, Platform.OS === 'web' ? 16 : 12);
+  const screenTopSpacing = Platform.OS === 'web' ? 16 : 8;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background, paddingTop }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background, paddingTop: screenTopSpacing }]}
+      edges={['top', 'left', 'right']}
+    >
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -208,7 +210,7 @@ export default function CalendarScreen() {
       >
         {/* Title Header */}
         <View style={styles.headerRow}>
-          <Text style={[styles.pageTitle, { color: colors.text }]}>{isTurkish ? 'Yenileme takvimi' : 'Renewal calendar'}</Text>
+          <Text numberOfLines={1} style={[styles.pageTitle, { color: colors.text }]}>{isTurkish ? 'Yenileme takvimi' : 'Renewal calendar'}</Text>
           <View style={[styles.activePill, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
             <Ionicons name="calendar-outline" size={14} color="#3B82F6" style={{ marginRight: 4 }} />
             <Text style={{ fontSize: 12, fontWeight: '800', color: '#3B82F6' }}>
@@ -396,6 +398,9 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: -0.3,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 10,
   },
   activePill: {
     flexDirection: 'row',
@@ -403,6 +408,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 14,
+    flexShrink: 0,
   },
   calendarHeaderCard: {
     borderRadius: 20,

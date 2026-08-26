@@ -6,6 +6,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { calculateSubmateWrapped, WrappedMetrics } from '@/services/ai/aiWrappedService';
 import { triggerHaptic } from '@/utils/haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
   visible: boolean;
@@ -18,6 +19,7 @@ export function SubmateWrappedModal({ visible, onClose, subscriptions, baseCurre
   useTheme();
   const { currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
+  const insets = useSafeAreaInsets();
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
@@ -77,7 +79,12 @@ export function SubmateWrappedModal({ visible, onClose, subscriptions, baseCurre
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
+      <View style={[styles.modalOverlay, {
+        paddingTop: Math.max(24, insets.top + 16),
+        paddingBottom: Math.max(24, insets.bottom + 16),
+        paddingLeft: Math.max(20, insets.left + 16),
+        paddingRight: Math.max(20, insets.right + 16),
+      }]}>
         <View style={[styles.wrappedCard, { backgroundColor: slide.bgGradient }]}>
           {/* Top Bar */}
           <View style={styles.topBar}>
@@ -148,8 +155,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.85)',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
   },
   wrappedCard: {
     flex: 1,

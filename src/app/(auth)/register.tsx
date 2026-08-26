@@ -4,6 +4,7 @@ import { View, Text, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } fr
 import { Link } from 'expo-router';
 import { RegisterForm } from '@/features/auth/components/RegisterForm';
 import { useTheme } from '@/context/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function RegisterScreen() {
   const { colors } = useTheme();
@@ -11,11 +12,12 @@ export default function RegisterScreen() {
   const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
 
   return (
-    <KeyboardAvoidingView 
-      style={dynamicStyles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={dynamicStyles.scrollContent}>
+    <SafeAreaView style={dynamicStyles.container} edges={['top', 'bottom', 'left', 'right']}>
+      <KeyboardAvoidingView
+        style={dynamicStyles.keyboardArea}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={dynamicStyles.scrollContent}>
         <View style={dynamicStyles.headerContainer}>
           <Text style={dynamicStyles.title}>{t.global.createAccount}</Text>
           <Text style={dynamicStyles.subtitle}>{t.global.startTrackingYourSub}</Text>
@@ -29,8 +31,9 @@ export default function RegisterScreen() {
             {t.authLeaks?.logInBtn || 'Log In'}
           </Link>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -38,6 +41,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  keyboardArea: {
+    flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
@@ -73,7 +79,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 16,
   },
 });
-
 
 
 

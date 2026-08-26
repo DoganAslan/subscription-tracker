@@ -4,7 +4,7 @@ import {
   signOut, 
   onAuthStateChanged,
   User as FirebaseUser,
-  updateEmail,
+  verifyBeforeUpdateEmail,
   updatePassword,
   reauthenticateWithCredential,
   EmailAuthProvider,
@@ -14,8 +14,11 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Platform, Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth, db } from './config';
-import { SubscriptionService } from './firestore';
+import { CardService, SubscriptionService } from './firestore';
+import i18n from '@/locales/i18n';
+import { getUserFacingError } from '@/utils/userFacingError';
 
 // Handle returning user from Firebase OAuth Redirect on Web
 if (Platform.OS === 'web') {
@@ -98,18 +101,15 @@ export const AuthService = {
     } catch (error: any) {
       console.error("Google Auth Error:", error?.code, error?.message);
 
-      if (error?.code === 'auth/operation-not-allowed') {
+      if (error?.code !== 'auth/popup-closed-by-user' && error?.code !== 'auth/cancelled-popup-request') {
+        const isTurkish = i18n.resolvedLanguage?.startsWith('tr') ?? false;
         Alert.alert(
-          'Firebase Yapılandırma Gerekli',
-          'Firebase Console -> Authentication -> Sign-in method bölümünden Google sağlayıcısını etkinleştirmeniz gerekmektedir.'
+          isTurkish ? 'Google girişi tamamlanamadı' : 'Google sign-in failed',
+          getUserFacingError(error, isTurkish, {
+            tr: 'Google ile giriş şu anda tamamlanamıyor. Lütfen tekrar deneyin.',
+            en: 'Google sign-in could not be completed. Please try again.',
+          }),
         );
-      } else if (error?.code === 'auth/unauthorized-domain') {
-        Alert.alert(
-          'Yetkisiz Etki Alanı (Domain)',
-          'Firebase Console -> Authentication -> Settings -> Authorized domains kısmına kullandığınız adresi (örn: localhost) ekleyin.'
-        );
-      } else if (error?.code !== 'auth/popup-closed-by-user' && error?.code !== 'auth/cancelled-popup-request') {
-        Alert.alert('Google Giriş Hatası', error?.message || 'Google ile giriş yapılırken bir hata oluştu.');
       }
       throw error;
     }
@@ -144,12 +144,20 @@ export const AuthService = {
         // 1. Delete all subscriptions
         await SubscriptionService.deleteAllSubscriptions(user.uid);
         
-        // 2. Delete user document
+        // 2. Delete payment-card labels
+        await CardService.deleteAllCards(user.uid);
+
+        // 3. Delete user document
         await SubscriptionService.deleteUserDocument(user.uid);
 
-        // 3. Delete auth account
+        // 4. Delete auth account
         const { deleteUser } = await import('firebase/auth');
         await deleteUser(user);
+
+        // 5. Remove account-linked caches and preferences from this device.
+        await AsyncStorage.clear().catch(error => {
+          console.warn('[AuthService] Local account data cleanup failed:', error);
+        });
       } catch (error: any) {
         console.error("Delete Error:", error);
         throw error;
@@ -161,7 +169,10 @@ export const AuthService = {
   updateEmailAddress: async (newEmail: string) => {
     const user = auth.currentUser;
     if (user) {
-      await updateEmail(user, newEmail);
+      // Firebase requires the new address to be verified before it replaces
+      // the current sign-in email. Updating Firestore here would create an
+      // inconsistent profile before verification is completed.
+      await verifyBeforeUpdateEmail(user, newEmail);
     } else {
       throw new Error('No user is currently signed in.');
     }

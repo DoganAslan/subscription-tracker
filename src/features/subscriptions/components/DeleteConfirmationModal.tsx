@@ -1,14 +1,14 @@
-import { t } from '@/locales/i18n';
 import React, { useState } from 'react';
 import { View, Text, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getCancelUrl } from '@/utils/cancelLinksDb';
 import { useTheme } from '@/context/ThemeContext';
 import { CancellationAssistModal } from './CancellationAssistModal';
+import { useTranslation } from '@/context/LanguageContext';
 
 interface Props {
   visible: boolean;
-  onConfirm: (didSaveMoney?: boolean) => void;
+  onConfirm: () => void;
   onCancel: () => void;
   isLoading?: boolean;
   subscriptionName?: string;
@@ -16,6 +16,7 @@ interface Props {
 
 export function DeleteConfirmationModal({ visible, onConfirm, onCancel, isLoading, subscriptionName }: Props) {
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation();
   const [assistVisible, setAssistVisible] = useState(false);
 
   const cancelUrl = getCancelUrl(subscriptionName);
@@ -70,30 +71,18 @@ export function DeleteConfirmationModal({ visible, onConfirm, onCancel, isLoadin
 
           <View style={{ flexDirection: 'column', gap: 10 }}>
             <TouchableOpacity 
-              style={{ backgroundColor: '#10B981', paddingVertical: 14, paddingHorizontal: 12, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8, overflow: 'hidden' }}
-              onPress={() => onConfirm(true)}
+              style={{ backgroundColor: '#EF4444', paddingVertical: 14, paddingHorizontal: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
+              onPress={onConfirm}
               disabled={isLoading}
               activeOpacity={0.85}
             >
-              {isLoading ? <ActivityIndicator color="#ffffff" /> : (
-                <>
-                  <Ionicons name="cash-outline" size={20} color="#FFF" style={{ flexShrink: 0 }} />
-                  <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 14, flexShrink: 1, textAlign: 'center' }}>
-                    {t.features?.cancelledToSave || 'I cancelled this to save money!'}
-                  </Text>
-                </>
+              {isLoading ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 14, textAlign: 'center' }}>
+                  {t.features?.justDelete || 'Yalnızca SubMate’ten sil'}
+                </Text>
               )}
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={{ backgroundColor: '#EF4444', paddingVertical: 12, paddingHorizontal: 12, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }}
-              onPress={() => onConfirm(false)}
-              disabled={isLoading}
-              activeOpacity={0.85}
-            >
-              <Text style={{ color: '#ffffff', fontWeight: 'bold', fontSize: 14, textAlign: 'center' }}>
-                {t.features?.justDeleteFromApp || 'Just Delete from App'}
-              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -125,11 +114,10 @@ export function DeleteConfirmationModal({ visible, onConfirm, onCancel, isLoadin
       cancelUrl={cancelUrl}
       onMarkCancelled={() => {
         setAssistVisible(false);
-        onConfirm(true);
+        onConfirm();
       }}
       isLoading={isLoading}
     />
   </>
   );
 }
-

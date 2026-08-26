@@ -20,6 +20,7 @@ export async function widgetTaskHandler(props: WidgetTaskHandlerProps) {
     monthlyTotal: 'AYLIK TOPLAM',
     nextPayment: 'SIRADAKİ ÖDEME',
     activeSubscriptions: 'aktif abonelik',
+    appName: 'SUBMATE',
   };
 
   try {

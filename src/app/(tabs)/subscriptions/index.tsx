@@ -1,5 +1,5 @@
 import { View, TouchableOpacity, Platform, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SubscriptionList } from '@/features/subscriptions/components/SubscriptionList';
 import { Header } from '@/components/common/Header';
 import { useRouter } from 'expo-router';
@@ -13,10 +13,14 @@ export default function SubscriptionListScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const paddingTop = Math.max(insets.top + 8, Platform.OS === 'web' ? 16 : 12);
+  const screenTopSpacing = Platform.OS === 'web' ? 16 : 8;
+  const fabBottom = Math.max(90, insets.bottom + 84);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background, paddingTop: screenTopSpacing }]}
+      edges={['top', 'left', 'right']}
+    >
       <View style={styles.headerRow}>
         <Header title={t.subscriptionsPage?.title || 'My Subscriptions'} />
       </View>
@@ -30,11 +34,11 @@ export default function SubscriptionListScreen() {
           router.push('/(tabs)/subscriptions/add');
         }}
         activeOpacity={0.85}
-        style={[styles.fabButton, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
+        style={[styles.fabButton, { backgroundColor: colors.primary, shadowColor: colors.primary, bottom: fabBottom }]}
       >
         <Ionicons name="add" size={32} color="#FFFFFF" />
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -62,4 +66,3 @@ const styles = StyleSheet.create({
     zIndex: 99,
   },
 });
-

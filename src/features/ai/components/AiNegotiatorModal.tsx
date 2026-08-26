@@ -7,6 +7,7 @@ import { useTranslation } from '@/context/LanguageContext';
 import { generateAiNegotiationScript } from '@/services/ai/aiNegotiator';
 import { triggerHaptic } from '@/utils/haptics';
 import * as Clipboard from 'expo-clipboard';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
   visible: boolean;
@@ -18,6 +19,7 @@ export function AiNegotiatorModal({ visible, onClose, subscription }: Props) {
   const { colors } = useTheme();
   const { currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
+  const insets = useSafeAreaInsets();
 
   if (!subscription) return null;
 
@@ -31,7 +33,12 @@ export function AiNegotiatorModal({ visible, onClose, subscription }: Props) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, {
+        paddingTop: Math.max(20, insets.top + 12),
+        paddingBottom: Math.max(20, insets.bottom + 12),
+        paddingLeft: Math.max(20, insets.left + 12),
+        paddingRight: Math.max(20, insets.right + 12),
+      }]}>
         <View style={[styles.content, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Header */}
           <View style={styles.header}>
@@ -90,7 +97,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.65)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
   },
   content: {
     width: '100%',
@@ -109,6 +115,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   iconBox: {
     width: 36,
@@ -132,6 +140,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   sectionBox: {
     padding: 12,

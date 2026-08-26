@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProfileStore } from '@/store/useProfileStore';
@@ -29,7 +29,7 @@ export function Header({ title }: HeaderProps) {
 
   return (
     <View style={styles.topHeaderFix}>
-      <Text style={[styles.submateBrandText, { color: colors.text }]}>{title}</Text>
+      <Text numberOfLines={1} style={[styles.submateBrandText, { color: colors.text }]}>{title}</Text>
 
       {/* CLOUD-SYNCED SMART AVATAR ACTION LINK */}
       <TouchableOpacity 
@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingTop: Platform.OS === 'android' ? 36 : 20, // adjust for android status bar if needed, but safeArea takes care of it usually
+    paddingHorizontal: 4,
+    paddingTop: 4,
     paddingBottom: 12,
     backgroundColor: 'transparent',
     zIndex: 50
@@ -73,14 +73,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 24,
     fontWeight: '900',
-    letterSpacing: -0.5
+    letterSpacing: -0.5,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
   },
   avatarCircleContainer: {
     width: 42,
     height: 42,
     borderRadius: 21,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    flexShrink: 0,
   },
   avatarInnerCircle: {
     width: 40,
@@ -100,6 +104,5 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5
   }
 });
-
 
 

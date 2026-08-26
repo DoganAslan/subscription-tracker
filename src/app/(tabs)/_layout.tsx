@@ -6,14 +6,17 @@ import { useTheme } from '@/context/ThemeContext';
 import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@/context/LanguageContext';
+import { useLiveSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 
 function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const bottomMargin = Math.max(insets.bottom + 6, 16);
+  const leftMargin = Math.max(insets.left + 8, 16);
+  const rightMargin = Math.max(insets.right + 8, 16);
   // This is intentionally explicit: custom tab bars receive every mounted route,
   // even when Expo Router hides its href from the default tab bar.
-  const primaryRouteNames = ['index', 'subscriptions', 'calendar', 'settings'];
+  const primaryRouteNames = ['index', 'subscriptions', 'analytics', 'calendar', 'settings'];
   const visibleRoutes = state.routes.filter((route: any) =>
     primaryRouteNames.some((name) => route.name === name || route.name.startsWith(`${name}/`))
   );
@@ -21,13 +24,13 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
   const totalTabs = visibleRoutes.length;
   const activeIndex = Math.max(0, visibleRoutes.findIndex((route: any) => route.key === activeRouteKey));
 
-  const [containerWidth, setContainerWidth] = useState(Dimensions.get('window').width - 32);
+  const [containerWidth, setContainerWidth] = useState(Dimensions.get('window').width - leftMargin - rightMargin);
   const tabWidth = containerWidth / Math.max(1, totalTabs);
 
   const slideAnim = useRef(new Animated.Value(activeIndex * tabWidth)).current;
   const lastHoveredIndex = useRef(activeIndex);
   const containerRef = useRef<View>(null);
-  const [containerPageX, setContainerPageX] = useState(16);
+  const [containerPageX, setContainerPageX] = useState(leftMargin);
 
   React.useEffect(() => {
     Animated.spring(slideAnim, {
@@ -106,6 +109,8 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
         styles.liquidTabBarContainer,
         {
           bottom: bottomMargin,
+          left: leftMargin,
+          right: rightMargin,
           backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.92)',
           borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.08)',
           shadowColor: isDark ? '#000000' : '#3B82F6',
@@ -207,6 +212,9 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
 
 export default function TabsLayout() {
   useTheme();
+  // A single real-time listener keeps every tab and modal in sync through the
+  // shared React Query cache. Individual screens no longer open duplicate streams.
+  useLiveSubscriptions();
   const { t, currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
 
@@ -234,9 +242,8 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="analytics"
         options={{
-          title: isTurkish ? 'Analiz' : 'Analytics',
-          tabBarLabel: isTurkish ? 'Analiz' : 'Analytics',
-          href: null,
+          title: isTurkish ? 'Finansal Analiz' : 'Financial Analysis',
+          tabBarLabel: isTurkish ? 'Analiz' : 'Analysis',
         }}
       />
       <Tabs.Screen

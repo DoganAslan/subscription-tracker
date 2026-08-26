@@ -1,6 +1,7 @@
 import { t } from '@/locales/i18n';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, SafeAreaView } from 'react-native';
+import { captureAppError } from '@/services/monitoring/sentry';
 
 interface Props {
   children: ReactNode;
@@ -23,6 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught application error:', error, errorInfo);
+    captureAppError(error, 'react_error_boundary');
   }
 
   private handleReset = () => {
@@ -36,7 +38,9 @@ export class ErrorBoundary extends Component<Props, State> {
           <View className="flex-1 items-center justify-center p-6">
             <Text className="text-2xl font-bold text-slate-900 dark:text-white mb-2 text-center">{t.global.oopsSomethingWentWro}</Text>
             <Text className="text-slate-500 dark:text-slate-400 mb-8 text-center">
-              {this.state.error?.message || 'An unexpected error occurred.'}
+              {__DEV__
+                ? this.state.error?.message || 'An unexpected error occurred.'
+                : t.global?.oopsSomethingWentWro || 'An unexpected error occurred.'}
             </Text>
             <TouchableOpacity 
               onPress={this.handleReset}
@@ -52,6 +56,5 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
 
 

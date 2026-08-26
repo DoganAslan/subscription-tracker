@@ -4,9 +4,7 @@ import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity, StyleShee
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
-import { LifetimeCostSimulator } from '@/features/subscriptions/components/LifetimeCostSimulator';
 import { PauseSubscriptionCard } from '@/features/subscriptions/components/PauseSubscriptionCard';
-import { UsageTrackerCard } from '@/features/subscriptions/components/UsageTrackerCard';
 import { PaymentHistoryWidget } from '@/features/subscriptions/components/PaymentHistoryWidget';
 import { SplitTrackerCard } from '@/features/subscriptions/components/SplitTrackerCard';
 import { DeleteConfirmationModal } from '@/features/subscriptions/components/DeleteConfirmationModal';
@@ -16,8 +14,6 @@ import { SubscriptionFormData } from '@/features/subscriptions/schemas/subscript
 import { AiNegotiatorModal } from '@/features/ai/components/AiNegotiatorModal';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
-import { useSavingsStore } from '@/store/useSavingsStore';
-import { calculateMonthlyCosts } from '@/utils/calculations';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function EditSubscriptionScreen() {
@@ -30,7 +26,6 @@ export default function EditSubscriptionScreen() {
   const { mutate: updateSubscription, isPending: isUpdating } = useUpdateSubscription();
   const { mutate: togglePauseSubscription } = useTogglePauseSubscription();
   const { mutate: deleteSubscription, isPending: isDeleting } = useDeleteSubscription();
-  const addSavings = useSavingsStore(state => state.addSavings);
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isNegotiatorModalVisible, setIsNegotiatorModalVisible] = useState(false);
@@ -67,32 +62,11 @@ export default function EditSubscriptionScreen() {
     handleGoBack();
   };
 
-  const handleDelete = (didSaveMoney?: boolean) => {
+  const handleDelete = () => {
     triggerHaptic('error');
     setIsDeleteModalVisible(false);
-
-    if (didSaveMoney && subscription) {
-      const costs = calculateMonthlyCosts(subscription, subscription.currency);
-      addSavings(costs.net, subscription.currency || 'USD');
-    }
-
     deleteSubscription(id);
     router.replace('/(tabs)/subscriptions');
-  };
-
-  const handleTrackUsage = () => {
-    triggerHaptic('success');
-    updateSubscription({
-      id,
-      data: {
-        ...subscription,
-        renewalDate: subscription.renewalDate.toDate(),
-        trialEndDate: subscription.trialEndDate ? subscription.trialEndDate.toDate() : undefined,
-        contractEndDate: subscription.contractEndDate ? new Date(subscription.contractEndDate) : undefined,
-        usageScore: (subscription.usageScore || 0) + 1,
-        lastUsedDate: new Date().toISOString()
-      } as any
-    });
   };
 
   return (
@@ -118,11 +92,6 @@ export default function EditSubscriptionScreen() {
           <PauseSubscriptionCard
             subscription={subscription}
             onUpdate={(data) => togglePauseSubscription({ id, data })}
-          />
-          <LifetimeCostSimulator subscription={subscription} />
-          <UsageTrackerCard
-            subscription={subscription}
-            onTrackUsage={handleTrackUsage}
           />
           <PaymentHistoryWidget
             subId={id as string}

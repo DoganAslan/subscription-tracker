@@ -5,7 +5,9 @@
     "ignoreDeprecations": "6.0",
     "strict": true,
     "customConditions": ["react-native"],
-    "types": ["nativewind/types", "jest"],
+    "types": [
+      "nativewind/types"
+    ],
     "paths": {
       "@/*": [
         "./src/*"

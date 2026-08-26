@@ -1,8 +1,7 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import {
   FlatList,
   Text,
-  SafeAreaView,
   RefreshControl,
   View,
   TouchableOpacity,
@@ -11,12 +10,11 @@ import {
   TextInput,
   Image,
   Modal,
-  StatusBar,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
@@ -43,7 +41,7 @@ import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useProfileStore } from '@/store/useProfileStore';
 import { triggerHaptic } from '@/utils/haptics';
-import { requestNotificationPermissions } from '@/services/notificationService';
+import { getUnreadNotificationCount, requestNotificationPermissions } from '@/services/notificationService';
 import { updateWidgetData } from '@/services/background/widgetSync';
 import { getMarketRatesWithDynamicCache, ExchangeRates, SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { calculateDoomStatus, getTrialHoursLeft } from '@/utils/date';
@@ -61,6 +59,7 @@ export default function DashboardScreen() {
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false);
   const [isWrappedModalOpen, setIsWrappedModalOpen] = useState(false);
   const [isAiChatVisible, setIsAiChatVisible] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
   const { t, currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
@@ -72,8 +71,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { colors, isDark } = useTheme();
 
-  const insets = useSafeAreaInsets();
-  const paddingTop = Math.max(insets.top + 6, Platform.OS === 'android' ? (StatusBar.currentHeight || 24) + 6 : 16);
+  const screenTopSpacing = Platform.OS === 'web' ? 16 : 6;
 
   useEffect(() => {
     requestNotificationPermissions();
@@ -86,6 +84,16 @@ export default function DashboardScreen() {
       else setUserName(user?.displayName || '');
     });
   }, [user]);
+
+  const refreshNotificationBadge = useCallback(() => {
+    getUnreadNotificationCount().then(setUnreadNotificationCount).catch(() => setUnreadNotificationCount(0));
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshNotificationBadge();
+    }, [refreshNotificationBadge]),
+  );
 
   // Keep every installed Android home-screen widget in sync whenever the
   // subscription list or the user's display currency changes.
@@ -192,8 +200,11 @@ export default function DashboardScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-        <View style={{ padding: 16, paddingTop }}>
+      <SafeAreaView
+        style={[styles.safeArea, { backgroundColor: colors.background, paddingTop: screenTopSpacing }]}
+        edges={['top', 'left', 'right']}
+      >
+        <View style={{ padding: 16 }}>
           <SubscriptionSkeleton count={5} />
         </View>
       </SafeAreaView>
@@ -201,7 +212,10 @@ export default function DashboardScreen() {
   }
 
   return (
-    <View style={[styles.safeArea, { backgroundColor: colors.background, paddingTop }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background, paddingTop: screenTopSpacing }]}
+      edges={['top', 'left', 'right']}
+    >
       <FlatList
         data={listData}
         keyExtractor={(item, index) => item.id || `sub-${index}`}
@@ -237,8 +251,8 @@ export default function DashboardScreen() {
                     <Text style={styles.avatarText}>{userName ? userName.charAt(0).toUpperCase() : 'U'}</Text>
                   </View>
                 )}
-                <View>
-                  <Text style={[styles.greetingText, { color: colors.text }]}>
+                <View style={styles.greetingCopy}>
+                  <Text numberOfLines={1} style={[styles.greetingText, { color: colors.text }]}>
                     {getGreeting()}, {userName.split(' ')[0]} 👋
                   </Text>
                 </View>
@@ -247,10 +261,15 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 style={[styles.bellButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 activeOpacity={0.7}
-                onPress={() => router.push('/(tabs)/settings')}
+                onPress={() => {
+                  triggerHaptic('impactLight');
+                  router.push('/notifications' as any);
+                }}
               >
                 <Ionicons name="notifications-outline" size={20} color={colors.text} />
-                <View style={styles.badgeDot} />
+                {unreadNotificationCount > 0 && (
+                  <View style={styles.badgeDot} />
+                )}
               </TouchableOpacity>
             </View>
 
@@ -427,7 +446,7 @@ export default function DashboardScreen() {
               <View style={styles.overviewContent}>
                 {/* Left Side: Spend amount and budget progress */}
                 <View style={{ flex: 1, paddingRight: 12 }}>
-                  <Text style={[styles.overviewAmount, { color: colors.text }]}>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={[styles.overviewAmount, { color: colors.text }]}>
                     {currencySymbol}{formattedWhole}{formattedDecimals}
                   </Text>
                   <Text style={[styles.overviewLimitText, { color: colors.textSecondary }]}>
@@ -587,7 +606,7 @@ export default function DashboardScreen() {
         subscriptions={subscriptions || []}
         baseCurrency={baseCurrency}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -604,6 +623,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
+  },
+  greetingCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   avatar: {
     width: 44,
@@ -626,6 +652,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     letterSpacing: -0.3,
+    flexShrink: 1,
   },
   bellButton: {
     width: 42,
@@ -635,6 +662,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    flexShrink: 0,
   },
   badgeDot: {
     position: 'absolute',

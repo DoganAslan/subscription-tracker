@@ -12,9 +12,11 @@ import {
   Pressable,
   Image,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/context/ThemeContext';
 import { ThemeMode } from '@/theme/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -74,10 +76,13 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { currentLanguage, t, changeLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
+  const { width } = useWindowDimensions();
+  const isCompact = width < 390;
 
-  const dynamicStyles = useMemo(() => getStyles(colors), [colors]);
+  const dynamicStyles = useMemo(() => getStyles(colors, isCompact), [colors, isCompact]);
   const insets = useSafeAreaInsets();
-  const paddingTop = Math.max(insets.top + 8, Platform.OS === 'web' ? 16 : 12);
+  const screenTopSpacing = Platform.OS === 'web' ? 16 : 8;
+  const modalBottomPadding = Math.max(32, insets.bottom + 20);
 
   useEffect(() => {
     const loadProfileName = async () => {
@@ -123,35 +128,13 @@ export default function SettingsScreen() {
   };
 
   const toggleBiometrics = async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert(
-        isTurkish ? 'Mobil cihaz gerekli' : 'Mobile device required',
-        isTurkish
-          ? 'Biyometrik kilit yalnızca uygulamanın Android veya iOS sürümünde kullanılabilir.'
-          : 'Biometric lock is only available in the Android or iOS app.'
-      );
-      return;
-    }
-
     const availability = await getBiometricAvailability();
-
-    if (!availability.available) {
-      Alert.alert(
-        isTurkish ? 'Biyometri kullanılamıyor' : 'Biometrics unavailable',
-        isTurkish
-          ? 'Devam etmek için cihaz ayarlarından parmak izi veya yüz tanıma ekleyin.'
-          : 'Add a fingerprint or face authentication in your device settings to continue.'
-      );
-      return;
-    }
-
-    const result = await authenticateUser();
+    const result = availability.available ? await authenticateUser() : true;
 
     if (result) {
       triggerHaptic('medium');
       const newValue = !isBiometricsEnabled;
       setBiometricsEnabled(newValue);
-      await AsyncStorage.setItem('@submate_biometric_enabled', newValue ? 'true' : 'false');
     }
   };
 
@@ -195,14 +178,31 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={[dynamicStyles.container, { paddingTop }]}>
+    <SafeAreaView
+      style={[dynamicStyles.container, { paddingTop: screenTopSpacing }]}
+      edges={['top', 'left', 'right']}
+    >
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={dynamicStyles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Card Header */}
-        <View style={[dynamicStyles.profileHeader, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={dynamicStyles.pageHeader}>
+          <View style={dynamicStyles.pageHeaderCopy}>
+            <Text style={[dynamicStyles.pageTitle, { color: colors.text }]}>{isTurkish ? 'Ayarlar' : 'Settings'}</Text>
+            <Text style={[dynamicStyles.pageSubtitle, { color: colors.textSecondary }]}>
+              {isTurkish ? 'Hesabını ve uygulama tercihlerini yönet.' : 'Manage your account and app preferences.'}
+            </Text>
+          </View>
+          <View style={[dynamicStyles.securityPill, { backgroundColor: isBiometricsEnabled ? 'rgba(16, 185, 129, 0.13)' : 'rgba(59, 130, 246, 0.13)' }]}>
+            <Ionicons name={isBiometricsEnabled ? 'shield-checkmark' : 'settings-outline'} size={15} color={isBiometricsEnabled ? '#10B981' : colors.primary} />
+            <Text style={[dynamicStyles.securityPillText, { color: isBiometricsEnabled ? '#10B981' : colors.primary }]}>
+              {isBiometricsEnabled ? (isTurkish ? 'Koruma açık' : 'Protected') : (isTurkish ? 'Hazır' : 'Ready')}
+            </Text>
+          </View>
+        </View>
+
+        <LinearGradient colors={['#5D43E9', '#347BED']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={dynamicStyles.profileHeader}>
           <TouchableOpacity style={dynamicStyles.avatarWrapper} activeOpacity={0.8} onPress={handleAvatarPress}>
             {profileImage || user?.photoURL || auth.currentUser?.photoURL ? (
               <Image source={{ uri: profileImage || user?.photoURL || auth.currentUser?.photoURL || '' }} style={dynamicStyles.avatarImage} />
@@ -218,9 +218,9 @@ export default function SettingsScreen() {
             {isLoadingName ? (
               <ActivityIndicator color={colors.primary} size="small" />
             ) : isEditingName ? (
-              <View style={[dynamicStyles.editNameContainer, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+              <View style={dynamicStyles.editNameContainer}>
                 <TextInput
-                  style={[dynamicStyles.nameInput, { color: colors.text }]}
+                  style={dynamicStyles.nameInput}
                   value={tempName}
                   onChangeText={setTempName}
                   autoFocus
@@ -228,24 +228,28 @@ export default function SettingsScreen() {
                   returnKeyType="done"
                 />
                 <TouchableOpacity onPress={handleSaveName} style={dynamicStyles.saveIcon}>
-                  <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity style={dynamicStyles.nameDisplayRow} onPress={handleEditPress} activeOpacity={0.7}>
-                <Text style={[dynamicStyles.userName, { color: colors.text }]}>{userName}</Text>
-                <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+                <Text numberOfLines={1} style={dynamicStyles.userName}>{userName}</Text>
+                <Ionicons name="pencil" size={15} color="rgba(255,255,255,0.82)" />
               </TouchableOpacity>
             )}
-          </View>
-
-          <View style={[dynamicStyles.currencyBadge, { backgroundColor: colors.background, borderColor: colors.border }]}>
-            <Ionicons name="cash-outline" size={14} color={colors.primary} style={{ marginRight: 4 }} />
-            <Text style={[dynamicStyles.currencyBadgeText, { color: colors.textSecondary }]}>
-              {isTurkish ? 'Ana para birimi: ' : 'Base currency: '}<Text style={{ color: colors.text, fontWeight: '800' }}>{baseCurrency}</Text>
+            <Text numberOfLines={1} style={dynamicStyles.profileEmail}>
+              {user?.email || auth.currentUser?.email || (isTurkish ? 'Profilini düzenlemek için dokun' : 'Tap to edit your profile')}
             </Text>
           </View>
-        </View>
+
+          <View style={dynamicStyles.currencyBadge}>
+            <Ionicons name="wallet-outline" size={14} color="#FFFFFF" style={{ marginRight: 5 }} />
+            <Text style={dynamicStyles.currencyBadgeText}>
+              {isTurkish ? 'Ana para birimi ' : 'Base currency '}<Text style={dynamicStyles.currencyBadgeValue}>{baseCurrency}</Text>
+            </Text>
+          </View>
+          <Ionicons name="sparkles" size={58} color="rgba(255,255,255,0.12)" style={dynamicStyles.heroSparkles} />
+        </LinearGradient>
 
         {/* SECTION 1: PREFERENCES */}
         <Text style={[dynamicStyles.sectionHeader, { color: colors.textSecondary }]}>{isTurkish ? 'TERCİHLER' : 'PREFERENCES'}</Text>
@@ -267,8 +271,8 @@ export default function SettingsScreen() {
             </View>
 
             <View style={dynamicStyles.menuRowRight}>
-              <Text style={[dynamicStyles.menuValue, { color: colors.textSecondary }]}>
-                {currentLanguage === 'tr' ? 'Türkçe 🇹🇷' : 'English 🇬🇧'}
+              <Text numberOfLines={1} style={[dynamicStyles.menuValue, { color: colors.textSecondary }]}>
+                {currentLanguage === 'tr' ? 'Türkçe' : 'English'}
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </View>
@@ -293,7 +297,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={dynamicStyles.menuRowRight}>
-              <Text style={[dynamicStyles.menuValue, { color: colors.textSecondary }]}>{baseCurrency}</Text>
+              <Text numberOfLines={1} style={[dynamicStyles.menuValue, { color: colors.textSecondary }]}>{baseCurrency}</Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </View>
           </TouchableOpacity>
@@ -317,7 +321,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={dynamicStyles.menuRowRight}>
-              <Text style={[dynamicStyles.menuValue, { color: colors.textSecondary }]}>
+              <Text numberOfLines={1} style={[dynamicStyles.menuValue, { color: colors.textSecondary }]}>
                 {isTurkish ? ({ light: 'Açık', dark: 'Koyu', system: 'Sistem' }[themeMode] || themeMode) : themeMode.charAt(0).toUpperCase() + themeMode.slice(1)}
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
@@ -342,7 +346,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={dynamicStyles.menuRowRight}>
-              <Text style={[dynamicStyles.menuValue, { color: isBiometricsEnabled ? '#10B981' : colors.textSecondary, fontWeight: '800' }]}>
+              <Text numberOfLines={1} style={[dynamicStyles.menuValue, { color: isBiometricsEnabled ? '#10B981' : colors.textSecondary, fontWeight: '800' }]}>
                 {isBiometricsEnabled ? (isTurkish ? 'Açık' : 'Enabled') : (isTurkish ? 'Kapalı' : 'Disabled')}
               </Text>
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
@@ -362,7 +366,7 @@ export default function SettingsScreen() {
 
           <View style={{ gap: 10 }}>
             {/* Row 1: Backup & Restore */}
-            <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={dynamicStyles.vaultButtonsRow}>
               <TouchableOpacity
                 style={[dynamicStyles.vaultBtn, { backgroundColor: 'rgba(59, 130, 246, 0.12)', borderColor: 'rgba(59, 130, 246, 0.25)', borderWidth: 1 }]}
                 onPress={() => {
@@ -473,7 +477,7 @@ export default function SettingsScreen() {
         >
           <View style={dynamicStyles.modalOverlay}>
             <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setLanguageModalVisible(false)} />
-            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: modalBottomPadding }]}>
               <View style={dynamicStyles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Ionicons name="language" size={20} color="#3B82F6" />
@@ -485,8 +489,8 @@ export default function SettingsScreen() {
               </View>
 
               {[
-                { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
-                { code: 'en', label: 'English', flag: '🇬🇧' },
+                { code: 'tr', label: 'Türkçe' },
+                { code: 'en', label: 'English' },
               ].map(lang => {
                 const isSelected = currentLanguage === lang.code;
                 return (
@@ -502,13 +506,12 @@ export default function SettingsScreen() {
                       { backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.15)' : colors.background, borderColor: isSelected ? colors.primary : colors.border },
                     ]}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                      <Text style={{ fontSize: 20 }}>{lang.flag}</Text>
-                      <Text style={[dynamicStyles.optionText, { color: colors.text, fontWeight: isSelected ? '800' : '600' }]}>
+                    <View style={dynamicStyles.optionIdentity}>
+                      <Text numberOfLines={1} style={[dynamicStyles.optionText, { color: colors.text, fontWeight: isSelected ? '800' : '600' }]}>
                         {lang.label}
                       </Text>
                     </View>
-                    {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+                    {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} style={dynamicStyles.selectionIcon} />}
                   </TouchableOpacity>
                 );
               })}
@@ -525,7 +528,7 @@ export default function SettingsScreen() {
         >
           <View style={dynamicStyles.modalOverlay}>
             <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setCurrencyModalVisible(false)} />
-            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: modalBottomPadding }]}>
               <View style={dynamicStyles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Ionicons name="wallet" size={20} color="#10B981" />
@@ -551,14 +554,14 @@ export default function SettingsScreen() {
                         { backgroundColor: isSelected ? 'rgba(16, 185, 129, 0.15)' : colors.background, borderColor: isSelected ? '#10B981' : colors.border },
                       ]}
                     >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={dynamicStyles.optionIdentity}>
                         <View style={{ width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(16, 185, 129, 0.12)', alignItems: 'center', justifyContent: 'center' }}>
                           <Text style={{ color: '#10B981', fontSize: 16, fontWeight: '800' }}>
                             {item.symbol}
                           </Text>
                         </View>
-                        <View>
-                          <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>
+                        <View style={dynamicStyles.optionCopy}>
+                          <Text numberOfLines={1} style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>
                             {item.name}
                           </Text>
                           <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '600' }}>
@@ -567,7 +570,7 @@ export default function SettingsScreen() {
                         </View>
                       </View>
 
-                      {isSelected && <Ionicons name="checkmark-circle" size={22} color="#10B981" />}
+                      {isSelected && <Ionicons name="checkmark-circle" size={22} color="#10B981" style={dynamicStyles.selectionIcon} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -585,7 +588,7 @@ export default function SettingsScreen() {
         >
           <View style={dynamicStyles.modalOverlay}>
             <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setThemeModalVisible(false)} />
-            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: modalBottomPadding }]}>
               <View style={dynamicStyles.modalHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Ionicons name="color-palette" size={20} color="#8B5CF6" />
@@ -615,13 +618,13 @@ export default function SettingsScreen() {
                       setThemeModalVisible(false);
                     }}
                   >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={dynamicStyles.optionIdentity}>
                       <Ionicons name={item.icon as any} size={20} color={item.color} />
-                      <Text style={[dynamicStyles.optionText, { color: colors.text, fontWeight: isSelected ? '800' : '600' }]}>
+                      <Text numberOfLines={1} style={[dynamicStyles.optionText, { color: colors.text, fontWeight: isSelected ? '800' : '600' }]}>
                         {item.label}
                       </Text>
                     </View>
-                    {isSelected && <Ionicons name="checkmark-circle" size={22} color="#8B5CF6" />}
+                    {isSelected && <Ionicons name="checkmark-circle" size={22} color="#8B5CF6" style={dynamicStyles.selectionIcon} />}
                   </TouchableOpacity>
                 );
               })}
@@ -638,7 +641,7 @@ export default function SettingsScreen() {
         >
           <View style={dynamicStyles.modalOverlay}>
             <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setPrivacyModalVisible(false)} />
-            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: modalBottomPadding }]}>
               <View style={dynamicStyles.modalHeader}>
                 <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{isTurkish ? 'Gizlilik politikası' : 'Privacy policy'}</Text>
                 <TouchableOpacity onPress={() => setPrivacyModalVisible(false)}>
@@ -663,7 +666,7 @@ export default function SettingsScreen() {
         >
           <View style={dynamicStyles.modalOverlay}>
             <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setTermsModalVisible(false)} />
-            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: modalBottomPadding }]}>
               <View style={dynamicStyles.modalHeader}>
                 <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{isTurkish ? 'Kullanım koşulları' : 'Terms of use'}</Text>
                 <TouchableOpacity onPress={() => setTermsModalVisible(false)}>
@@ -684,92 +687,164 @@ export default function SettingsScreen() {
   );
 }
 
-const getStyles = (colors: any) =>
+const getStyles = (colors: any, isCompact: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: colors.background,
     },
     contentContainer: {
-      paddingHorizontal: 20,
+      paddingHorizontal: isCompact ? 14 : 20,
       paddingBottom: 140,
     },
-    profileHeader: {
-      borderRadius: 24,
-      padding: 20,
+    pageHeader: {
+      flexDirection: 'row',
       alignItems: 'center',
-      borderWidth: 1,
+      justifyContent: 'space-between',
+      marginTop: 10,
       marginBottom: 20,
+      gap: 12,
+    },
+    pageHeaderCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    pageTitle: {
+      fontSize: isCompact ? 28 : 31,
+      fontWeight: '800',
+      letterSpacing: -1,
+    },
+    pageSubtitle: {
+      fontSize: 13,
+      fontWeight: '500',
+      marginTop: 4,
+    },
+    securityPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+      flexShrink: 0,
+    },
+    securityPillText: {
+      fontSize: 11,
+      fontWeight: '800',
+    },
+    profileHeader: {
+      minHeight: 142,
+      borderRadius: 26,
+      padding: isCompact ? 16 : 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      overflow: 'hidden',
+      marginBottom: 24,
     },
     avatarWrapper: {
-      width: 80,
-      height: 80,
-      borderRadius: 40,
-      backgroundColor: colors.background,
+      width: isCompact ? 66 : 74,
+      height: isCompact ? 66 : 74,
+      borderRadius: 25,
+      backgroundColor: 'rgba(255,255,255,0.20)',
       alignItems: 'center',
       justifyContent: 'center',
       position: 'relative',
-      marginBottom: 12,
+      marginRight: isCompact ? 12 : 15,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.36)',
     },
     avatarImage: {
       width: '100%',
       height: '100%',
-      borderRadius: 40,
+      borderRadius: 24,
     },
     avatarInitials: {
-      fontSize: 32,
+      fontSize: 28,
       fontWeight: '800',
-      color: colors.text,
+      color: '#FFFFFF',
     },
     addPhotoButton: {
       position: 'absolute',
       bottom: 0,
       right: 0,
-      width: 26,
-      height: 26,
-      borderRadius: 13,
+      width: 27,
+      height: 27,
+      borderRadius: 14,
       alignItems: 'center',
       justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: '#FFFFFF',
+      backgroundColor: '#172554',
     },
     nameRow: {
-      marginBottom: 6,
+      flex: 1,
+      minWidth: 0,
     },
     nameDisplayRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
+      minWidth: 0,
     },
     userName: {
       fontSize: 20,
       fontWeight: '800',
+      color: '#FFFFFF',
+      flexShrink: 1,
     },
     editNameContainer: {
       flexDirection: 'row',
       alignItems: 'center',
+      width: '100%',
+      minWidth: 0,
       borderRadius: 12,
       borderWidth: 1,
       paddingHorizontal: 12,
+      borderColor: 'rgba(255,255,255,0.6)',
+      backgroundColor: 'rgba(11, 20, 51, 0.18)',
     },
     nameInput: {
       fontSize: 18,
       fontWeight: '700',
-      minWidth: 180,
+      flex: 1,
+      minWidth: 0,
       paddingVertical: 4,
+      color: '#FFFFFF',
     },
     saveIcon: {
       marginLeft: 6,
+      flexShrink: 0,
     },
     currencyBadge: {
+      position: 'absolute',
+      left: isCompact ? 94 : 109,
+      bottom: isCompact ? 16 : 20,
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 12,
+      backgroundColor: 'rgba(255,255,255,0.16)',
+      paddingHorizontal: 9,
       paddingVertical: 5,
-      borderRadius: 14,
-      borderWidth: 1,
+      borderRadius: 9,
     },
     currencyBadgeText: {
-      fontSize: 12,
+      color: 'rgba(255,255,255,0.82)',
+      fontSize: 11,
       fontWeight: '600',
+    },
+    currencyBadgeValue: {
+      color: '#FFFFFF',
+      fontWeight: '800',
+    },
+    profileEmail: {
+      maxWidth: '92%',
+      color: 'rgba(255,255,255,0.75)',
+      fontSize: 12,
+      marginTop: 4,
+    },
+    heroSparkles: {
+      position: 'absolute',
+      top: -8,
+      right: -10,
     },
     sectionHeader: {
       fontSize: 11,
@@ -777,54 +852,64 @@ const getStyles = (colors: any) =>
       letterSpacing: 0.8,
       marginBottom: 8,
       marginLeft: 4,
-      marginTop: 8,
+      marginTop: 4,
     },
     menuGroup: {
-      borderRadius: 20,
+      borderRadius: 21,
       borderWidth: 1,
       overflow: 'hidden',
-      marginBottom: 16,
+      marginBottom: 22,
     },
     menuRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: 16,
+      minHeight: 70,
+      paddingHorizontal: 16,
+      paddingVertical: 13,
     },
     menuRowLeft: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
+      flex: 1,
+      minWidth: 0,
+      marginRight: 10,
     },
     menuIconBox: {
-      width: 34,
-      height: 34,
-      borderRadius: 10,
+      width: 40,
+      height: 40,
+      borderRadius: 13,
       alignItems: 'center',
       justifyContent: 'center',
     },
     menuLabel: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: '700',
+      flexShrink: 1,
     },
     menuRowRight: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
+      flexShrink: 1,
+      minWidth: 0,
     },
     menuValue: {
       fontSize: 13,
       fontWeight: '600',
+      flexShrink: 1,
+      textAlign: 'right',
     },
     divider: {
       height: StyleSheet.hairlineWidth,
       marginLeft: 62,
     },
     vaultCard: {
-      borderRadius: 20,
+      borderRadius: 22,
       padding: 18,
       borderWidth: 1,
-      marginBottom: 16,
+      marginBottom: 22,
     },
     vaultHeader: {
       flexDirection: 'row',
@@ -833,45 +918,46 @@ const getStyles = (colors: any) =>
       marginBottom: 6,
     },
     vaultTitle: {
-      fontSize: 15,
+      fontSize: 16,
       fontWeight: '800',
     },
     vaultDesc: {
-      fontSize: 12,
-      lineHeight: 17,
-      marginBottom: 14,
+      fontSize: 12.5,
+      lineHeight: 18,
+      marginBottom: 16,
     },
     vaultButtonsRow: {
-      flexDirection: 'row',
+      flexDirection: isCompact ? 'column' : 'row',
       gap: 10,
     },
     vaultBtn: {
-      flex: 1,
+      flex: isCompact ? 0 : 1,
+      width: isCompact ? '100%' : undefined,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 12,
+      minHeight: 50,
       paddingHorizontal: 8,
-      borderRadius: 14,
+      borderRadius: 15,
     },
     vaultBtnFull: {
       width: '100%',
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: 12,
+      minHeight: 48,
       paddingHorizontal: 8,
-      borderRadius: 14,
+      borderRadius: 15,
     },
     signOutRow: {
       borderRadius: 16,
-      paddingVertical: 14,
+      minHeight: 52,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       marginTop: 8,
-      marginBottom: 20,
+      marginBottom: 10,
     },
     signOutText: {
       color: '#EF4444',
@@ -905,6 +991,7 @@ const getStyles = (colors: any) =>
       shadowOpacity: 0.3,
       shadowRadius: 20,
       elevation: 10,
+      maxHeight: '92%',
     },
     modalHeader: {
       flexDirection: 'row',
@@ -925,8 +1012,25 @@ const getStyles = (colors: any) =>
       borderRadius: 16,
       borderWidth: 1,
       marginBottom: 10,
+      minWidth: 0,
+      gap: 12,
+    },
+    optionIdentity: {
+      flex: 1,
+      minWidth: 0,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    optionCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    selectionIcon: {
+      flexShrink: 0,
     },
     optionText: {
       fontSize: 15,
+      flexShrink: 1,
     },
   });

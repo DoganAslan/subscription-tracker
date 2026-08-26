@@ -1,11 +1,10 @@
 import { useTranslation } from '@/context/LanguageContext';
 import { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Platform, LayoutAnimation, UIManager } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useCards, useUpdateCard } from '@/features/cards/hooks/useCards';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { CardWidget } from '@/features/cards/components/CardWidget';
-import { SavingBankWidget } from '@/features/wallet/components/SavingBankWidget';
 import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -25,8 +24,7 @@ export default function WalletScreen() {
   const router = useRouter();
   const { t, currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
-  const insets = useSafeAreaInsets();
-  const paddingTop = Math.max(insets.top + 8, Platform.OS === 'web' ? 16 : 12);
+  const screenTopSpacing = Platform.OS === 'web' ? 16 : 8;
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
   const currencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || baseCurrency;
 
@@ -68,21 +66,24 @@ export default function WalletScreen() {
 
   if (isLoadingCards || isLoadingSubs) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.center, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.primary} />
-      </View>
+      </SafeAreaView>
     );
   }
 
   const linkedSubsCount = subscriptions.filter(s => s.cardId).length;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background, paddingTop: screenTopSpacing }]}
+      edges={['top', 'left', 'right']}
+    >
       {/* Title & Add Button Header */}
       <View style={styles.headerRow}>
-        <View>
-          <Text style={[styles.pageTitle, { color: colors.text }]}>{t.walletPage?.myWallet || 'My Wallet'}</Text>
-          <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>
+        <View style={styles.headerCopy}>
+          <Text numberOfLines={1} style={[styles.pageTitle, { color: colors.text }]}>{t.walletPage?.myWallet || 'My Wallet'}</Text>
+          <Text numberOfLines={2} style={[styles.pageSubtitle, { color: colors.textSecondary }]}>
             {cards.length} {t.walletPage?.cards || 'Cards'} • {linkedSubsCount} {t.walletPage?.linkedSubs || 'Linked Subscriptions'}
           </Text>
         </View>
@@ -101,11 +102,6 @@ export default function WalletScreen() {
         keyExtractor={(item, index) => item.id || `card-${index}`}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={{ marginBottom: 16 }}>
-            <SavingBankWidget />
-          </View>
-        }
         ListEmptyComponent={
           <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={[styles.emptyIconBg, { backgroundColor: colors.border }]}>
@@ -247,7 +243,7 @@ export default function WalletScreen() {
           );
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -265,6 +261,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    gap: 12,
+  },
+  headerCopy: {
+    flex: 1,
+    minWidth: 0,
     marginBottom: 12,
   },
   pageTitle: {
@@ -283,6 +284,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,

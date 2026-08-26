@@ -16,6 +16,7 @@ import { Timestamp } from 'firebase/firestore';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 
 import { useTranslation } from '@/context/LanguageContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CARD_TYPES = [
   { label: 'Visa', value: 'visa' },
@@ -63,6 +64,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const { colors, isDark } = useTheme();
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   
   const isEdit = !!initialData;
   const currentYear = new Date().getFullYear();
@@ -301,7 +303,12 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
       {/* Type Selection Modal */}
       <Modal visible={isTypeModalVisible} animationType="slide" transparent={true} onRequestClose={() => setIsTypeModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.modalContent, {
+            backgroundColor: colors.surface,
+            paddingBottom: Math.max(24, insets.bottom + 16),
+            paddingLeft: Math.max(24, insets.left + 16),
+            paddingRight: Math.max(24, insets.right + 16),
+          }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>{t.global.selectCardType}</Text>
               <TouchableOpacity onPress={() => setIsTypeModalVisible(false)}>
@@ -326,10 +333,10 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
                       }}
                       style={[styles.modalRow, { borderBottomColor: colors.border }]}
                     >
-                      <Text style={[styles.modalRowText, { color: value === item.value ? colors.primary : colors.text }]}>
+                      <Text numberOfLines={2} style={[styles.modalRowText, { color: value === item.value ? colors.primary : colors.text }]}>
                         {item.label}
                       </Text>
-                      {value === item.value && <Text style={{ color: colors.primary, fontWeight: 'bold' }}>✓</Text>}
+                      {value === item.value && <Text style={styles.selectionMark}>✓</Text>}
                     </TouchableOpacity>
                   )}
                 />
@@ -342,7 +349,12 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
       {/* Currency Selection Modal */}
       <Modal visible={isCurrencyModalVisible} animationType="slide" transparent={true} onRequestClose={() => setIsCurrencyModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+          <View style={[styles.modalContent, {
+            backgroundColor: colors.surface,
+            paddingBottom: Math.max(24, insets.bottom + 16),
+            paddingLeft: Math.max(24, insets.left + 16),
+            paddingRight: Math.max(24, insets.right + 16),
+          }]}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>{t.global.selectCurrency}</Text>
               <TouchableOpacity onPress={() => setIsCurrencyModalVisible(false)}>
@@ -367,10 +379,10 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
                       }}
                       style={[styles.modalRow, { borderBottomColor: colors.border }]}
                     >
-                      <Text style={[styles.modalRowText, { color: value === item.value ? colors.primary : colors.text }]}>
+                      <Text numberOfLines={2} style={[styles.modalRowText, { color: value === item.value ? colors.primary : colors.text }]}>
                         {item.label}
                       </Text>
-                      {value === item.value && <Text style={{ color: colors.primary, fontWeight: 'bold' }}>✓</Text>}
+                      {value === item.value && <Text style={styles.selectionMark}>✓</Text>}
                     </TouchableOpacity>
                   )}
                 />
@@ -472,6 +484,9 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
   },
   modalRow: {
     flexDirection: 'row',
@@ -481,5 +496,9 @@ const styles = StyleSheet.create({
   },
   modalRowText: {
     fontSize: 16,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 12,
   },
+  selectionMark: { color: '#3B82F6', fontWeight: 'bold', flexShrink: 0 },
 });

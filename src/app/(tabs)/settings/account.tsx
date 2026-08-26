@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,136 +10,80 @@ import {
   TextInput,
   Platform,
   Pressable,
+  useWindowDimensions,
+  KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/context/ThemeContext';
 import { triggerHaptic } from '@/utils/haptics';
-import * as Clipboard from 'expo-clipboard';
-import Toast from 'react-native-toast-message';
 import { AuthService } from '@/services/firebase/auth';
+import { auth } from '@/services/firebase/config';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Button } from '@/components/ui/Button';
 import { useTranslation } from '@/context/LanguageContext';
-import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { getUserFacingError } from '@/utils/userFacingError';
 
 export default function AccountSettingsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
   const { user } = useAuthStore();
-  const dynamicStyles = React.useMemo(() => getStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 390;
+  const dynamicStyles = React.useMemo(() => getStyles(colors, isCompact), [colors, isCompact]);
+  const modalBottomPadding = Math.max(28, insets.bottom + 20);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   // Modal States
   const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
-  const [, setReauthModalVisible] = useState(false);
   const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
   const { t, currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
+  const errorTitle = isTurkish ? 'İşlem tamamlanamadı' : 'Could not complete action';
 
   // Form States
   const [newEmail, setNewEmail] = useState('');
+  const [currentEmailPassword, setCurrentEmailPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [reauthPassword, setReauthPassword] = useState('');
   const [deletePassword, setDeletePassword] = useState('');
-
-  // Password Visibility States
-  const [showConfirmPass, setShowConfirmPass] = useState(false);
-
-  // Track what action to retry after re-auth
-  const [pendingAction, setPendingAction] = useState<'email' | 'password' | 'delete' | null>(null);
-
-  // Privacy State
-  const [isIdVisible, setIsIdVisible] = useState(false);
-
-  useFocusEffect(
-    useCallback(() => {
-      return () => {
-        setIsIdVisible(false);
-      };
-    }, [])
-  );
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    if (isIdVisible) {
-      timer = setTimeout(() => {
-        setIsIdVisible(false);
-      }, 30000);
-    }
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [isIdVisible]);
-
-  const handleAuthError = (error: any, actionType: 'email' | 'password' | 'delete') => {
-    if (error.code === 'auth/requires-recent-login') {
-      setPendingAction(actionType);
-      setReauthPassword('');
-      setReauthModalVisible(true);
-    } else {
-      Alert.alert(t.global?.error || 'Error', error.message || 'An unexpected error occurred.');
-    }
-  };
-
-  const executePendingAction = async () => {
-    if (!pendingAction) return;
-
-    if (pendingAction === 'email') {
-      await AuthService.updateEmailAddress(newEmail);
-      Alert.alert(t.global?.success || 'Success', 'Email address updated successfully.');
-      setEmailModalVisible(false);
-    } else if (pendingAction === 'password') {
-      await AuthService.updateUserPassword(newPassword);
-      Alert.alert(t.global?.success || 'Success', 'Password updated successfully.');
-      setPasswordModalVisible(false);
-    } else if (pendingAction === 'delete') {
-      await AuthService.deleteAccount();
-    }
-    setPendingAction(null);
-    setReauthModalVisible(false);
-  };
-
-  const handleReauthSubmit = async () => {
-    if (!reauthPassword) {
-      Alert.alert(t.global?.error || 'Error', 'Please enter your password.');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await AuthService.reauthenticate(reauthPassword);
-      await executePendingAction();
-    } catch (error: any) {
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        Alert.alert(t.global?.error || 'Error', 'The password you entered is incorrect.');
-      } else {
-        Alert.alert(t.global?.error || 'Error', error.message || 'An unexpected error occurred.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleChangeEmail = async () => {
     if (!newEmail || !newEmail.includes('@')) {
-      Alert.alert(t.global?.invalidEmail || 'Invalid Email', 'Please enter a valid email address.');
+      Alert.alert(isTurkish ? 'Geçersiz e-posta' : 'Invalid email', isTurkish ? 'Geçerli bir e-posta adresi girin.' : 'Enter a valid email address.');
+      return;
+    }
+    if (!currentEmailPassword) {
+      Alert.alert(isTurkish ? 'Şifre gerekli' : 'Password required', isTurkish ? 'E-posta değişikliği için mevcut şifreni gir.' : 'Enter your current password to change your email.');
       return;
     }
 
     setIsLoading(true);
     try {
+      await AuthService.reauthenticate(currentEmailPassword);
       await AuthService.updateEmailAddress(newEmail);
-      Alert.alert(t.global?.success || 'Success', 'Email updated successfully.');
+      Alert.alert(
+        isTurkish ? 'Doğrulama bağlantısı gönderildi' : 'Verification link sent',
+        isTurkish
+          ? `${newEmail} adresine bir doğrulama bağlantısı gönderdik. Bağlantıyı açtığında e-posta adresin değiştirilecek.`
+          : `We sent a verification link to ${newEmail}. Your email address will change after you open the link.`,
+      );
       setEmailModalVisible(false);
       setNewEmail('');
-    } catch (error: any) {
-      handleAuthError(error, 'email');
+      setCurrentEmailPassword('');
+    } catch (error: unknown) {
+      Alert.alert(errorTitle, getUserFacingError(error, isTurkish, {
+        tr: 'E-posta doğrulama bağlantısı gönderilemedi.',
+        en: 'The email verification link could not be sent.',
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -147,15 +91,15 @@ export default function AccountSettingsScreen() {
 
   const handleChangePassword = async () => {
     if (!currentPassword) {
-      Alert.alert(t.global?.error || 'Error', 'Please enter your current password.');
+      Alert.alert(errorTitle, isTurkish ? 'Mevcut şifreni gir.' : 'Enter your current password.');
       return;
     }
     if (!newPassword || newPassword.length < 6) {
-      Alert.alert(t.global?.invalidPassword || 'Invalid Password', 'Password must be at least 6 characters.');
+      Alert.alert(isTurkish ? 'Geçersiz şifre' : 'Invalid password', isTurkish ? 'Yeni şifre en az 6 karakter olmalıdır.' : 'The new password must be at least 6 characters.');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert(t.global?.error || 'Error', 'Passwords do not match.');
+      Alert.alert(errorTitle, isTurkish ? 'Yeni şifreler birbiriyle eşleşmiyor.' : 'The new passwords do not match.');
       return;
     }
 
@@ -164,53 +108,78 @@ export default function AccountSettingsScreen() {
       await AuthService.reauthenticate(currentPassword);
       await AuthService.updateUserPassword(newPassword);
 
-      Alert.alert(t.global?.success || 'Success', 'Password updated successfully.');
+      Alert.alert(isTurkish ? 'Şifre güncellendi' : 'Password updated', isTurkish ? 'Yeni şifren artık kullanılabilir.' : 'Your new password is ready to use.');
       setPasswordModalVisible(false);
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
-      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        Alert.alert(t.global?.error || 'Error', 'Current password is incorrect.');
-      } else {
-        Alert.alert(t.global?.error || 'Error', error.message || 'Failed to update password.');
-      }
+    } catch (error: unknown) {
+      Alert.alert(errorTitle, getUserFacingError(error, isTurkish, {
+        tr: 'Şifre güncellenemedi.',
+        en: 'The password could not be updated.',
+      }));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSendResetEmail = async () => {
-    const authInstance = getAuth();
-    const currentUser = authInstance.currentUser;
-
-    if (!currentUser || !currentUser.email) {
-      Alert.alert(t.global?.error || 'Error', 'No authenticated user email found.');
+  const sendPasswordResetLink = async () => {
+    const email = user?.email || auth.currentUser?.email;
+    if (!email) {
+      Alert.alert(
+        isTurkish ? 'E-posta bulunamadı' : 'Email not found',
+        isTurkish ? 'Şifre sıfırlama bağlantısı için hesabına bağlı bir e-posta gerekli.' : 'An email address is required to send a password reset link.',
+      );
       return;
     }
 
-    const executeReset = async () => {
-      try {
-        setIsLoading(true);
-        await sendPasswordResetEmail(authInstance, currentUser.email!);
-        Alert.alert(t.global?.success || 'Success', 'Password reset email sent. Please check your inbox.');
-      } catch (error: any) {
-        Alert.alert(t.global?.error || 'Error', error.message || 'Failed to send reset email.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Send a password reset link to ${currentUser.email}?`)) {
-        await executeReset();
-      }
-    } else {
-      Alert.alert('Reset Password', `Send password reset link to ${currentUser.email}?`, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Send', onPress: executeReset },
-      ]);
+    setIsResettingPassword(true);
+    try {
+      await AuthService.sendPasswordResetEmail(email);
+      Alert.alert(
+        isTurkish ? 'Bağlantı gönderildi' : 'Link sent',
+        isTurkish
+          ? `${email} adresine şifre sıfırlama bağlantısı gönderdik. Gelen kutunu ve spam klasörünü kontrol et.`
+          : `We sent a password reset link to ${email}. Check your inbox and spam folder.`,
+      );
+    } catch (error: unknown) {
+      Alert.alert(
+        errorTitle,
+        getUserFacingError(error, isTurkish, {
+          tr: 'Şifre sıfırlama bağlantısı gönderilemedi.',
+          en: 'The password reset link could not be sent.',
+        }),
+      );
+    } finally {
+      setIsResettingPassword(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    const email = user?.email || auth.currentUser?.email || '';
+    const title = isTurkish ? 'Şifreni mi unuttun?' : 'Forgot your password?';
+    const message = isTurkish
+      ? `${email} adresine şifreni yenileyebileceğin güvenli bir bağlantı göndereceğiz.`
+      : `We will send a secure password reset link to ${email}.`;
+
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      if (window.confirm(message)) {
+        void sendPasswordResetLink();
+      }
+      return;
+    }
+
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: isTurkish ? 'Vazgeç' : 'Cancel', style: 'cancel' },
+        {
+          text: isTurkish ? 'Bağlantı gönder' : 'Send link',
+          onPress: () => void sendPasswordResetLink(),
+        },
+      ],
+    );
   };
 
   const handleDeleteAccount = () => {
@@ -220,7 +189,7 @@ export default function AccountSettingsScreen() {
 
   const confirmAndDelete = async () => {
     if (!deletePassword) {
-      Alert.alert(t.global?.error || 'Error', 'Password is required to delete account.');
+      Alert.alert(errorTitle, isTurkish ? 'Hesabı silmek için mevcut şifreni gir.' : 'Enter your current password to delete the account.');
       return;
     }
 
@@ -228,23 +197,21 @@ export default function AccountSettingsScreen() {
     try {
       await AuthService.reauthenticate(deletePassword);
       await AuthService.deleteAccount();
-    } catch (error: any) {
-      Alert.alert(t.global?.error || 'Error', error.message || 'Failed to delete account.');
+    } catch (error: unknown) {
+      Alert.alert(errorTitle, getUserFacingError(error, isTurkish, {
+        tr: 'Hesap silinemedi.',
+        en: 'The account could not be deleted.',
+      }));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCopyId = async () => {
-    if (user?.uid) {
-      triggerHaptic('light');
-      await Clipboard.setStringAsync(user.uid);
-      Toast.show({ type: 'success', text1: 'Copied to clipboard!', position: 'top' });
-    }
-  };
+  const displayName = user?.displayName || auth.currentUser?.displayName || (isTurkish ? 'SubMate kullanıcısı' : 'SubMate user');
+  const initials = displayName.trim().charAt(0).toUpperCase() || 'S';
 
   return (
-    <SafeAreaView style={dynamicStyles.container}>
+    <SafeAreaView style={dynamicStyles.container} edges={['top', 'bottom', 'left', 'right']}>
       {/* Header Bar */}
       <View style={[dynamicStyles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity
@@ -254,13 +221,28 @@ export default function AccountSettingsScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={[dynamicStyles.headerTitle, { color: colors.text }]}>{t.accountSettings?.title || 'Account Settings'}</Text>
+        <Text numberOfLines={1} style={[dynamicStyles.headerTitle, { color: colors.text }]}>{t.accountSettings?.title || 'Account Settings'}</Text>
         <View style={{ width: 28 }} />
       </View>
 
       <ScrollView style={dynamicStyles.content} contentContainerStyle={{ paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
+        <LinearGradient colors={['#5D43E9', '#347BED']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={dynamicStyles.accountHero}>
+          <View style={dynamicStyles.avatar}>
+            <Text style={dynamicStyles.avatarText}>{initials}</Text>
+          </View>
+          <View style={dynamicStyles.heroCopy}>
+            <Text numberOfLines={1} style={dynamicStyles.heroName}>{displayName}</Text>
+            <Text numberOfLines={1} style={dynamicStyles.heroEmail}>{user?.email || auth.currentUser?.email || '—'}</Text>
+            <View style={dynamicStyles.heroStatus}>
+              <Ionicons name="shield-checkmark" size={14} color="#FFFFFF" />
+              <Text style={dynamicStyles.heroStatusText}>{isTurkish ? 'Hesabın güvende' : 'Your account is protected'}</Text>
+            </View>
+          </View>
+          <Ionicons name="sparkles" size={54} color="rgba(255,255,255,0.12)" style={dynamicStyles.heroDecoration} />
+        </LinearGradient>
+
         {/* Personal Info */}
-        <Text style={[dynamicStyles.sectionTitle, { color: colors.textSecondary }]}>{(t.accountSettings?.personalInfo || 'PERSONAL INFORMATION').toUpperCase()}</Text>
+        <Text style={[dynamicStyles.sectionTitle, { color: colors.textSecondary }]}>{isTurkish ? 'HESAP BİLGİLERİ' : 'ACCOUNT DETAILS'}</Text>
         <View style={[dynamicStyles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Email Row */}
           <View style={dynamicStyles.menuRow}>
@@ -268,76 +250,17 @@ export default function AccountSettingsScreen() {
               <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
                 <Ionicons name="mail-outline" size={18} color="#3B82F6" />
               </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{t.accountSettings?.emailLabel || 'Email Address'}</Text>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{isTurkish ? 'E-posta adresi' : 'Email address'}</Text>
             </View>
             <Text style={[dynamicStyles.menuValue, { color: colors.textSecondary }]} numberOfLines={1}>
               {user?.email || 'N/A'}
             </Text>
           </View>
 
-          <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
-
-          {/* Account ID Row */}
-          <View style={dynamicStyles.menuRow}>
-            <View style={dynamicStyles.menuRowLeft}>
-              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
-                <Ionicons name="key-outline" size={18} color="#10B981" />
-              </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{(t.accountSettings as any)?.accountId || 'Account ID'}</Text>
-            </View>
-
-            {isIdVisible ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <TouchableOpacity style={dynamicStyles.copyContainer} onPress={handleCopyId} activeOpacity={0.7}>
-                  <Text style={[dynamicStyles.menuValue, { color: colors.text, maxWidth: 110 }]} numberOfLines={1} ellipsizeMode="middle">
-                    {user?.uid}
-                  </Text>
-                  <Ionicons name="copy-outline" size={16} color={colors.primary} style={{ marginLeft: 4 }} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setIsIdVisible(false)} style={{ marginLeft: 8 }}>
-                  <Ionicons name="eye-off-outline" size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                onPress={() => {
-                  triggerHaptic('medium');
-                  setIsIdVisible(true);
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center' }}
-              >
-                <Ionicons name="eye-outline" size={16} color={colors.primary} style={{ marginRight: 4 }} />
-                <Text style={{ fontSize: 13, fontWeight: '800', color: colors.primary }}>{isTurkish ? 'Kimliği göster' : 'Reveal ID'}</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
-
-          {/* Language Row */}
-          <TouchableOpacity
-            style={dynamicStyles.menuRow}
-            activeOpacity={0.7}
-            onPress={() => router.replace('/(tabs)/settings')}
-          >
-            <View style={dynamicStyles.menuRowLeft}>
-              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.12)' }]}>
-                <Ionicons name="language-outline" size={18} color="#8B5CF6" />
-              </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>Language / Dil</Text>
-            </View>
-
-            <View style={dynamicStyles.menuRowRight}>
-              <Text style={[dynamicStyles.menuValue, { color: colors.textSecondary }]}>
-                {currentLanguage === 'tr' ? 'Türkçe 🇹🇷' : 'English 🇬🇧'}
-              </Text>
-              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-            </View>
-          </TouchableOpacity>
         </View>
 
         {/* Security Section */}
-        <Text style={[dynamicStyles.sectionTitle, { color: colors.textSecondary }]}>GÜVENLİK</Text>
+        <Text style={[dynamicStyles.sectionTitle, { color: colors.textSecondary }]}>{isTurkish ? 'GÜVENLİK' : 'SECURITY'}</Text>
         <View style={[dynamicStyles.cardGroup, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Change Email */}
           <TouchableOpacity
@@ -383,27 +306,32 @@ export default function AccountSettingsScreen() {
 
           <View style={[dynamicStyles.divider, { backgroundColor: colors.border }]} />
 
-          {/* Send Password Reset Email */}
           <TouchableOpacity
-            style={dynamicStyles.menuRow}
+            style={[dynamicStyles.menuRow, isResettingPassword && { opacity: 0.55 }]}
             activeOpacity={0.7}
+            disabled={isResettingPassword}
             onPress={() => {
               triggerHaptic('medium');
-              handleSendResetEmail();
+              handleForgotPassword();
             }}
           >
             <View style={dynamicStyles.menuRowLeft}>
-              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
-                <Ionicons name="paper-plane-outline" size={18} color="#10B981" />
+              <View style={[dynamicStyles.menuIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.14)' }]}>
+                <Ionicons name="key-outline" size={18} color="#8B5CF6" />
               </View>
-              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{(t.accountSettings as any)?.sendResetEmail || 'Send Password Reset Email'}</Text>
+              <Text style={[dynamicStyles.menuLabel, { color: colors.text }]}>{isTurkish ? 'Şifremi unuttum' : 'Forgot password'}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            {isResettingPassword ? (
+              <Ionicons name="hourglass-outline" size={18} color={colors.textSecondary} />
+            ) : (
+              <Ionicons name="paper-plane-outline" size={18} color={colors.textSecondary} />
+            )}
           </TouchableOpacity>
+
         </View>
 
         {/* Danger Zone */}
-        <Text style={[dynamicStyles.sectionTitle, { color: '#EF4444', marginTop: 16 }]}>{(t.accountSettings as any)?.dangerZone || 'DANGER ZONE'}</Text>
+        <Text style={[dynamicStyles.sectionTitle, { color: '#EF4444', marginTop: 16 }]}>{isTurkish ? 'TEHLİKELİ İŞLEMLER' : 'DANGER ZONE'}</Text>
         <View style={[dynamicStyles.cardGroup, { backgroundColor: colors.surface, borderColor: 'rgba(239, 68, 68, 0.3)' }]}>
           <TouchableOpacity
             style={dynamicStyles.menuRow}
@@ -425,12 +353,17 @@ export default function AccountSettingsScreen() {
       </ScrollView>
 
       {/* Change Email Modal */}
-      <Modal visible={emailModalVisible} animationType="fade" transparent>
-        <View style={dynamicStyles.modalOverlay}>
-          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setEmailModalVisible(false)} />
-          <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Modal visible={emailModalVisible} animationType="fade" transparent onRequestClose={() => setEmailModalVisible(false)}>
+        <KeyboardAvoidingView
+          style={dynamicStyles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => { Keyboard.dismiss(); setEmailModalVisible(false); }} />
+          <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: modalBottomPadding }]}>
             <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{(t.accountSettings as any)?.changeEmail || 'Change Email'}</Text>
-            <Text style={[dynamicStyles.modalSubtitle, { color: colors.textSecondary }]}>{(t.accountSettings as any)?.enterNewEmail || 'Enter your new email address.'}</Text>
+            <Text style={[dynamicStyles.modalSubtitle, { color: colors.textSecondary }]}>
+              {isTurkish ? 'Güvenlik için yeni e-posta adresini ve mevcut şifreni doğrula.' : 'Confirm your new email and current password for security.'}
+            </Text>
 
             <TextInput
               style={[dynamicStyles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
@@ -441,20 +374,31 @@ export default function AccountSettingsScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
+            <TextInput
+              style={[dynamicStyles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+              placeholder={isTurkish ? 'Mevcut şifre' : 'Current password'}
+              placeholderTextColor={colors.textSecondary}
+              value={currentEmailPassword}
+              onChangeText={setCurrentEmailPassword}
+              secureTextEntry
+            />
 
             <View style={dynamicStyles.modalButtons}>
-              <Button title={t.common?.cancel || 'Cancel'} variant="secondary" onPress={() => setEmailModalVisible(false)} style={{ flex: 1, marginRight: 8 }} />
-              <Button title={(t.global as any)?.saveChanges || 'Save'} onPress={handleChangeEmail} style={{ flex: 1, marginLeft: 8 }} isLoading={isLoading} />
+              <Button title={t.common?.cancel || 'Cancel'} variant="secondary" onPress={() => setEmailModalVisible(false)} style={dynamicStyles.modalButton} />
+              <Button title={(t.global as any)?.saveChanges || 'Save'} onPress={handleChangeEmail} style={dynamicStyles.modalButton} isLoading={isLoading} />
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Change Password Modal */}
-      <Modal visible={passwordModalVisible} animationType="fade" transparent>
-        <View style={dynamicStyles.modalOverlay}>
-          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setPasswordModalVisible(false)} />
-          <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <Modal visible={passwordModalVisible} animationType="fade" transparent onRequestClose={() => setPasswordModalVisible(false)}>
+        <KeyboardAvoidingView
+          style={dynamicStyles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => { Keyboard.dismiss(); setPasswordModalVisible(false); }} />
+          <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: modalBottomPadding }]}>
             <Text style={[dynamicStyles.modalTitle, { color: colors.text }]}>{(t.accountSettings as any)?.changePassword || 'Change Password'}</Text>
             <Text style={[dynamicStyles.modalSubtitle, { color: colors.textSecondary }]}>{(t.accountSettings as any)?.enterCurrentAndNewPassword || 'Enter your current and new password.'}</Text>
 
@@ -486,18 +430,21 @@ export default function AccountSettingsScreen() {
             />
 
             <View style={dynamicStyles.modalButtons}>
-              <Button title={t.common?.cancel || 'Cancel'} variant="secondary" onPress={() => setPasswordModalVisible(false)} style={{ flex: 1, marginRight: 8 }} />
-              <Button title={(t.global as any)?.update || 'Update'} onPress={handleChangePassword} style={{ flex: 1, marginLeft: 8 }} isLoading={isLoading} />
+              <Button title={t.common?.cancel || 'Cancel'} variant="secondary" onPress={() => setPasswordModalVisible(false)} style={dynamicStyles.modalButton} />
+              <Button title={(t.global as any)?.update || 'Update'} onPress={handleChangePassword} style={dynamicStyles.modalButton} isLoading={isLoading} />
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Delete Account Modal */}
-      <Modal visible={isDeleteModalVisible} animationType="fade" transparent>
-        <View style={dynamicStyles.modalOverlay}>
-          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => setDeleteModalVisible(false)} />
-          <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: '#EF4444' }]}>
+      <Modal visible={isDeleteModalVisible} animationType="fade" transparent onRequestClose={() => setDeleteModalVisible(false)}>
+        <KeyboardAvoidingView
+          style={dynamicStyles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <Pressable style={dynamicStyles.modalDismissArea} onPress={() => { Keyboard.dismiss(); setDeleteModalVisible(false); }} />
+          <View style={[dynamicStyles.modalContent, { backgroundColor: colors.surface, borderColor: '#EF4444', paddingBottom: modalBottomPadding }]}>
             <Text style={[dynamicStyles.modalTitle, { color: '#EF4444' }]}>{(t.accountSettings as any)?.deleteAccountPermanently || 'Permanently Delete Account'}</Text>
             <Text style={[dynamicStyles.modalSubtitle, { color: colors.textSecondary }]}>
               {(t.accountSettings as any)?.deleteAccountWarning || 'This action cannot be undone. Enter current password to confirm.'}
@@ -513,17 +460,17 @@ export default function AccountSettingsScreen() {
             />
 
             <View style={dynamicStyles.modalButtons}>
-              <Button title={t.common?.cancel || 'Cancel'} variant="secondary" onPress={() => setDeleteModalVisible(false)} style={{ flex: 1, marginRight: 8 }} />
-              <Button title={(t.accountSettings as any)?.permanentlyDelete || 'Permanently Delete'} onPress={confirmAndDelete} style={{ flex: 1, marginLeft: 8, backgroundColor: '#EF4444' }} isLoading={isLoading} />
+              <Button title={t.common?.cancel || 'Cancel'} variant="secondary" onPress={() => setDeleteModalVisible(false)} style={dynamicStyles.modalButton} />
+              <Button title={(t.accountSettings as any)?.permanentlyDelete || 'Permanently Delete'} onPress={confirmAndDelete} style={[dynamicStyles.modalButton, { backgroundColor: '#EF4444' }]} isLoading={isLoading} />
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
 }
 
-const getStyles = (colors: any) =>
+const getStyles = (colors: any, isCompact: boolean) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -534,20 +481,83 @@ const getStyles = (colors: any) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 20,
-      paddingVertical: 16,
+      paddingVertical: 14,
       borderBottomWidth: 1,
     },
     backButton: {
       padding: 4,
     },
     headerTitle: {
-      fontSize: 18,
+      fontSize: 17,
       fontWeight: '800',
+      flex: 1,
+      minWidth: 0,
+      textAlign: 'center',
     },
     content: {
       flex: 1,
-      paddingHorizontal: 20,
-      paddingTop: 16,
+      paddingHorizontal: isCompact ? 14 : 20,
+      paddingTop: 18,
+    },
+    accountHero: {
+      minHeight: 142,
+      borderRadius: 25,
+      padding: isCompact ? 16 : 20,
+      flexDirection: 'row',
+      alignItems: 'center',
+      overflow: 'hidden',
+      marginBottom: 24,
+    },
+    avatar: {
+      width: 68,
+      height: 68,
+      borderRadius: 23,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(255,255,255,0.20)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.34)',
+      marginRight: 14,
+    },
+    avatarText: {
+      color: '#FFFFFF',
+      fontSize: 27,
+      fontWeight: '800',
+    },
+    heroCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    heroName: {
+      color: '#FFFFFF',
+      fontSize: 20,
+      fontWeight: '800',
+    },
+    heroEmail: {
+      color: 'rgba(255,255,255,0.76)',
+      fontSize: 12.5,
+      marginTop: 4,
+    },
+    heroStatus: {
+      alignSelf: 'flex-start',
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      borderRadius: 9,
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+      marginTop: 11,
+    },
+    heroStatusText: {
+      color: '#FFFFFF',
+      fontSize: 11,
+      fontWeight: '800',
+    },
+    heroDecoration: {
+      position: 'absolute',
+      top: -8,
+      right: -9,
     },
     sectionTitle: {
       fontSize: 11,
@@ -555,35 +565,41 @@ const getStyles = (colors: any) =>
       letterSpacing: 0.8,
       marginBottom: 8,
       marginLeft: 4,
-      marginTop: 12,
+      marginTop: 4,
     },
     cardGroup: {
-      borderRadius: 20,
+      borderRadius: 21,
       borderWidth: 1,
       overflow: 'hidden',
-      marginBottom: 16,
+      marginBottom: 22,
     },
     menuRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: 16,
+      minHeight: 70,
+      paddingHorizontal: 16,
+      paddingVertical: 13,
     },
     menuRowLeft: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 12,
+      flex: 1,
+      minWidth: 0,
+      marginRight: 10,
     },
     menuIconBox: {
-      width: 34,
-      height: 34,
-      borderRadius: 10,
+      width: 40,
+      height: 40,
+      borderRadius: 13,
       alignItems: 'center',
       justifyContent: 'center',
     },
     menuLabel: {
-      fontSize: 14,
+      fontSize: 15,
       fontWeight: '700',
+      flexShrink: 1,
     },
     menuRowRight: {
       flexDirection: 'row',
@@ -593,6 +609,9 @@ const getStyles = (colors: any) =>
     menuValue: {
       fontSize: 13,
       fontWeight: '600',
+      maxWidth: '46%',
+      flexShrink: 1,
+      textAlign: 'right',
     },
     divider: {
       height: StyleSheet.hairlineWidth,
@@ -620,9 +639,11 @@ const getStyles = (colors: any) =>
       width: '100%',
       maxWidth: 520,
       alignSelf: 'center',
-      borderRadius: 24,
-      padding: 24,
+      borderRadius: 26,
+      padding: 22,
+      paddingBottom: 28,
       borderWidth: 1,
+      maxHeight: '92%',
     },
     modalTitle: {
       fontSize: 18,
@@ -641,7 +662,12 @@ const getStyles = (colors: any) =>
       marginBottom: 16,
     },
     modalButtons: {
-      flexDirection: 'row',
+      flexDirection: isCompact ? 'column' : 'row',
       marginTop: 8,
+      gap: 10,
+    },
+    modalButton: {
+      flex: isCompact ? 0 : 1,
+      width: isCompact ? '100%' : undefined,
     },
   });

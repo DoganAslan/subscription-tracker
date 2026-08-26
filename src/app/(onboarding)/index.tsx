@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { View, Text, SafeAreaView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -83,7 +84,7 @@ export default function OnboardingScreen() {
 
   return (
     <LinearGradient colors={['#080B18', '#111735', '#0B1020']} style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
         <View style={styles.topBar}>
           <View style={styles.brandMark}>
             <Ionicons name="sparkles" size={16} color="#C4B5FD" />

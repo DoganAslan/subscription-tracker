@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "npx firebase use --add": "submate-4fc0a",
+    "default": "submate-4fc0a"
+  },
+  "targets": {},
+  "etags": {}
+}

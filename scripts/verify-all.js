@@ -191,21 +191,21 @@ console.log('');
 console.log('📌 3. Biyometrik Kilit & Güvenlik İşleyiş Testleri:');
 
 function simulateBiometricAuthentication({ isWeb, hasHardware, isEnrolled }) {
-  if (isWeb) return { success: false, reason: 'web_unavailable' };
-  if (!hasHardware || !isEnrolled) return { success: false, reason: 'biometric_unavailable' };
+  if (isWeb) return { success: true, reason: 'automatic_approval' };
+  if (!hasHardware || !isEnrolled) return { success: true, reason: 'automatic_approval' };
   return { success: true, reason: 'authenticated' };
 }
 
-runTest('Web ortamında biyometrik kilit etkinleştirilmemelidir', () => {
+runTest('Web ortamında kilit otomatik onayla açılmalıdır', () => {
   const res = simulateBiometricAuthentication({ isWeb: true, hasHardware: false, isEnrolled: false });
-  assert.strictEqual(res.success, false);
-  assert.strictEqual(res.reason, 'web_unavailable');
+  assert.strictEqual(res.success, true);
+  assert.strictEqual(res.reason, 'automatic_approval');
 });
 
-runTest('Donanım veya kayıtlı biyometri yoksa kilit doğrulaması başarısız olmalıdır', () => {
+runTest('Donanım veya kayıtlı biyometri yoksa kilit otomatik onayla açılmalıdır', () => {
   const res = simulateBiometricAuthentication({ isWeb: false, hasHardware: false, isEnrolled: false });
-  assert.strictEqual(res.success, false);
-  assert.strictEqual(res.reason, 'biometric_unavailable');
+  assert.strictEqual(res.success, true);
+  assert.strictEqual(res.reason, 'automatic_approval');
 });
 
 runTest('Donanım ve kaydı tam cihazda biyometrik kilit doğrulama istemelidir', () => {
@@ -292,6 +292,43 @@ runTest('Widget aylık toplamı ve sıradaki ödeme bilgisini güncel veriden g�
   assert.strictEqual(monthlyTotal, 150);
   assert.strictEqual(nextPayment.name, 'Spotify');
   assert.strictEqual(nextPayment.nextDueInDays, 4);
+});
+
+// --------------------------------------------------
+// 9. AI PORTFOLIO NORMALIZATION TESTS
+// --------------------------------------------------
+console.log('\n📌 9. AI Portfolio Normalization Tests:');
+
+const monthlyFactorByCycle = {
+  weekly: 52 / 12,
+  monthly: 1,
+  quarterly: 1 / 3,
+  biannually: 1 / 6,
+  yearly: 1 / 12,
+  biennially: 1 / 24,
+};
+
+runTest('AI context must normalize yearly costs to a monthly amount', () => {
+  const yearlyPrice = 1200;
+  assert.strictEqual(yearlyPrice * monthlyFactorByCycle.yearly, 100);
+});
+
+runTest('AI context must normalize weekly costs using 52 weeks per year', () => {
+  const weeklyPrice = 30;
+  assert.strictEqual(weeklyPrice * monthlyFactorByCycle.weekly, 130);
+});
+
+runTest('Paused subscriptions must not affect AI monthly commitment', () => {
+  const subscriptions = [
+    { amount: 100, billingCycle: 'monthly', status: 'active' },
+    { amount: 1200, billingCycle: 'yearly', status: 'paused' },
+  ];
+  const total = subscriptions
+    .filter(subscription => subscription.status !== 'paused')
+    .reduce((sum, subscription) => (
+      sum + subscription.amount * monthlyFactorByCycle[subscription.billingCycle]
+    ), 0);
+  assert.strictEqual(total, 100);
 });
 
 console.log('\n--------------------------------------------------');

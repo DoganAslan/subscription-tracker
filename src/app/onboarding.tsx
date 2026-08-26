@@ -1,12 +1,11 @@
-import { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, StyleSheet, Platform, FlatList } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, FlatList, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useOnboardingStore } from '@/features/onboarding/store/useOnboardingStore';
 import { useTranslation } from '@/context/LanguageContext';
-
-const { width, height } = Dimensions.get('window');
 
 const SLIDES = [
   {
@@ -18,9 +17,9 @@ const SLIDES = [
   },
   {
     id: '2',
-    title: 'HUNT ZOMBIE SUBS',
-    subtitle: 'Detect forgotten free trials and passive money drains. Deep-link directly to official cancellation portals.',
-    icon: 'skull',
+    title: 'REVIEW UNUSED COSTS',
+    subtitle: 'Use your own activity signals to spot subscriptions worth reviewing without misleading labels.',
+    icon: 'search',
     color: '#8B5CF6', 
   },
   {
@@ -42,9 +41,9 @@ const TURKISH_SLIDES = [
   },
   {
     id: '2',
-    title: 'ATIL ABONELİKLERİ BUL',
-    subtitle: 'Unutulan denemeleri ve gereksiz harcamaları tespit et; iptal sayfalarına kolayca ulaş.',
-    icon: 'skull',
+    title: 'KULLANIMI DEĞERLENDİR',
+    subtitle: 'Kendi kullanım bilgilerinle gözden geçirilmeye değer abonelikleri yanıltıcı etiketler olmadan bul.',
+    icon: 'search',
     color: '#8B5CF6',
   },
   {
@@ -58,6 +57,8 @@ const TURKISH_SLIDES = [
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [currentIndex, setCurrentIndex] = useState(0);
   const slidesRef = useRef<any>(null);
   const { currentLanguage } = useTranslation();
@@ -65,6 +66,14 @@ export default function OnboardingScreen() {
   const slides = isTurkish ? TURKISH_SLIDES : SLIDES;
 
   const { completeOnboarding } = useOnboardingStore();
+  const isCompact = height < 700 || width < 360;
+
+  useEffect(() => {
+    slidesRef.current?.scrollToOffset({
+      offset: currentIndex * width,
+      animated: false,
+    });
+  }, [currentIndex, width]);
 
   const handleLaunchApp = async () => {
     try {
@@ -100,10 +109,30 @@ export default function OnboardingScreen() {
     <View style={styles.container}>
       
       {/* BACKGROUND GLOW */}
-      <View pointerEvents="none" style={[styles.glowOrb, { backgroundColor: slides[currentIndex].color }]} />
+      <View
+        pointerEvents="none"
+        style={[
+          styles.glowOrb,
+          {
+            backgroundColor: slides[currentIndex].color,
+            width: width * 1.2,
+            height: width * 1.2,
+            borderRadius: width * 0.6,
+          },
+        ]}
+      />
 
       {/* HEADER CONTROLS */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          {
+            top: Math.max(insets.top + 10, 20),
+            paddingLeft: Math.max(insets.left + 20, 24),
+            paddingRight: Math.max(insets.right + 20, 24),
+          },
+        ]}
+      >
         <View style={styles.brandContainer}>
           <Ionicons name="hardware-chip" size={20} color="#38BDF8" />
           <Text style={styles.brandText}>SUBMATE v2.0</Text>
@@ -124,21 +153,34 @@ export default function OnboardingScreen() {
           showsHorizontalScrollIndicator={false}
           bounces={false}
           getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+          onMomentumScrollEnd={(event) => {
+            const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+            setCurrentIndex(Math.max(0, Math.min(nextIndex, slides.length - 1)));
+          }}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <View style={styles.slide}>
-              <View style={[styles.iconRing, { borderColor: item.color, shadowColor: item.color }]}>
-                <Ionicons name={item.icon as any} size={64} color={item.color} />
+            <View style={[styles.slide, { width, height: height * (isCompact ? 0.6 : 0.65), paddingHorizontal: isCompact ? 24 : 40 }]}>
+              <View style={[styles.iconRing, isCompact && styles.iconRingCompact, { borderColor: item.color, shadowColor: item.color }]}>
+                <Ionicons name={item.icon as any} size={isCompact ? 48 : 64} color={item.color} />
               </View>
-              <Text style={styles.slideTitle}>{item.title}</Text>
-              <Text style={styles.slideSubtitle}>{item.subtitle}</Text>
+              <Text style={[styles.slideTitle, isCompact && styles.slideTitleCompact]}>{item.title}</Text>
+              <Text style={[styles.slideSubtitle, isCompact && styles.slideSubtitleCompact]}>{item.subtitle}</Text>
             </View>
           )}
         />
       </View>
 
       {/* FOOTER CONTROLS */}
-      <View style={styles.footer}>
+      <View
+        style={[
+          styles.footer,
+          {
+            bottom: Math.max(insets.bottom + 12, 20),
+            paddingLeft: Math.max(insets.left + 20, 24),
+            paddingRight: Math.max(insets.right + 20, 24),
+          },
+        ]}
+      >
         <View style={styles.pagination}>
           {slides.map((_, i) => (
             <View
@@ -174,32 +216,34 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#030712' },
+  container: { flex: 1, backgroundColor: '#030712', overflow: 'hidden' },
   glowOrb: {
     position: 'absolute', top: -100, alignSelf: 'center',
-    width: width * 1.2, height: width * 1.2, borderRadius: width * 0.6,
     opacity: 0.12, transform: [{ scale: 1.2 }]
   },
   header: {
-    position: 'absolute', top: 40, left: 0, right: 0,
+    position: 'absolute', left: 0, right: 0,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 24, zIndex: 999999 
+    zIndex: 10,
   },
   brandContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandText: { color: '#F8FAFC', fontWeight: '800', fontSize: 13, letterSpacing: 1 },
   skipText: { color: '#64748B', fontWeight: '700', fontSize: 13 },
   sliderContainer: { flex: 1, justifyContent: 'center' },
-  slide: { width, height: height * 0.65, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 },
+  slide: { alignItems: 'center', justifyContent: 'center' },
   iconRing: {
     width: 140, height: 140, borderRadius: 70, backgroundColor: '#0B0F19',
     borderWidth: 2, alignItems: 'center', justifyContent: 'center',
     marginBottom: 40, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.6, shadowRadius: 30
   },
+  iconRingCompact: { width: 108, height: 108, borderRadius: 54, marginBottom: 24 },
   slideTitle: { color: '#FFFFFF', fontSize: 28, fontWeight: '900', letterSpacing: 1, marginBottom: 16, textAlign: 'center' },
+  slideTitleCompact: { fontSize: 23, marginBottom: 10 },
   slideSubtitle: { color: '#94A3B8', fontSize: 15, textAlign: 'center', lineHeight: 24 },
+  slideSubtitleCompact: { fontSize: 14, lineHeight: 20 },
   footer: { 
-    position: 'absolute', bottom: 40, left: 0, right: 0,
-    paddingHorizontal: 24, zIndex: 999999 
+    position: 'absolute', left: 0, right: 0,
+    zIndex: 10,
   },
   pagination: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginBottom: 28 },
   dot: { height: 8, borderRadius: 4, transition: 'all 0.3s ease' } as any,
@@ -211,5 +255,3 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800', letterSpacing: 0.5 },
   interactiveArea: { padding: 10 }
 });
-
-

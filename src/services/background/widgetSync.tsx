@@ -9,10 +9,11 @@ import { SummaryWidget } from '../../widgets/SummaryWidget';
 import { getMarketRatesWithDynamicCache, convertCurrency, SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { Platform } from 'react-native';
 import { getSecureData } from '@/utils/secureStorage';
-import { getMonthlyCost, getNextRenewalDate } from '@/features/dashboard/utils/calculations';
 import { Subscription } from '@/services/firebase/types';
+import { buildWidgetData } from './widgetData';
 
 export const BACKGROUND_WIDGET_SYNC_TASK = 'BACKGROUND_WIDGET_SYNC_TASK';
+let widgetUpdateQueue: Promise<unknown> = Promise.resolve();
 
 const getStoredBaseCurrency = async (): Promise<string> => {
   try {
@@ -24,31 +25,10 @@ const getStoredBaseCurrency = async (): Promise<string> => {
   }
 };
 
-const getRelativeDueLabel = (date: Date, isTurkish: boolean) => {
-  const today = new Date();
-  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const startOfDueDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const differenceInDays = Math.round((startOfDueDay.getTime() - startOfToday.getTime()) / 86_400_000);
-
-  if (differenceInDays === 0) return isTurkish ? 'Bugün' : 'Today';
-  if (differenceInDays === 1) return isTurkish ? 'Yarın' : 'Tomorrow';
-  return isTurkish ? `${differenceInDays} gün sonra` : `in ${differenceInDays} days`;
-};
-
-const toDate = (value: unknown): Date | null => {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
-  if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
-    const date = (value as { toDate: () => Date }).toDate();
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-  const date = new Date(value as string | number);
-  return Number.isNaN(date.getTime()) ? null : date;
-};
-
 /**
  * Updates AsyncStorage widget data and triggers a native Android widget re-render
  */
-export const updateWidgetData = async (subscriptions: Subscription[], targetBaseCurrency?: string) => {
+const performWidgetDataUpdate = async (subscriptions: Subscription[], targetBaseCurrency?: string) => {
   try {
     const baseCurrency = targetBaseCurrency || await getStoredBaseCurrency();
     const isTurkish = (await AsyncStorage.getItem('@submate_lang')) !== 'en';
@@ -56,83 +36,28 @@ export const updateWidgetData = async (subscriptions: Subscription[], targetBase
     // Ensure exchange rates are loaded
     await getMarketRatesWithDynamicCache(baseCurrency);
 
-    // Calculate total spend in base currency for active subscriptions
-    let totalSpend = 0;
-    if (subscriptions && Array.isArray(subscriptions)) {
-      for (const sub of subscriptions) {
-        if (sub.status === 'paused') continue;
-        const subAmount = typeof sub.amount === 'number' ? sub.amount : parseFloat(sub.amount) || 0;
-        const subCurrency = sub.currency || 'TRY';
-        const converted = convertCurrency(subAmount, subCurrency, baseCurrency);
-        totalSpend += getMonthlyCost(converted, sub.billingCycle || 'monthly');
-      }
-    }
-
     const matchedCurrency = SUPPORTED_CURRENCIES.find(c => c.code === baseCurrency);
     const symbol = matchedCurrency ? matchedCurrency.symbol : baseCurrency;
-    const monthlyTotalFormatted = `${symbol}${totalSpend.toFixed(2)}`;
-
-    // Find next payment
-    let nextPaymentName = isTurkish ? 'Yaklaşan ödeme yok' : 'No upcoming payment';
-    let nextPaymentDate = '--';
-    let nextPaymentMeta = isTurkish ? 'Yeni abonelik eklediğinde burada görünür.' : 'It will appear here after you add a subscription.';
-    const activeCount = subscriptions?.filter(sub => sub.status !== 'paused').length || 0;
-
-    if (subscriptions && Array.isArray(subscriptions) && subscriptions.length > 0) {
-      const today = new Date();
-      let nextSub = null;
-      let minDiff = Infinity;
-
-      for (const sub of subscriptions) {
-        if (sub.status === 'paused' || !sub.renewalDate) continue;
-
-        const rawDate = toDate(sub.renewalDate);
-        if (!rawDate) continue;
-
-        const nextOccurrence = getNextRenewalDate(rawDate, sub.billingCycle || 'monthly');
-
-        const diff = nextOccurrence.getTime() - today.getTime();
-        if (diff >= 0 && diff < minDiff) {
-          minDiff = diff;
-          nextSub = sub;
-        }
-      }
-
-      if (nextSub) {
-        nextPaymentName = nextSub.name;
-        const subRawDate = toDate(nextSub.renewalDate);
-        if (!subRawDate) return null;
-        const nextOccurrence = getNextRenewalDate(subRawDate, nextSub.billingCycle || 'monthly');
-        nextPaymentDate = nextOccurrence.toLocaleDateString(isTurkish ? 'tr-TR' : 'en-US', { month: 'short', day: 'numeric' });
-        nextPaymentMeta = getRelativeDueLabel(nextOccurrence, isTurkish);
-      }
-    }
-
-    const widgetData = {
-      monthlyTotal: monthlyTotalFormatted,
-      nextPaymentName,
-      nextPaymentDate,
-      nextPaymentMeta,
-      activeCount,
-      labels: {
-        monthlyTotal: isTurkish ? 'AYLIK TOPLAM' : 'MONTHLY TOTAL',
-        nextPayment: isTurkish ? 'SIRADAKİ ÖDEME' : 'NEXT PAYMENT',
-        activeSubscriptions: isTurkish ? 'aktif abonelik' : 'active subscriptions',
-      },
-    };
+    const widgetData = buildWidgetData({
+      subscriptions,
+      baseCurrency,
+      currencySymbol: symbol,
+      isTurkish,
+      convertAmount: convertCurrency,
+    });
 
     await AsyncStorage.setItem('widget_data', JSON.stringify(widgetData));
 
     if (Platform.OS !== 'web') {
-      requestWidgetUpdate({
+      await requestWidgetUpdate({
         widgetName: 'SummaryWidget',
         renderWidget: () => (
           <SummaryWidget
-            monthlyTotal={monthlyTotalFormatted}
-            nextPaymentName={nextPaymentName}
-            nextPaymentDate={nextPaymentDate}
-            nextPaymentMeta={nextPaymentMeta}
-            activeCount={activeCount}
+            monthlyTotal={widgetData.monthlyTotal}
+            nextPaymentName={widgetData.nextPaymentName}
+            nextPaymentDate={widgetData.nextPaymentDate}
+            nextPaymentMeta={widgetData.nextPaymentMeta}
+            activeCount={widgetData.activeCount}
             labels={widgetData.labels}
           />
         ),
@@ -147,6 +72,15 @@ export const updateWidgetData = async (subscriptions: Subscription[], targetBase
     console.error('[Widget Sync] Failed to update widget data:', error);
     return null;
   }
+};
+
+export const updateWidgetData = (subscriptions: Subscription[], targetBaseCurrency?: string) => {
+  const snapshot = [...subscriptions];
+  const queuedUpdate = widgetUpdateQueue
+    .catch(() => undefined)
+    .then(() => performWidgetDataUpdate(snapshot, targetBaseCurrency));
+  widgetUpdateQueue = queuedUpdate;
+  return queuedUpdate;
 };
 
 /**

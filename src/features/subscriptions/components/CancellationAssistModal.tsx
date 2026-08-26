@@ -15,6 +15,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { getCancellationGuide, openCancellationUrl } from '@/utils/cancelAssist';
 import { triggerHaptic } from '@/utils/haptics';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CancellationAssistModalProps {
   visible: boolean;
@@ -37,6 +38,7 @@ export function CancellationAssistModal({
   const { currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
   const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({});
+  const insets = useSafeAreaInsets();
 
   const guide = getCancellationGuide(subscriptionName, cancelUrl);
   const steps = isTurkish ? guide.stepsTr : guide.stepsEn;
@@ -56,7 +58,13 @@ export function CancellationAssistModal({
       <View style={styles.overlay}>
         <Pressable style={styles.dismissArea} onPress={onClose} />
         
-        <View style={[styles.content, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.content, {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          paddingBottom: Math.max(24, insets.bottom + 16),
+          paddingLeft: Math.max(20, insets.left + 16),
+          paddingRight: Math.max(20, insets.right + 16),
+        }]}>
           {/* Header Bar */}
           <View style={styles.headerBar}>
             <View style={styles.headerLeft}>
@@ -186,7 +194,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     maxHeight: '85%',
     paddingTop: 20,
-    paddingHorizontal: 20,
     paddingBottom: 24,
   },
   headerBar: {
@@ -200,6 +207,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     flex: 1,
+    minWidth: 0,
+    marginRight: 8,
   },
   iconBox: {
     width: 44,
@@ -219,6 +228,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     padding: 6,
+    flexShrink: 0,
   },
   scrollBody: {
     marginBottom: 16,

@@ -9,14 +9,16 @@ import { ProtectedRoute } from '@/components/common/ProtectedRoute';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '@/components/common/ToastConfig';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { authenticateUser } from '@/utils/biometrics';
 import { BiometricOverlay } from '@/components/BiometricOverlay';
-import { registerForPushNotificationsAsync } from '@/services/notificationService';
+import { registerForPushNotificationsAsync, registerNotificationHistoryListeners } from '@/services/notificationService';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { getMarketRatesWithDynamicCache } from '@/utils/currency';
 import { neutralizeProductionLogs } from '@/utils/security';
+import { useSecurityStore } from '@/store/useSecurityStore';
+import { initializeMonitoring } from '@/services/monitoring/sentry';
+import * as Sentry from '@sentry/react-native';
 import '../../global.css';
 import '../locales/i18n';
 
@@ -26,6 +28,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 
 // Fire immediately upon JS Engine boot:
+initializeMonitoring();
 neutralizeProductionLogs();
 // Suppress third-party web-only SVG touch warnings
 LogBox.ignoreLogs([
@@ -43,6 +46,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 
 function RootLayout() {
   const [isReady, setIsReady] = useState(false);
+  const isBiometricsEnabled = useSecurityStore(state => state.isBiometricsEnabled);
   const appState = useRef(AppState.currentState);
   const [currentAppState, setCurrentAppState] = useState(AppState.currentState);
 
@@ -55,20 +59,25 @@ function RootLayout() {
     // Fire and forget: syncs rates silently in the background
     getMarketRatesWithDynamicCache();
     
+    let removeNotificationHistoryListeners: () => void = () => {};
     if (Platform.OS !== 'web') {
-      if (hasRequestedToken.current) return;
-      hasRequestedToken.current = true;
-      registerForPushNotificationsAsync().catch(console.warn);
+      removeNotificationHistoryListeners = registerNotificationHistoryListeners();
+      if (!hasRequestedToken.current) {
+        hasRequestedToken.current = true;
+        registerForPushNotificationsAsync().catch(console.warn);
+      }
     }
     
     setIsReady(true);
     SplashScreen.hideAsync().catch(() => {});
+
+    return () => removeNotificationHistoryListeners();
   }, []);
 
   const [isLocked, setIsLocked] = useState(false);
   const isPromptingBiometric = useRef(false);
 
-  const unlockWithBiometrics = async () => {
+  const unlockWithBiometrics = useCallback(async () => {
     if (isPromptingBiometric.current) return;
 
     isPromptingBiometric.current = true;
@@ -78,38 +87,32 @@ function RootLayout() {
     } finally {
       isPromptingBiometric.current = false;
     }
-  };
+  }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    AsyncStorage.getItem('@submate_biometric_enabled').then((enabled) => {
-      if (!isMounted || enabled !== 'true') return;
-      setIsLocked(true);
-      void unlockWithBiometrics();
-    });
+    if (Platform.OS === 'web' || !isBiometricsEnabled) {
+      setIsLocked(false);
+      return;
+    }
 
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    setIsLocked(true);
+    void unlockWithBiometrics();
+  }, [isBiometricsEnabled, unlockWithBiometrics]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', async nextAppState => {
       const previousAppState = appState.current;
 
-      if (nextAppState.match(/inactive|background/)) {
-        const enabled = await AsyncStorage.getItem('@submate_biometric_enabled');
-        if (enabled === 'true') {
-          setIsLocked(true);
-        }
+      if (isBiometricsEnabled && nextAppState.match(/inactive|background/)) {
+        setIsLocked(true);
       }
 
-      if (previousAppState.match(/inactive|background/) && nextAppState === 'active') {
-        const enabled = await AsyncStorage.getItem('@submate_biometric_enabled');
-        if (enabled === 'true') {
-          setIsLocked(true);
-          void unlockWithBiometrics();
-        }
+      if (
+        isBiometricsEnabled
+        && previousAppState.match(/inactive|background/)
+        && nextAppState === 'active'
+      ) {
+        await unlockWithBiometrics();
       }
 
       appState.current = nextAppState;
@@ -118,7 +121,7 @@ function RootLayout() {
     return () => {
       subscription.remove();
     };
-  }, []);
+  }, [isBiometricsEnabled, unlockWithBiometrics]);
 
   const triggerAuth = () => void unlockWithBiometrics();
 
@@ -137,7 +140,7 @@ function RootLayout() {
                 <AuthProvider>
                   <ProtectedRoute>
                     <>
-                      {isLocked && <BiometricOverlay onUnlockRetry={triggerAuth} />}
+                      {isLocked && Platform.OS !== 'web' && <BiometricOverlay onUnlockRetry={triggerAuth} />}
                       <Stack screenOptions={{ headerShown: false }}>
                         <Stack.Screen name="index" />
                         <Stack.Screen name="onboarding" />
@@ -164,7 +167,7 @@ function RootLayout() {
   );
 }
 
-export default RootLayout;
+export default Sentry.wrap(RootLayout);
 
 const styles = StyleSheet.create({
   privacyShield: {

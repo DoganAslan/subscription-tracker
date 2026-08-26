@@ -2,6 +2,7 @@ import { initializeApp, getApp, getApps } from 'firebase/app';
 import { initializeAuth, getReactNativePersistence, getAuth, Auth } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { getFirestore, initializeFirestore, persistentLocalCache, Firestore } from 'firebase/firestore';
+import { getFunctions } from 'firebase/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
@@ -48,14 +49,7 @@ try {
   db = getFirestore(app);
 }
 
-// Initialize Crashlytics on Native platforms
-if (Platform.OS !== 'web') {
-  try {
-    const crashlytics = require('@react-native-firebase/crashlytics').default;
-    crashlytics().setCrashlyticsCollectionEnabled(!__DEV__);
-  } catch (e) {
-    console.log('Crashlytics initialization skipped on this platform');
-  }
-}
+// Authentication tokens are attached automatically by the callable Functions SDK.
+const functions = getFunctions(app, 'europe-west1');
 
-export { app, auth, db };
+export { app, auth, db, functions };

@@ -1,568 +1,587 @@
-import { useMemo, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  ScrollView,
-  View,
-  Text,
-  SafeAreaView,
-  RefreshControl,
-  TouchableOpacity,
-  StyleSheet,
+  ActivityIndicator,
   Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 
-import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
-import { useCards } from '@/features/cards/hooks/useCards';
-import { useAnalytics } from '@/hooks/useAnalytics';
+import { AiChatModal } from '@/features/ai/components/AiChatModal';
+import { FinancialDecisionTools } from '@/features/analytics/components/FinancialDecisionTools';
+import { useSubscriptions, useUpdateSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
+import { useBudgetStore } from '@/store/useBudgetStore';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
-
-import { CategoryBreakdownCard } from '@/features/dashboard/components/CategoryBreakdownCard';
-import { CardBreakdownCard } from '@/features/dashboard/components/CardBreakdownCard';
-import { SpendingInsightsCard } from '@/features/dashboard/components/SpendingInsightsCard';
-import { CostPerUseCard } from '@/features/dashboard/components/CostPerUseCard';
-import { SmartAlternativesCard } from '@/features/dashboard/components/SmartAlternativesCard';
-import { BundleAlertCard } from '@/features/dashboard/components/BundleAlertCard';
-import { CurrencyRiskCard } from '@/features/dashboard/components/CurrencyRiskCard';
-import { SpendingHeatmapCard } from '@/features/dashboard/components/SpendingHeatmapCard';
-
-import { SubmateWrappedModal } from '@/features/analytics/components/SubmateWrappedModal';
-import { AiChatModal } from '@/features/ai/components/AiChatModal';
-
-import { getMarketRatesWithDynamicCache, ExchangeRates, SUPPORTED_CURRENCIES } from '@/utils/currency';
-import { generate6MonthProjection } from '@/utils/projection';
-import { analyzeFinancialHealth } from '@/utils/healthScore';
+import { getCategoryMeta } from '@/utils/categoryMeta';
+import { getMarketRatesWithDynamicCache } from '@/utils/currency';
 import { triggerHaptic } from '@/utils/haptics';
+import { calculateFinancialAnalysis } from '@/features/analytics/utils/financialAnalytics';
+import { Subscription } from '@/services/firebase/types';
+import { getResponsiveGridItemWidth } from '@/utils/responsiveGrid';
+
+type InsightItem = {
+  icon: any;
+  color: string;
+  backgroundColor: string;
+  title: string;
+  description: string;
+};
 
 export default function AnalyticsScreen() {
-  const [liveRates, setLiveRates] = useState<ExchangeRates | null>(null);
-  const [wrappedVisible, setWrappedVisible] = useState(false);
   const [aiChatVisible, setAiChatVisible] = useState(false);
-
-  const { t, currentLanguage } = useTranslation();
-  const isTurkish = currentLanguage === 'tr';
-  const { data: subscriptions, refetch, isRefetching } = useSubscriptions();
-  const { data: cards = [] } = useCards();
-  const baseCurrency = useCurrencyStore(state => state.baseCurrency);
-  const router = useRouter();
+  const [ratesVersion, setRatesVersion] = useState(0);
+  const [updatingUsageId, setUpdatingUsageId] = useState<string | null>(null);
+  const [selectedCashFlowMonth, setSelectedCashFlowMonth] = useState<string | null>(null);
   const { colors } = useTheme();
-
-  const insets = useSafeAreaInsets();
-  const paddingTop = Math.max(insets.top + 8, Platform.OS === 'web' ? 16 : 12);
-  const currencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || baseCurrency;
+  const { currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
+  const baseCurrency = useCurrencyStore(state => state.baseCurrency);
+  const monthlyBudget = useBudgetStore(state => state.monthlyBudget);
+  const { data: subscriptions = [], isLoading, isRefetching, refetch } = useSubscriptions();
+  const { mutate: updateSubscription } = useUpdateSubscription();
+  const { width } = useWindowDimensions();
+  const router = useRouter();
+  const isWide = width >= 900;
+  const isCompact = width < 380;
+  const metricCardWidths = [0, 1, 2].map(itemIndex => getResponsiveGridItemWidth({
+    screenWidth: width,
+    itemIndex,
+    itemCount: 3,
+  }));
 
   useEffect(() => {
-    getMarketRatesWithDynamicCache().then(setLiveRates).catch(console.error);
+    getMarketRatesWithDynamicCache('TRY')
+      .then(() => setRatesVersion(version => version + 1))
+      .catch(error => console.warn('[Analytics] Exchange rates could not be refreshed:', error));
   }, []);
 
-  const metrics = useAnalytics(subscriptions);
+  const analysis = useMemo(
+    () => calculateFinancialAnalysis(subscriptions, baseCurrency, monthlyBudget),
+    [baseCurrency, monthlyBudget, ratesVersion, subscriptions],
+  );
 
-  const chartData = useMemo(() => {
-    return generate6MonthProjection(subscriptions, liveRates, baseCurrency);
-  }, [subscriptions, liveRates, baseCurrency]);
+  const moneyFormatter = useMemo(
+    () => new Intl.NumberFormat(isTurkish ? 'tr-TR' : 'en-US', {
+      style: 'currency',
+      currency: baseCurrency,
+      maximumFractionDigits: 2,
+    }),
+    [baseCurrency, isTurkish],
+  );
 
-  const maxAmount = useMemo(() => {
-    const rawMax = Math.max(...chartData.map(d => d.totalAmount), 0);
-    return rawMax > 0 ? rawMax : 1;
-  }, [chartData]);
+  const formatMoney = (value: number) => moneyFormatter.format(Number.isFinite(value) ? value : 0);
+  const formatDate = (date: Date) => new Intl.DateTimeFormat(isTurkish ? 'tr-TR' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+  }).format(date);
+  const formatMonth = (date: Date) => new Intl.DateTimeFormat(isTurkish ? 'tr-TR' : 'en-US', {
+    month: 'short',
+  }).format(date).replace('.', '');
 
-  const healthData = useMemo(() => {
-    return analyzeFinancialHealth(subscriptions || []);
-  }, [subscriptions]);
+  const insights = useMemo<InsightItem[]>(() => {
+    const items: InsightItem[] = [];
 
-  const yearlyProjection = useMemo(() => {
-    return metrics.monthlyTotal * 12;
-  }, [metrics.monthlyTotal]);
-
-  const avgCostPerSub = useMemo(() => {
-    const count = subscriptions?.filter(s => s.status !== 'paused').length || 0;
-    return count > 0 ? metrics.monthlyTotal / count : 0;
-  }, [subscriptions, metrics.monthlyTotal]);
-
-  const getScoreStatusText = () => {
-    if (healthData.score >= 80) return isTurkish ? 'Mükemmel Bütçe Sağlığı' : (t.healthScore?.excellent || 'Excellent Budget Health');
-    if (healthData.score >= 50) return isTurkish ? 'Dengeli Harcama Düzeyi' : (t.healthScore?.good || 'Moderate Spending');
-    return isTurkish ? 'Bütçe Riski Uyarısı' : (t.healthScore?.warning || 'Budget Risk Warning');
-  };
-
-  const getVampirAlertMessage = () => {
-    if (healthData.vampireStats) {
-      if (typeof t.healthScore?.vampirWarning === 'function') {
-        return t.healthScore.vampirWarning(healthData.vampireStats.category, healthData.vampireStats.count);
-      }
-      return isTurkish
-        ? `Vampir Abonelik Uyarısı: "${healthData.vampireStats.category}" kategorisinde ${healthData.vampireStats.count} fazla servis tespit edildi.`
-        : `Vampire Alert: Multiple entries found in "${healthData.vampireStats.category}".`;
+    if (analysis.budgetUsagePercent !== null && analysis.budgetUsagePercent > 100) {
+      items.push({
+        icon: 'warning-outline',
+        color: '#EF4444',
+        backgroundColor: 'rgba(239, 68, 68, 0.12)',
+        title: isTurkish ? 'Bütçe limiti aşıldı' : 'Budget limit exceeded',
+        description: isTurkish
+          ? `Aylık taahhüdün limitin ${formatMoney(Math.abs(analysis.budgetRemaining || 0))} üzerinde.`
+          : `Your monthly commitment is ${formatMoney(Math.abs(analysis.budgetRemaining || 0))} over the limit.`,
+      });
     }
-    return null;
+
+    if (analysis.trialsEndingSoon > 0) {
+      items.push({
+        icon: 'hourglass-outline',
+        color: '#F59E0B',
+        backgroundColor: 'rgba(245, 158, 11, 0.12)',
+        title: isTurkish ? 'Deneme süresi yaklaşıyor' : 'Trial ending soon',
+        description: isTurkish
+          ? `${analysis.trialsEndingSoon} ücretsiz deneme önümüzdeki 14 gün içinde ücretli olabilir.`
+          : `${analysis.trialsEndingSoon} free trial may become paid within the next 14 days.`,
+      });
+    }
+
+    if (analysis.lowUsageCount > 0) {
+      items.push({
+        icon: 'eye-off-outline',
+        color: '#F97316',
+        backgroundColor: 'rgba(249, 115, 22, 0.12)',
+        title: isTurkish ? 'Düşük kullanım tespit edildi' : 'Low usage detected',
+        description: isTurkish
+          ? `${analysis.lowUsageCount} abonelikte aylık ${formatMoney(analysis.lowUsageMonthly)} tutar yeniden değerlendirilebilir.`
+          : `${formatMoney(analysis.lowUsageMonthly)} per month across ${analysis.lowUsageCount} subscriptions is worth reviewing.`,
+      });
+    }
+
+    if (analysis.duplicateCategoryCount > 0) {
+      items.push({
+        icon: 'layers-outline',
+        color: '#8B5CF6',
+        backgroundColor: 'rgba(139, 92, 246, 0.12)',
+        title: isTurkish ? 'Kategori çakışması var' : 'Category overlap found',
+        description: isTurkish
+          ? `${analysis.duplicateCategoryCount} kategoride birden fazla aktif servis var; benzer hizmetleri karşılaştır.`
+          : `${analysis.duplicateCategoryCount} categories contain multiple active services; compare overlapping options.`,
+      });
+    }
+
+    if (analysis.contractsEndingSoon > 0) {
+      items.push({
+        icon: 'document-text-outline',
+        color: '#F59E0B',
+        backgroundColor: 'rgba(245, 158, 11, 0.12)',
+        title: isTurkish ? 'Taahhüt bitişi yaklaşıyor' : 'Contract ending soon',
+        description: isTurkish
+          ? `${analysis.contractsEndingSoon} sözleşme önümüzdeki 30 gün içinde sona eriyor.`
+          : `${analysis.contractsEndingSoon} contract ends within the next 30 days.`,
+      });
+    }
+
+    if (analysis.foreignCurrencyShare >= 30) {
+      items.push({
+        icon: 'swap-horizontal-outline',
+        color: '#3B82F6',
+        backgroundColor: 'rgba(59, 130, 246, 0.12)',
+        title: isTurkish ? 'Kur hareketlerine açıksın' : 'High currency exposure',
+        description: isTurkish
+          ? `Aylık yükün %${analysis.foreignCurrencyShare.toFixed(0)} kadarı yabancı para biriminde.`
+          : `${analysis.foreignCurrencyShare.toFixed(0)}% of your monthly commitment is in foreign currencies.`,
+      });
+    }
+
+    if (analysis.unassignedPaymentCount > 0) {
+      items.push({
+        icon: 'card-outline',
+        color: '#06B6D4',
+        backgroundColor: 'rgba(6, 182, 212, 0.12)',
+        title: isTurkish ? 'Ödeme yöntemi eksik' : 'Payment method missing',
+        description: isTurkish
+          ? `${analysis.unassignedPaymentCount} aktif abonelik bir karta bağlı değil.`
+          : `${analysis.unassignedPaymentCount} active subscriptions are not linked to a card.`,
+      });
+    }
+
+    if (items.length === 0) {
+      items.push({
+        icon: 'checkmark-circle-outline',
+        color: '#10B981',
+        backgroundColor: 'rgba(16, 185, 129, 0.12)',
+        title: isTurkish ? 'Görünür bir risk yok' : 'No immediate risk found',
+        description: isTurkish
+          ? 'Kayıtlı aboneliklerin bütçe ve yenileme yapısı dengeli görünüyor.'
+          : 'Your recorded subscriptions look balanced across budget and renewal timing.',
+      });
+    }
+
+    return items.slice(0, 4);
+  }, [analysis, baseCurrency, isTurkish, moneyFormatter]);
+
+  const maxCashFlow = Math.max(...analysis.cashFlow.map(month => month.amount), 1);
+  const topCategories = analysis.categories.slice(0, 5);
+  const topUpcoming = analysis.upcomingPayments.slice(0, 4);
+  const selectedCashFlow = analysis.cashFlow.find(month => month.key === selectedCashFlowMonth) || null;
+  const screenTopSpacing = Platform.OS === 'web' ? 18 : 8;
+
+  const handleLogUsage = (subscription: Subscription) => {
+    const id = String(subscription.id || '');
+    if (!id) return;
+
+    const now = new Date();
+    const todayKey = now.toISOString().slice(0, 10);
+    const recentLogs = (subscription.usageLogDates || []).filter(value => {
+      const date = new Date(value);
+      return !Number.isNaN(date.getTime()) && now.getTime() - date.getTime() <= 90 * 24 * 60 * 60 * 1000;
+    });
+    const alreadyLoggedToday = recentLogs.some(value => value.slice(0, 10) === todayKey);
+
+    setUpdatingUsageId(id);
+    updateSubscription({
+      id,
+      data: {
+        lastUsedDate: now.toISOString(),
+        usageLogDates: alreadyLoggedToday ? recentLogs : [...recentLogs, now.toISOString()],
+        usageScore: (subscription.usageScore || 0) + (alreadyLoggedToday ? 0 : 1),
+      },
+    }, {
+      onSettled: () => setUpdatingUsageId(null),
+    });
   };
+
+  const handleSetUsageFrequency = (
+    subscription: Subscription,
+    frequency: NonNullable<Subscription['usageFrequency']>,
+  ) => {
+    const id = String(subscription.id || '');
+    if (!id) return;
+    setUpdatingUsageId(id);
+    updateSubscription({ id, data: { usageFrequency: frequency } }, {
+      onSettled: () => setUpdatingUsageId(null),
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={[styles.safeArea, styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          {isTurkish ? 'Finansal veriler hazırlanıyor...' : 'Preparing your financial data...'}
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background, paddingTop }]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background, paddingTop: screenTopSpacing }]}
+      edges={['top', 'left', 'right']}
+    >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
-        }
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />}
       >
-        {/* Header Row */}
         <View style={styles.headerRow}>
-          <View style={{ flex: 1, marginRight: 8, overflow: 'hidden' }}>
-            <Text numberOfLines={1} style={[styles.pageTitle, { color: colors.text }]}>
-              {isTurkish ? 'Analiz & YZ İpuçları' : 'Analytics & AI Insights'}
+          <View style={styles.headerCopy}>
+            <Text numberOfLines={1} style={[styles.pageTitle, isCompact && styles.pageTitleCompact, { color: colors.text }]}>
+              {isTurkish ? 'Finansal Analiz' : 'Financial Analysis'}
             </Text>
-            <Text numberOfLines={1} style={[styles.pageSubtitle, { color: colors.textSecondary }]}>
-              {isTurkish ? 'Detaylı harcama dökümü ve akıllı bütçe optimizasyonu' : 'Detailed breakdown & smart budget optimization'}
-            </Text>
+            <View style={styles.liveRow}>
+              <View style={styles.liveDot} />
+              <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>
+                {isTurkish ? 'Aboneliklerin değiştikçe otomatik güncellenir' : 'Updates automatically when subscriptions change'}
+              </Text>
+            </View>
           </View>
+          <TouchableOpacity
+            style={styles.aiButton}
+            onPress={() => {
+              triggerHaptic('impactLight');
+              setAiChatVisible(true);
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="sparkles" size={17} color="#FFFFFF" />
+            <Text style={styles.aiButtonText}>{isTurkish ? 'AI’ye sor' : 'Ask AI'}</Text>
+          </TouchableOpacity>
+        </View>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        {analysis.activeCount === 0 ? (
+          <View style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="stats-chart-outline" size={30} color={colors.primary} />
+            </View>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {isTurkish ? 'Analiz için abonelik ekle' : 'Add a subscription to start analysis'}
+            </Text>
+            <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
+              {isTurkish
+                ? 'Aylık yükünü, yaklaşan ödemeleri ve tasarruf fırsatlarını burada göreceksin.'
+                : 'Your monthly load, upcoming payments, and savings opportunities will appear here.'}
+            </Text>
             <TouchableOpacity
-              style={[styles.aiChatHeaderBtn, { backgroundColor: 'rgba(139, 92, 246, 0.15)', borderColor: 'rgba(139, 92, 246, 0.3)' }]}
-              onPress={() => {
-                triggerHaptic('impactLight');
-                setAiChatVisible(true);
-              }}
+              style={[styles.primaryButton, { backgroundColor: colors.primary }]}
+              onPress={() => router.push('/(tabs)/subscriptions/add')}
             >
-              <Ionicons name="sparkles" size={16} color="#8B5CF6" style={{ marginRight: 4 }} />
-              <Text style={styles.aiChatHeaderBtnText}>{isTurkish ? 'YZ Asistan' : 'AI Advisor'}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.headerIconBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-              onPress={() => {
-                triggerHaptic('selection');
-                router.push('/(tabs)/subscriptions');
-              }}
-            >
-              <Ionicons name="options-outline" size={20} color={colors.text} />
+              <Ionicons name="add" size={19} color="#FFFFFF" />
+              <Text style={styles.primaryButtonText}>{isTurkish ? 'Abonelik ekle' : 'Add subscription'}</Text>
             </TouchableOpacity>
           </View>
-        </View>
-
-        {/* SubMate Wrapped Banner CTA */}
-        <TouchableOpacity
-          style={{
-            backgroundColor: '#8B5CF6',
-            borderRadius: 18,
-            padding: 14,
-            marginBottom: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-          onPress={() => {
-            triggerHaptic('impactLight');
-            setWrappedVisible(true);
-          }}
-          activeOpacity={0.85}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
-            <Ionicons name="sparkles" size={24} color="#FFFFFF" />
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '800' }}>
-                {isTurkish ? '🎁 SubMate Wrapped Yıllık Özet' : '🎁 SubMate Annual Wrapped'}
-              </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 1 }}>
-                {isTurkish ? 'Yıllık abonelik istatistiklerinizi keşfedin!' : 'Explore your annual subscription stats!'}
-              </Text>
-            </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        {/* 1. TOP STATS OVERVIEW CARDS */}
-        <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.statHeader}>
-              <Text numberOfLines={1} style={[styles.statLabel, { color: colors.textSecondary }]}>
-                {isTurkish ? 'Aylık Harcama' : 'Monthly Spend'}
-              </Text>
-              <View style={[styles.statIconBox, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
-                <Ionicons name="wallet-outline" size={16} color="#3B82F6" />
+        ) : (
+          <>
+            <LinearGradient colors={['#2563EB', '#4F46E5', '#7C3AED']} style={styles.heroCard}>
+              <View style={styles.heroTopRow}>
+                <View>
+                  <Text style={styles.heroLabel}>{isTurkish ? 'AYLIK NET TAAHHÜT' : 'NET MONTHLY COMMITMENT'}</Text>
+                  <Text style={styles.heroValue}>{formatMoney(analysis.monthlyCommitment)}</Text>
+                </View>
+                <View style={styles.currencyBadge}>
+                  <Text style={styles.currencyBadgeText}>{baseCurrency}</Text>
+                </View>
               </View>
-            </View>
-            <Text numberOfLines={1} style={[styles.statValue, { color: colors.text }]}>
-              {currencySymbol}{metrics.monthlyTotal.toFixed(2)}
-            </Text>
-            <Text numberOfLines={1} style={[styles.statSub, { color: '#10B981' }]}>
-              {isTurkish ? 'Aktif Taahhüt' : 'Active Commitment'}
-            </Text>
-          </View>
 
-          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.statHeader}>
-              <Text numberOfLines={1} style={[styles.statLabel, { color: colors.textSecondary }]}>
-                {isTurkish ? 'Yıllık Görünüm' : 'Yearly Outlook'}
-              </Text>
-              <View style={[styles.statIconBox, { backgroundColor: 'rgba(139, 92, 246, 0.12)' }]}>
-                <Ionicons name="trending-up-outline" size={16} color="#8B5CF6" />
-              </View>
-            </View>
-            <Text numberOfLines={1} style={[styles.statValue, { color: colors.text }]}>
-              {currencySymbol}{yearlyProjection.toFixed(0)}
-            </Text>
-            <Text numberOfLines={1} style={[styles.statSub, { color: colors.textSecondary }]}>
-              {isTurkish ? '12 Aylık Toplam' : '12 Months Total'}
-            </Text>
-          </View>
-        </View>
+              {analysis.monthlyTrialCredit > 0 && (
+                <Text style={styles.heroNote}>
+                  {isTurkish
+                    ? `Aktif denemeler nedeniyle şu an yaklaşık ${formatMoney(analysis.currentMonthlyCost)}`
+                    : `Currently about ${formatMoney(analysis.currentMonthlyCost)} while trials are active`}
+                </Text>
+              )}
 
-        <View style={styles.statsGrid}>
-          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.statHeader}>
-              <Text numberOfLines={1} style={[styles.statLabel, { color: colors.textSecondary }]}>
-                {isTurkish ? 'Abonelik Başı Ort.' : 'Avg / Subscription'}
-              </Text>
-              <View style={[styles.statIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.12)' }]}>
-                <Ionicons name="calculator-outline" size={16} color="#10B981" />
-              </View>
-            </View>
-            <Text numberOfLines={1} style={[styles.statValue, { color: colors.text }]}>
-              {currencySymbol}{avgCostPerSub.toFixed(2)}
-            </Text>
-            <Text numberOfLines={1} style={[styles.statSub, { color: colors.textSecondary }]}>
-              {isTurkish ? 'Aktif servis başına' : 'Per active service'}
-            </Text>
-          </View>
-
-          <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={styles.statHeader}>
-              <Text numberOfLines={1} style={[styles.statLabel, { color: colors.textSecondary }]}>
-                {isTurkish ? 'Aktif Servisler' : 'Active Services'}
-              </Text>
-              <View style={[styles.statIconBox, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
-                <Ionicons name="cube-outline" size={16} color="#F59E0B" />
-              </View>
-            </View>
-            <Text numberOfLines={1} style={[styles.statValue, { color: colors.text }]}>
-              {subscriptions?.length || 0}
-            </Text>
-            <Text numberOfLines={1} style={[styles.statSub, { color: colors.textSecondary }]}>
-              {isTurkish ? 'Takip edilen servis' : 'Tracked items'}
-            </Text>
-          </View>
-        </View>
-
-        {/* 2. FINANCIAL HEALTH SCORE */}
-        <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.cardHeaderRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="sparkles" size={16} color="#8B5CF6" />
-              <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
-                {isTurkish ? 'YZ FİNANSAL SAĞLIK SKORU' : (t.health?.meterTitle || 'AI FINANCIAL HEALTH SCORE')}
-              </Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <Text style={{ color: healthData.colorTheme, fontSize: 26, fontWeight: '800' }}>
-                {healthData.score}
-              </Text>
-              <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginLeft: 2 }}>
-                / 100
-              </Text>
-            </View>
-          </View>
-
-          <Text style={[styles.scoreStatusTitle, { color: colors.text }]}>
-            {getScoreStatusText()}
-          </Text>
-
-          {/* Progress Bar */}
-          <View style={[styles.progressTrack, { backgroundColor: colors.border }]}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${healthData.score}%`, backgroundColor: healthData.colorTheme },
-              ]}
-            />
-          </View>
-
-          {/* AI Insights Bullets */}
-          {getVampirAlertMessage() && (
-            <View style={styles.insightBullet}>
-              <Text style={{ color: healthData.colorTheme, fontSize: 14, marginRight: 6 }}>•</Text>
-              <Text style={[styles.insightText, { color: colors.text }]}>{getVampirAlertMessage()}</Text>
-            </View>
-          )}
-          {healthData.insights.filter(adv => !adv.startsWith('Vampir Uyarısı')).map((adv, idx) => (
-            <View key={idx} style={styles.insightBullet}>
-              <Text style={{ color: healthData.colorTheme, fontSize: 14, marginRight: 6 }}>•</Text>
-              <Text style={[styles.insightText, { color: colors.text }]}>{adv}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* 4. REDESIGNED 6-MONTH PROJECTION SPENDING CHART */}
-        <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <View style={styles.cardHeaderRow}>
-            <Text style={[styles.cardTitle, { color: colors.text, marginBottom: 0 }]}>
-              {isTurkish ? '6 Aylık Harcama Projeksiyonu' : '6-Month Spending Outlook'}
-            </Text>
-            <View style={styles.currencyPill}>
-              <Text style={styles.currencyPillText}>{baseCurrency}</Text>
-            </View>
-          </View>
-
-          {/* Grid lines background */}
-          <View style={styles.chartContainer}>
-            <View style={styles.chartArea}>
-              {chartData.map((item, index) => {
-                const barHeightPercent = maxAmount > 0 ? (Number(item.totalAmount || 0) / maxAmount) * 100 : 0;
-                const safeHeight = isNaN(barHeightPercent) ? 6 : Math.max(barHeightPercent, 6);
-                const isCurrentMonth = index === 0;
-
-                return (
-                  <View key={index} style={styles.chartCol}>
-                    <Text style={[styles.barValueText, { color: isCurrentMonth ? '#3B82F6' : colors.textSecondary }]}>
-                      {isNaN(item.totalAmount) ? '0' : `${Math.round(item.totalAmount)}`}
-                    </Text>
-
-                    <View style={styles.barTrack}>
-                      <View
-                        style={[
-                          styles.barFill,
-                          {
-                            height: `${safeHeight}%`,
-                            backgroundColor: isCurrentMonth ? '#3B82F6' : '#6366F1',
-                            opacity: isCurrentMonth ? 1 : 0.45 + (index * 0.08),
-                          },
-                        ]}
-                      />
-                    </View>
-
-                    <Text
-                      style={[
-                        styles.barMonthLabel,
-                        { color: isCurrentMonth ? '#3B82F6' : colors.textSecondary, fontWeight: isCurrentMonth ? '800' : '600' },
-                      ]}
-                    >
-                      {item.monthName}
-                    </Text>
+              {analysis.budgetUsagePercent !== null ? (
+                <View style={styles.budgetArea}>
+                  <View style={styles.budgetHeader}>
+                    <Text style={styles.budgetLabel}>{isTurkish ? 'Bütçe kullanımı' : 'Budget usage'}</Text>
+                    <Text style={styles.budgetValue}>{analysis.budgetUsagePercent.toFixed(0)}%</Text>
                   </View>
-                );
-              })}
+                  <View style={styles.budgetTrack}>
+                    <View
+                      style={[
+                        styles.budgetFill,
+                        {
+                          width: `${Math.min(100, analysis.budgetUsagePercent)}%`,
+                          backgroundColor: analysis.budgetUsagePercent > 100 ? '#FCA5A5' : '#FFFFFF',
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={styles.budgetHint}>
+                    {(analysis.budgetRemaining || 0) >= 0
+                      ? isTurkish
+                        ? `${formatMoney(analysis.budgetRemaining || 0)} kullanılabilir alan kaldı`
+                        : `${formatMoney(analysis.budgetRemaining || 0)} of budget remains`
+                      : isTurkish
+                        ? `${formatMoney(Math.abs(analysis.budgetRemaining || 0))} limit üzerinde`
+                        : `${formatMoney(Math.abs(analysis.budgetRemaining || 0))} over budget`}
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.budgetPrompt} onPress={() => router.push('/(tabs)')}>
+                  <Ionicons name="flag-outline" size={16} color="#FFFFFF" />
+                  <Text style={styles.budgetPromptText}>
+                    {isTurkish ? 'Ana sayfadan aylık bütçe limiti belirle' : 'Set a monthly budget from Home'}
+                  </Text>
+                  <Ionicons name="chevron-forward" size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+              )}
+
+              <View style={styles.heroSummaryRow}>
+                <View style={styles.heroSummaryItem}>
+                  <Text style={styles.heroSummaryLabel}>{isTurkish ? 'Brüt' : 'Gross'}</Text>
+                  <Text style={styles.heroSummaryValue}>{formatMoney(analysis.monthlyGross)}</Text>
+                </View>
+                <View style={styles.heroSummaryDivider} />
+                <View style={styles.heroSummaryItem}>
+                  <Text style={styles.heroSummaryLabel}>{isTurkish ? 'Paylaşılan' : 'Recovered'}</Text>
+                  <Text style={styles.heroSummaryValue}>{formatMoney(analysis.monthlyRecoverable)}</Text>
+                </View>
+              </View>
+            </LinearGradient>
+
+            <View style={styles.statGrid}>
+              <MetricCard width={metricCardWidths[0]} icon="calendar-outline" color="#8B5CF6" label={isTurkish ? '12 AYLIK TAHMİN' : '12-MONTH FORECAST'} value={formatMoney(analysis.yearlyProjection)} detail={isTurkish ? 'Mevcut taahhütlerle' : 'At current commitments'} surface={colors.surface} border={colors.border} text={colors.text} secondary={colors.textSecondary} />
+              <MetricCard width={metricCardWidths[1]} icon="repeat-outline" color="#10B981" label={isTurkish ? 'AKTİF ABONELİK' : 'ACTIVE SUBSCRIPTIONS'} value={String(analysis.activeCount)} detail={analysis.pausedCount > 0 ? isTurkish ? `${analysis.pausedCount} duraklatılmış` : `${analysis.pausedCount} paused` : isTurkish ? 'Tümü aktif' : 'All active'} surface={colors.surface} border={colors.border} text={colors.text} secondary={colors.textSecondary} />
+              <MetricCard width={metricCardWidths[2]} icon="calculator-outline" color="#F59E0B" label={isTurkish ? 'ABONELİK BAŞINA' : 'PER SUBSCRIPTION'} value={formatMoney(analysis.averagePerSubscription)} detail={isTurkish ? 'Aylık ortalama' : 'Monthly average'} surface={colors.surface} border={colors.border} text={colors.text} secondary={colors.textSecondary} />
             </View>
-          </View>
-        </View>
 
-        {/* 5. CATEGORY BREAKDOWN DONUT & PERCENTAGES */}
-        <CategoryBreakdownCard breakdown={metrics.categoryBreakdown} monthlyTotal={metrics.monthlyTotal} subscriptions={subscriptions || []} />
+            <SectionCard surface={colors.surface} border={colors.border}>
+              <SectionHeader icon="bar-chart-outline" title={isTurkish ? 'Önümüzdeki 6 ay' : 'Next 6 months'} subtitle={isTurkish ? 'Gerçek yenileme tarihlerine göre ödeme akışı' : 'Cash flow based on actual renewal dates'} text={colors.text} secondary={colors.textSecondary} />
+              <View style={styles.cashFlowChart}>
+                {analysis.cashFlow.map((month, index) => {
+                  const height = month.amount > 0 ? Math.max(8, (month.amount / maxCashFlow) * 118) : 4;
+                  const isSelected = selectedCashFlowMonth === month.key;
+                  return (
+                    <TouchableOpacity
+                      key={month.key}
+                      style={styles.cashFlowColumn}
+                      activeOpacity={0.75}
+                      onPress={() => {
+                        triggerHaptic('selection');
+                        setSelectedCashFlowMonth(current => current === month.key ? null : month.key);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityLabel={isTurkish ? `${formatMonth(month.date)} ayı ödemelerini göster` : `Show ${formatMonth(month.date)} payments`}
+                    >
+                      <Text numberOfLines={1} style={[styles.cashFlowValue, { color: index === 0 || isSelected ? colors.primary : colors.textSecondary }]}>
+                        {month.amount > 0 ? formatMoney(month.amount).replace(baseCurrency, '').trim() : '—'}
+                      </Text>
+                      <View style={[styles.cashFlowTrack, { backgroundColor: isSelected ? `${colors.primary}26` : colors.surfaceSubtle, borderColor: isSelected ? colors.primary : 'transparent' }]}>
+                        <View style={[styles.cashFlowBar, { height, backgroundColor: index === 0 || isSelected ? colors.primary : '#6366F1', opacity: index === 0 || isSelected ? 1 : 0.68 }]} />
+                      </View>
+                      <Text style={[styles.cashFlowMonth, { color: index === 0 || isSelected ? colors.primary : colors.textSecondary }]}>{formatMonth(month.date)}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {selectedCashFlow && (
+                <View style={[styles.cashFlowDetails, { backgroundColor: colors.surfaceSubtle, borderColor: colors.border }]}>
+                  <View style={styles.cashFlowDetailsHeader}>
+                    <View style={styles.cashFlowDetailsTitleRow}>
+                      <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                      <Text style={[styles.cashFlowDetailsTitle, { color: colors.text }]}>
+                        {new Intl.DateTimeFormat(isTurkish ? 'tr-TR' : 'en-US', { month: 'long', year: 'numeric' }).format(selectedCashFlow.date)}
+                      </Text>
+                    </View>
+                    <Text style={[styles.cashFlowDetailsTotal, { color: colors.primary }]}>{formatMoney(selectedCashFlow.amount)}</Text>
+                  </View>
+                  {selectedCashFlow.payments.length > 0 ? (
+                    <View style={styles.cashFlowPaymentList}>
+                      {selectedCashFlow.payments.map(payment => (
+                        <View key={`${selectedCashFlow.key}-${payment.subscription.id}-${payment.date.toISOString()}`} style={[styles.cashFlowPaymentRow, { borderTopColor: colors.border }]}>
+                          <View style={[styles.cashFlowPaymentIcon, { backgroundColor: `${colors.primary}1A` }]}>
+                            <Ionicons name="card-outline" size={15} color={colors.primary} />
+                          </View>
+                          <View style={styles.cashFlowPaymentCopy}>
+                            <Text numberOfLines={1} style={[styles.cashFlowPaymentName, { color: colors.text }]}>{payment.subscription.name}</Text>
+                            <Text style={[styles.cashFlowPaymentDate, { color: colors.textSecondary }]}>{formatDate(payment.date)}</Text>
+                          </View>
+                          <Text style={[styles.cashFlowPaymentAmount, { color: colors.text }]}>{formatMoney(payment.amount)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={[styles.cashFlowEmptyText, { color: colors.textSecondary }]}>
+                      {isTurkish ? 'Bu ay için kayıtlı ödeme yok.' : 'No recorded payments for this month.'}
+                    </Text>
+                  )}
+                </View>
+              )}
+            </SectionCard>
 
-        {/* 6. CARD SPENDING BREAKDOWN */}
-        <CardBreakdownCard cards={cards} subscriptions={subscriptions || []} />
+            <View style={[styles.twoColumnLayout, isWide && styles.twoColumnWide]}>
+              <View style={isWide ? styles.wideColumn : undefined}>
+                <SectionCard surface={colors.surface} border={colors.border} style={isWide ? styles.fillCard : undefined}>
+                  <SectionHeader icon="pie-chart-outline" title={isTurkish ? 'Harcama dağılımı' : 'Spending breakdown'} subtitle={isTurkish ? 'Aylık net taahhüdün kategorilere dağılımı' : 'Your net monthly commitment by category'} text={colors.text} secondary={colors.textSecondary} />
+                  <View style={styles.categoryList}>
+                    {topCategories.map(category => {
+                      const meta = getCategoryMeta(category.category, isTurkish);
+                      return (
+                        <View key={category.category} style={styles.categoryItem}>
+                          <View style={styles.categoryTopRow}>
+                            <View style={styles.categoryIdentity}>
+                              <View style={[styles.categoryIcon, { backgroundColor: meta.bg }]}>
+                                <Ionicons name={meta.icon as any} size={16} color={meta.color} />
+                              </View>
+                              <View>
+                                <Text style={[styles.categoryName, { color: colors.text }]}>{meta.name}</Text>
+                                <Text style={[styles.categoryCount, { color: colors.textSecondary }]}>{isTurkish ? `${category.count} abonelik` : `${category.count} subscription${category.count > 1 ? 's' : ''}`}</Text>
+                              </View>
+                            </View>
+                            <View style={styles.categoryAmountArea}>
+                              <Text style={[styles.categoryAmount, { color: colors.text }]}>{formatMoney(category.amount)}</Text>
+                              <Text style={[styles.categoryPercent, { color: colors.textSecondary }]}>%{category.percentage.toFixed(0)}</Text>
+                            </View>
+                          </View>
+                          <View style={[styles.categoryTrack, { backgroundColor: colors.surfaceSubtle }]}>
+                            <View style={[styles.categoryFill, { width: `${Math.max(2, category.percentage)}%`, backgroundColor: meta.color }]} />
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </SectionCard>
+              </View>
 
-        {/* 7. SMART ALTERNATIVES, BUNDLES & CURRENCY RISKS */}
-        <SpendingHeatmapCard subscriptions={subscriptions || []} baseCurrency={baseCurrency} />
-        <SmartAlternativesCard subscriptions={subscriptions || []} />
-        <BundleAlertCard subscriptions={subscriptions || []} />
-        <CurrencyRiskCard subscriptions={subscriptions || []} baseCurrency={baseCurrency} liveRates={liveRates} />
+              <View style={isWide ? styles.wideColumn : undefined}>
+                <SectionCard surface={colors.surface} border={colors.border} style={isWide ? styles.fillCard : undefined}>
+                  <SectionHeader icon="time-outline" title={isTurkish ? 'Yaklaşan ödemeler' : 'Upcoming payments'} subtitle={isTurkish ? `30 günde ${topUpcoming.length > 0 ? formatMoney(analysis.upcoming30DayTotal) : 'ödeme yok'}` : `${topUpcoming.length > 0 ? formatMoney(analysis.upcoming30DayTotal) : 'No payments'} in 30 days`} text={colors.text} secondary={colors.textSecondary} action={isTurkish ? 'Takvim' : 'Calendar'} onAction={() => router.push('/(tabs)/calendar')} />
+                  {topUpcoming.length > 0 ? (
+                    <View style={styles.paymentList}>
+                      {topUpcoming.map(payment => (
+                        <View key={`${payment.subscription.id}-${payment.date.toISOString()}`} style={styles.paymentRow}>
+                          <View style={[styles.dateBadge, { backgroundColor: colors.surfaceSubtle }]}>
+                            <Text style={[styles.dateBadgeDay, { color: colors.text }]}>{payment.date.getDate()}</Text>
+                            <Text style={[styles.dateBadgeMonth, { color: colors.textSecondary }]}>{formatMonth(payment.date)}</Text>
+                          </View>
+                          <View style={styles.paymentCopy}>
+                            <Text numberOfLines={1} style={[styles.paymentName, { color: colors.text }]}>{payment.subscription.name}</Text>
+                            <Text style={[styles.paymentTiming, { color: colors.textSecondary }]}>{payment.daysLeft === 0 ? isTurkish ? 'Bugün' : 'Today' : isTurkish ? `${payment.daysLeft} gün sonra` : `In ${payment.daysLeft} days`}</Text>
+                          </View>
+                          <Text style={[styles.paymentAmount, { color: colors.text }]}>{formatMoney(payment.amount)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.noPaymentState}>
+                      <Ionicons name="checkmark-circle-outline" size={25} color="#10B981" />
+                      <Text style={[styles.noPaymentText, { color: colors.textSecondary }]}>{isTurkish ? 'Önümüzdeki 30 günde ödeme görünmüyor.' : 'No payments are due in the next 30 days.'}</Text>
+                    </View>
+                  )}
+                </SectionCard>
+              </View>
+            </View>
 
-        {/* 8. SPENDING INSIGHTS & COST PER USE */}
-        <SpendingInsightsCard mostExpensive={metrics.mostExpensive} />
-        <CostPerUseCard />
+            <SectionCard surface={colors.surface} border={colors.border}>
+              <SectionHeader icon="compass-outline" title={isTurkish ? 'Finansal yapı' : 'Financial structure'} subtitle={isTurkish ? 'Maliyet yoğunlaşması ve kur etkisi' : 'Cost concentration and currency exposure'} text={colors.text} secondary={colors.textSecondary} />
+              <View style={styles.structureGrid}>
+                <StructureItem width={metricCardWidths[0]} icon="diamond-outline" color="#8B5CF6" label={isTurkish ? 'En yüksek maliyet' : 'Largest commitment'} value={analysis.topSubscription?.subscription.name || '—'} detail={analysis.topSubscription ? `${formatMoney(analysis.topSubscription.amount)} · %${analysis.topSubscription.share.toFixed(0)}` : '—'} text={colors.text} secondary={colors.textSecondary} subtle={colors.surfaceSubtle} />
+                <StructureItem width={metricCardWidths[1]} icon="globe-outline" color="#3B82F6" label={isTurkish ? 'Döviz maruziyeti' : 'Currency exposure'} value={`%${analysis.foreignCurrencyShare.toFixed(0)}`} detail={formatMoney(analysis.foreignCurrencyMonthly)} text={colors.text} secondary={colors.textSecondary} subtle={colors.surfaceSubtle} />
+                <StructureItem width={metricCardWidths[2]} icon="people-outline" color="#10B981" label={isTurkish ? 'Aylık geri alınan pay' : 'Monthly shared recovery'} value={formatMoney(analysis.monthlyRecoverable)} detail={isTurkish ? 'Paylaşılan ödemeler' : 'Shared payments'} text={colors.text} secondary={colors.textSecondary} subtle={colors.surfaceSubtle} />
+              </View>
+            </SectionCard>
+
+            <FinancialDecisionTools
+              subscriptions={subscriptions}
+              baseCurrency={baseCurrency}
+              isTurkish={isTurkish}
+              formatMoney={formatMoney}
+              updatingId={updatingUsageId}
+              onOpenSubscription={id => router.push(`/(tabs)/subscriptions/${id}`)}
+              onLogUsage={handleLogUsage}
+              onSetFrequency={handleSetUsageFrequency}
+            />
+
+            <SectionCard surface={colors.surface} border={colors.border}>
+              <SectionHeader icon="flash-outline" title={isTurkish ? 'Öncelikli aksiyonlar' : 'Priority actions'} subtitle={isTurkish ? 'En etkili kontroller önce gösterilir' : 'Highest-impact checks appear first'} text={colors.text} secondary={colors.textSecondary} />
+              <View style={styles.insightList}>
+                {insights.map((insight, index) => (
+                  <TouchableOpacity key={`${insight.title}-${index}`} style={[styles.insightRow, { backgroundColor: colors.surfaceSubtle }]} onPress={() => router.push('/(tabs)/subscriptions')} activeOpacity={0.75}>
+                    <View style={[styles.insightIcon, { backgroundColor: insight.backgroundColor }]}><Ionicons name={insight.icon} size={20} color={insight.color} /></View>
+                    <View style={styles.insightCopy}>
+                      <Text style={[styles.insightTitle, { color: colors.text }]}>{insight.title}</Text>
+                      <Text style={[styles.insightDescription, { color: colors.textSecondary }]}>{insight.description}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </SectionCard>
+
+            <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>{isTurkish ? `Tahminler kayıtlı tutar, para birimi, paylaşım ve yenileme tarihlerine dayanır. Son kontrol: ${formatDate(new Date())}.` : `Forecasts use saved amounts, currencies, shared costs, and renewal dates. Last checked ${formatDate(new Date())}.`}</Text>
+          </>
+        )}
       </ScrollView>
 
-      {/* SubMate Annual Wrapped Interactive Modal */}
-      <SubmateWrappedModal
-        visible={wrappedVisible}
-        onClose={() => setWrappedVisible(false)}
-        subscriptions={subscriptions || []}
-        baseCurrency={baseCurrency}
-      />
       <AiChatModal visible={aiChatVisible} onClose={() => setAiChatVisible(false)} />
     </SafeAreaView>
   );
 }
 
+function MetricCard({ width, icon, color, label, value, detail, surface, border, text, secondary }: any) {
+  return <View style={[styles.metricCard, { width, backgroundColor: surface, borderColor: border }]}><View style={[styles.metricIcon, { backgroundColor: `${color}1F` }]}><Ionicons name={icon} size={18} color={color} /></View><Text style={[styles.metricLabel, { color: secondary }]}>{label}</Text><Text numberOfLines={1} adjustsFontSizeToFit style={[styles.metricValue, { color: text }]}>{value}</Text><Text style={[styles.metricDetail, { color: secondary }]}>{detail}</Text></View>;
+}
+
+function SectionCard({ children, surface, border, style }: any) {
+  return <View style={[styles.sectionCard, { backgroundColor: surface, borderColor: border }, style]}>{children}</View>;
+}
+
+function SectionHeader({ icon, title, subtitle, text, secondary, action, onAction }: any) {
+  return <View style={styles.sectionHeader}><View style={styles.sectionHeaderLeft}><View style={styles.sectionTitleRow}><Ionicons name={icon} size={18} color="#6366F1" /><Text style={[styles.sectionTitle, { color: text }]}>{title}</Text></View><Text style={[styles.sectionSubtitle, { color: secondary }]}>{subtitle}</Text></View>{action && <TouchableOpacity onPress={onAction} style={styles.sectionAction}><Text style={styles.sectionActionText}>{action}</Text><Ionicons name="chevron-forward" size={15} color="#3B82F6" /></TouchableOpacity>}</View>;
+}
+
+function StructureItem({ width, icon, color, label, value, detail, text, secondary, subtle }: any) {
+  return <View style={[styles.structureItem, { width, backgroundColor: subtle }]}><View style={[styles.structureIcon, { backgroundColor: `${color}1F` }]}><Ionicons name={icon} size={18} color={color} /></View><Text style={[styles.structureLabel, { color: secondary }]}>{label}</Text><Text numberOfLines={1} style={[styles.structureValue, { color: text }]}>{value}</Text><Text numberOfLines={1} style={[styles.structureDetail, { color: secondary }]}>{detail}</Text></View>;
+}
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  scrollContent: {
-    paddingBottom: 140,
-    gap: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 6,
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.3,
-  },
-  pageSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  aiChatHeaderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-  },
-  aiChatHeaderBtnText: {
-    color: '#8B5CF6',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  headerIconBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 18,
-    padding: 14,
-    borderWidth: 1,
-    overflow: 'hidden',
-    minWidth: 0,
-  },
-  statHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    gap: 6,
-    overflow: 'hidden',
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    flexShrink: 1,
-  },
-  statIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 2,
-  },
-  statSub: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  cardContainer: {
-    borderRadius: 20,
-    padding: 18,
-    borderWidth: 1,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  cardSubtitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  scoreStatusTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  progressTrack: {
-    width: '100%',
-    height: 8,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  insightBullet: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: 6,
-  },
-  insightText: {
-    fontSize: 13,
-    flex: 1,
-    lineHeight: 18,
-  },
-  currencyPill: {
-    backgroundColor: 'rgba(59, 130, 246, 0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-  },
-  currencyPillText: {
-    color: '#3B82F6',
-    fontSize: 12,
-    fontWeight: '800',
-  },
-  chartContainer: {
-    paddingTop: 8,
-  },
-  chartArea: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    height: 180,
-    paddingTop: 16,
-  },
-  chartCol: {
-    alignItems: 'center',
-    flex: 1,
-    height: '100%',
-  },
-  barValueText: {
-    fontSize: 10,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  barTrack: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    width: '100%',
-    alignItems: 'center',
-  },
-  barFill: {
-    width: 24,
-    borderRadius: 12,
-    minHeight: 6,
-  },
-  barMonthLabel: {
-    fontSize: 11,
-    marginTop: 8,
-  },
+  safeArea: { flex: 1 }, centered: { alignItems: 'center', justifyContent: 'center' }, loadingText: { fontSize: 13, marginTop: 12 },
+  scrollView: { flex: 1, paddingHorizontal: 16 }, scrollContent: { paddingBottom: 130, gap: 16, width: '100%', maxWidth: 1180, alignSelf: 'center' },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, marginBottom: 2 }, headerCopy: { flex: 1, minWidth: 0 }, pageTitle: { fontSize: 25, fontWeight: '900', letterSpacing: -0.5 }, pageTitleCompact: { fontSize: 21 }, liveRow: { flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 4 }, liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#10B981' }, pageSubtitle: { fontSize: 12, lineHeight: 17, flexShrink: 1 },
+  aiButton: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 14, paddingHorizontal: 14, backgroundColor: '#7C3AED', flexShrink: 0 }, aiButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  emptyCard: { borderRadius: 24, borderWidth: 1, padding: 28, alignItems: 'center', marginTop: 20 }, emptyIcon: { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(59, 130, 246, 0.12)', marginBottom: 16 }, emptyTitle: { fontSize: 19, fontWeight: '900', textAlign: 'center' }, emptyDescription: { fontSize: 13, lineHeight: 20, textAlign: 'center', maxWidth: 420, marginTop: 8 }, primaryButton: { minHeight: 46, borderRadius: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 7, marginTop: 20 }, primaryButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  heroCard: { borderRadius: 24, padding: 20, overflow: 'hidden' }, heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }, heroLabel: { color: 'rgba(255,255,255,0.74)', fontSize: 11, fontWeight: '800', letterSpacing: 0.8 }, heroValue: { color: '#FFFFFF', fontSize: 32, fontWeight: '900', letterSpacing: -1, marginTop: 5 }, heroNote: { color: 'rgba(255,255,255,0.82)', fontSize: 12, lineHeight: 18, marginTop: 4 }, currencyBadge: { backgroundColor: 'rgba(255,255,255,0.16)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 6 }, currencyBadgeText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900' },
+  budgetArea: { marginTop: 20 }, budgetHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 7 }, budgetLabel: { color: 'rgba(255,255,255,0.78)', fontSize: 11, fontWeight: '700' }, budgetValue: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' }, budgetTrack: { height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.18)', overflow: 'hidden' }, budgetFill: { height: '100%', borderRadius: 4 }, budgetHint: { color: 'rgba(255,255,255,0.72)', fontSize: 10, marginTop: 7 }, budgetPrompt: { marginTop: 18, minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 12, paddingHorizontal: 12, backgroundColor: 'rgba(255,255,255,0.14)' }, budgetPromptText: { color: '#FFFFFF', flex: 1, fontSize: 11, fontWeight: '700' },
+  heroSummaryRow: { flexDirection: 'row', marginTop: 20, paddingTop: 15, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.24)' }, heroSummaryItem: { flex: 1 }, heroSummaryDivider: { width: StyleSheet.hairlineWidth, backgroundColor: 'rgba(255,255,255,0.24)', marginHorizontal: 16 }, heroSummaryLabel: { color: 'rgba(255,255,255,0.68)', fontSize: 10, fontWeight: '700' }, heroSummaryValue: { color: '#FFFFFF', fontSize: 14, fontWeight: '800', marginTop: 3 },
+  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 }, metricCard: { minHeight: 132, borderRadius: 18, borderWidth: 1, padding: 14 }, metricIcon: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }, metricLabel: { fontSize: 9, lineHeight: 13, fontWeight: '800', letterSpacing: 0.5 }, metricValue: { fontSize: 20, fontWeight: '900', marginTop: 4 }, metricDetail: { fontSize: 10, lineHeight: 14, marginTop: 3 },
+  sectionCard: { borderRadius: 22, borderWidth: 1, padding: 17 }, sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 16 }, sectionHeaderLeft: { flex: 1 }, sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 }, sectionTitle: { fontSize: 16, fontWeight: '900', letterSpacing: -0.2 }, sectionSubtitle: { fontSize: 11, lineHeight: 16, marginTop: 4 }, sectionAction: { flexDirection: 'row', alignItems: 'center', paddingVertical: 3 }, sectionActionText: { color: '#3B82F6', fontSize: 11, fontWeight: '800' },
+  cashFlowChart: { height: 175, flexDirection: 'row', alignItems: 'flex-end', paddingTop: 4 }, cashFlowColumn: { flex: 1, height: '100%', alignItems: 'center', justifyContent: 'flex-end', minWidth: 0 }, cashFlowValue: { fontSize: 9, fontWeight: '800', marginBottom: 5, maxWidth: '100%' }, cashFlowTrack: { height: 122, width: '62%', maxWidth: 38, minWidth: 18, borderRadius: 10, justifyContent: 'flex-end', overflow: 'hidden', borderWidth: 1 }, cashFlowBar: { width: '100%', borderRadius: 10 }, cashFlowMonth: { fontSize: 10, fontWeight: '800', marginTop: 7, textTransform: 'capitalize' },
+  cashFlowDetails: { borderRadius: 16, borderWidth: 1, padding: 12, marginTop: 12 }, cashFlowDetailsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }, cashFlowDetailsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 }, cashFlowDetailsTitle: { fontSize: 13, fontWeight: '900', textTransform: 'capitalize' }, cashFlowDetailsTotal: { fontSize: 13, fontWeight: '900' }, cashFlowPaymentList: { marginTop: 5 }, cashFlowPaymentRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 9, borderTopWidth: StyleSheet.hairlineWidth }, cashFlowPaymentIcon: { width: 30, height: 30, borderRadius: 10, alignItems: 'center', justifyContent: 'center' }, cashFlowPaymentCopy: { flex: 1 }, cashFlowPaymentName: { fontSize: 11, fontWeight: '800' }, cashFlowPaymentDate: { fontSize: 10, marginTop: 2 }, cashFlowPaymentAmount: { fontSize: 11, fontWeight: '900' }, cashFlowEmptyText: { fontSize: 11, marginTop: 12 },
+  twoColumnLayout: { gap: 16 }, twoColumnWide: { flexDirection: 'row', alignItems: 'stretch' }, wideColumn: { flex: 1, minWidth: 0 }, fillCard: { flex: 1 }, categoryList: { gap: 15 }, categoryItem: { gap: 8 }, categoryTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 }, categoryIdentity: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }, categoryIcon: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center' }, categoryName: { fontSize: 12, fontWeight: '800' }, categoryCount: { fontSize: 9, marginTop: 2 }, categoryAmountArea: { alignItems: 'flex-end', flexShrink: 0 }, categoryAmount: { fontSize: 12, fontWeight: '800' }, categoryPercent: { fontSize: 9, marginTop: 2 }, categoryTrack: { height: 5, borderRadius: 3, overflow: 'hidden' }, categoryFill: { height: '100%', borderRadius: 3 },
+  paymentList: { gap: 5 }, paymentRow: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 10 }, dateBadge: { width: 43, height: 43, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, dateBadgeDay: { fontSize: 14, fontWeight: '900', lineHeight: 16 }, dateBadgeMonth: { fontSize: 8, fontWeight: '700', textTransform: 'uppercase' }, paymentCopy: { flex: 1 }, paymentName: { fontSize: 12, fontWeight: '800' }, paymentTiming: { fontSize: 9, marginTop: 3 }, paymentAmount: { fontSize: 12, fontWeight: '900' }, noPaymentState: { minHeight: 120, alignItems: 'center', justifyContent: 'center', gap: 10 }, noPaymentText: { fontSize: 11, textAlign: 'center' },
+  structureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, alignItems: 'stretch' }, structureItem: { minHeight: 118, borderRadius: 16, padding: 13 }, structureIcon: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }, structureLabel: { fontSize: 9, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 }, structureValue: { fontSize: 14, fontWeight: '900', marginTop: 4 }, structureDetail: { fontSize: 9, marginTop: 3 },
+  insightList: { gap: 9 }, insightRow: { minHeight: 70, borderRadius: 16, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 11 }, insightIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' }, insightCopy: { flex: 1 }, insightTitle: { fontSize: 12, fontWeight: '900' }, insightDescription: { fontSize: 10, lineHeight: 15, marginTop: 3 }, disclaimer: { fontSize: 9, lineHeight: 14, textAlign: 'center', paddingHorizontal: 16 },
 });

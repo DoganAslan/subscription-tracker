@@ -115,11 +115,11 @@ export const t: any = new Proxy({}, {
   get(_target, namespace) {
     return new Proxy({}, {
       get(_target2, key) {
-        return i18n.t(`${String(namespace)}.${String(key)}`);
+        const translationKey = `${String(namespace)}.${String(key)}`;
+        return i18n.exists(translationKey) ? i18n.t(translationKey) : '';
       }
     });
   }
 });
-
 
 

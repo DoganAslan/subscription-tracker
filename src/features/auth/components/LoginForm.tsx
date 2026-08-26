@@ -13,6 +13,7 @@ import { AuthService } from '@/services/firebase/auth';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import i18n from '@/locales/i18n';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { triggerHaptic } from '@/utils/haptics';
 
@@ -24,11 +25,13 @@ export function LoginForm() {
   const [isResetModalVisible, setResetModalVisible] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [isConsentGiven, setIsConsentGiven] = useState(false);
+  const [readLegalDocuments, setReadLegalDocuments] = useState({ privacy: false, terms: false });
   const [showPassword, setShowPassword] = useState(false);
   const [activeLegalModal, setActiveLegalModal] = useState<'privacy' | 'terms' | null>(null);
 
   const { t, currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
+  const insets = useSafeAreaInsets();
 
   const handleForgotPassword = async () => {
     const cleanEmail = resetEmail?.trim();
@@ -70,9 +73,13 @@ export function LoginForm() {
   };
 
   const handleAcceptLegalModal = () => {
-    setIsConsentGiven(true);
+    if (activeLegalModal) {
+      setReadLegalDocuments(previous => ({ ...previous, [activeLegalModal]: true }));
+    }
     setActiveLegalModal(null);
   };
+
+  const canGiveConsent = readLegalDocuments.privacy && readLegalDocuments.terms;
 
   return (
     <View style={[styles.cardContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -134,27 +141,35 @@ export function LoginForm() {
       <View style={styles.checkboxContainer}>
         <Checkbox
           value={isConsentGiven}
-          onValueChange={setIsConsentGiven}
+          disabled={!canGiveConsent}
+          onValueChange={value => {
+            if (canGiveConsent) setIsConsentGiven(value);
+          }}
           color={isConsentGiven ? colors.primary : undefined}
           style={styles.checkbox}
         />
         <View style={styles.checkboxLabel}>
           <Text style={[styles.consentText, { color: colors.textSecondary }]}>
-            {t.legal?.readAndAgreePrefix || 'I have read, understood and accept the '}
+            {t.legal?.readAndAgreePrefix || (isTurkish ? 'Aşağıdaki belgeleri okudum, anladım ve kabul ediyorum: ' : 'I have read, understood and accept the ')}
             <Text
-              style={[styles.legalLink, { color: colors.primary }]}
+              style={[styles.legalLink, { color: readLegalDocuments.privacy ? '#10B981' : colors.primary }]}
               onPress={() => setActiveLegalModal('privacy')}
             >
               {t.legal?.privacyPolicy || 'Privacy Policy'}
             </Text>
             {' '}{t.legal?.andWord || 'and'}{' '}
             <Text
-              style={[styles.legalLink, { color: colors.primary }]}
+              style={[styles.legalLink, { color: readLegalDocuments.terms ? '#10B981' : colors.primary }]}
               onPress={() => setActiveLegalModal('terms')}
             >
               {t.legal?.termsOfUse || 'Terms of Use'}
             </Text>.
           </Text>
+          {!canGiveConsent && (
+            <Text style={[styles.legalHint, { color: colors.textSecondary }]}>
+              {isTurkish ? 'Devam etmek için her iki belgeyi açıp okuyun.' : 'Open and read both documents before continuing.'}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -199,7 +214,7 @@ export function LoginForm() {
       {/* RESET PASSWORD MODAL */}
       <Modal visible={isResetModalVisible} animationType="fade" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: Math.max(24, insets.bottom + 16) }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>{isTurkish ? 'Şifreyi sıfırla' : 'Reset password'}</Text>
             <Text style={[styles.modalSubtitle, { color: colors.textSecondary }]}>
               {isTurkish ? 'Kayıtlı e-posta adresini gir; şifreni sıfırlaman için bağlantı gönderelim.' : 'Enter your registered email address and we will send you a reset link.'}
@@ -221,12 +236,12 @@ export function LoginForm() {
                 title={isTurkish ? 'İptal' : 'Cancel'}
                 variant="secondary"
                 onPress={() => setResetModalVisible(false)}
-                style={{ flex: 1, marginRight: 8 }}
+                style={styles.modalActionButton}
               />
               <Button
                 title={isTurkish ? 'Bağlantı gönder' : 'Send link'}
                 onPress={handleForgotPassword}
-                style={{ flex: 1, marginLeft: 8 }}
+                style={styles.modalActionButton}
               />
             </View>
           </View>
@@ -242,9 +257,9 @@ export function LoginForm() {
       >
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalDismissArea} onPress={() => setActiveLegalModal(null)} />
-          <View style={[styles.legalModalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={[styles.legalModalContent, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: Math.max(32, insets.bottom + 20) }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>
+              <Text numberOfLines={2} style={[styles.modalTitle, styles.modalHeaderTitle, { color: colors.text }]}>
                 {activeLegalModal === 'privacy'
                   ? (t.legal?.privacyPolicy || 'Privacy Policy')
                   : (t.legal?.termsOfUse || 'Terms of Use')}
@@ -264,7 +279,7 @@ export function LoginForm() {
 
             <View style={styles.acceptButtonContainer}>
               <Button
-                title="✓ Okudum ve Kabul Ediyorum"
+                title={isTurkish ? '✓ Okudum, devam et' : '✓ Read and continue'}
                 onPress={handleAcceptLegalModal}
                 style={{ width: '100%', backgroundColor: colors.primary }}
               />
@@ -336,10 +351,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
+    gap: 12,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
+  },
+  modalHeaderTitle: {
+    flex: 1,
+    minWidth: 0,
   },
   modalSubtitle: {
     fontSize: 15,
@@ -355,8 +375,10 @@ const styles = StyleSheet.create({
   },
   modalButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 12,
   },
+  modalActionButton: { flexGrow: 1, flexBasis: 140 },
   legalScrollView: {
     maxHeight: 380,
     marginBottom: 16,
@@ -390,6 +412,11 @@ const styles = StyleSheet.create({
   legalLink: {
     fontWeight: '700',
     textDecorationLine: 'underline',
+  },
+  legalHint: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 5,
   },
   dividerRow: {
     flexDirection: 'row',

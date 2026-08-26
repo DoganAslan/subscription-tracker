@@ -25,6 +25,7 @@ export const subscriptionSchema = z.object({
   usageFrequency: z.enum(['high', 'medium', 'low', 'none']).optional(),
   lastUsedDate: z.string().optional(),
   usageScore: z.number().optional(),
+  usageLogDates: z.array(z.string()).optional(),
   cardId: z.string().optional().nullable(),
   isSplit: z.boolean().default(false).optional(),
   splitMembers: z.array(z.object({

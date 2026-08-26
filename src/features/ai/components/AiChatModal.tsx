@@ -12,14 +12,14 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Markdown from 'react-native-markdown-display';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { chatWithSubmateAi, ChatMessage } from '@/services/ai/gemini';
 import { triggerHaptic } from '@/utils/haptics';
+import { SafeMarkdownText } from '@/components/common/SafeMarkdownText';
 
 interface Props {
   visible: boolean;
@@ -64,9 +64,14 @@ export function AiChatModal({ visible, onClose }: Props) {
       ];
 
   useEffect(() => {
-    if (visible) {
-      setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
-    }
+    if (!visible) return undefined;
+
+    const timer = setTimeout(
+      () => scrollViewRef.current?.scrollToEnd({ animated: true }),
+      100,
+    );
+
+    return () => clearTimeout(timer);
   }, [visible, messages]);
 
   const handleSend = async (textToSend?: string) => {
@@ -89,7 +94,7 @@ export function AiChatModal({ visible, onClose }: Props) {
     try {
       const responseText = await chatWithSubmateAi(
         queryText,
-        [...messages, userMsg],
+        messages,
         subscriptions,
         baseCurrency,
         isTurkish
@@ -113,22 +118,26 @@ export function AiChatModal({ visible, onClose }: Props) {
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-        style={[styles.container, { backgroundColor: colors.background }]}
+      <SafeAreaView
+        style={[styles.safeShell, { backgroundColor: colors.surface }]}
+        edges={['top', 'left', 'right']}
       >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+          style={[styles.container, { backgroundColor: colors.background }]}
+        >
         {/* Header */}
         <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
           <View style={styles.headerTitleRow}>
             <View style={styles.aiBadgeIcon}>
               <Ionicons name="sparkles" size={18} color="#8B5CF6" />
             </View>
-            <View>
-              <Text style={[styles.headerTitle, { color: colors.text }]}>
+            <View style={styles.headerCopy}>
+              <Text numberOfLines={1} style={[styles.headerTitle, { color: colors.text }]}>
                 {isTurkish ? 'SubMate YZ Danışmanı' : 'SubMate AI Advisor'}
               </Text>
-              <Text style={[styles.headerSub, { color: '#10B981' }]}>
+              <Text numberOfLines={1} style={[styles.headerSub, { color: '#10B981' }]}>
                 {isTurkish ? 'Kişisel finans desteği' : 'Your personal finance guide'}
               </Text>
             </View>
@@ -173,7 +182,7 @@ export function AiChatModal({ visible, onClose }: Props) {
                   {isUser ? (
                     <Text style={[styles.msgText, { color: '#FFFFFF' }]}>{msg.text}</Text>
                   ) : (
-                    <Markdown style={markdownStyles(colors.text)}>{msg.text}</Markdown>
+                    <SafeMarkdownText text={msg.text} color={colors.text} />
                   )}
                   <Text style={[styles.msgTime, { color: isUser ? 'rgba(255,255,255,0.7)' : colors.textSecondary }]}>
                     {msg.timestamp}
@@ -245,36 +254,16 @@ export function AiChatModal({ visible, onClose }: Props) {
             <Ionicons name="arrow-up" size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </Modal>
   );
 }
 
-const markdownStyles = (color: string) => ({
-  body: {
-    color,
-    fontSize: 14,
-    lineHeight: 21,
-    margin: 0,
-  },
-  paragraph: {
-    marginTop: 0,
-    marginBottom: 8,
-  },
-  strong: {
-    color,
-    fontWeight: '800' as const,
-  },
-  bullet_list: {
-    marginTop: 2,
-    marginBottom: 8,
-  },
-  list_item: {
-    marginBottom: 2,
-  },
-});
-
 const styles = StyleSheet.create({
+  safeShell: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -283,7 +272,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 50 : 18,
+    paddingTop: 12,
     paddingBottom: 14,
     borderBottomWidth: 1,
   },
@@ -291,6 +280,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    flex: 1,
+    minWidth: 0,
+    marginRight: 10,
+  },
+  headerCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   aiBadgeIcon: {
     width: 36,
@@ -315,6 +311,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   chatScroll: {
     flex: 1,

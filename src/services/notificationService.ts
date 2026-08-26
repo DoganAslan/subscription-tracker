@@ -1,8 +1,20 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getNextRenewalDate } from '@/features/dashboard/utils/calculations';
 import i18n from '@/locales/i18n';
+
+const NOTIFICATION_HISTORY_KEY = '@submate_notification_history';
+const MAX_NOTIFICATION_HISTORY_ITEMS = 60;
+
+export type NotificationHistoryItem = {
+  id: string;
+  title: string;
+  body: string;
+  receivedAt: number;
+  read: boolean;
+};
 
 // Configure how notifications appear when the app is in the foreground
 Notifications.setNotificationHandler({
@@ -17,6 +29,98 @@ Notifications.setNotificationHandler({
 
 const getNotifId = (subId: string): string => `sub_remind_${subId}`;
 const getContractDoomNotifId = (subId: string): string => `sub_contract_doom_${subId}`;
+
+const notificationToHistoryItem = (
+  notification: Notifications.Notification,
+  read = false,
+): NotificationHistoryItem => ({
+  id: notification.request.identifier,
+  title: notification.request.content.title || 'SubMate',
+  body: notification.request.content.body || '',
+  receivedAt: Date.now(),
+  read,
+});
+
+const persistNotificationHistoryItem = async (item: NotificationHistoryItem) => {
+  try {
+    const stored = await AsyncStorage.getItem(NOTIFICATION_HISTORY_KEY);
+    const existing: NotificationHistoryItem[] = stored ? JSON.parse(stored) : [];
+    const previous = existing.find(historyItem => historyItem.id === item.id);
+    const next = [
+      { ...previous, ...item, receivedAt: item.receivedAt || previous?.receivedAt || Date.now() },
+      ...existing.filter(historyItem => historyItem.id !== item.id),
+    ].slice(0, MAX_NOTIFICATION_HISTORY_ITEMS);
+    await AsyncStorage.setItem(NOTIFICATION_HISTORY_KEY, JSON.stringify(next));
+  } catch (error) {
+    console.warn('[Notifications] Could not save notification history:', error);
+  }
+};
+
+export const getNotificationHistory = async (): Promise<NotificationHistoryItem[]> => {
+  try {
+    const stored = await AsyncStorage.getItem(NOTIFICATION_HISTORY_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.warn('[Notifications] Could not read notification history:', error);
+    return [];
+  }
+};
+
+export const getUnreadNotificationCount = async (): Promise<number> => {
+  const history = await getNotificationHistory();
+  return history.filter(item => !item.read).length;
+};
+
+export const markNotificationsAsRead = async (): Promise<void> => {
+  const history = await getNotificationHistory();
+  await AsyncStorage.setItem(
+    NOTIFICATION_HISTORY_KEY,
+    JSON.stringify(history.map(item => ({ ...item, read: true }))),
+  );
+};
+
+export const clearNotificationHistory = async (): Promise<void> => {
+  await AsyncStorage.removeItem(NOTIFICATION_HISTORY_KEY);
+};
+
+// Expo exposes the notifications that are still visible in the system tray.
+// Merging them here also catches reminders delivered while the app was closed.
+export const syncPresentedNotificationsToHistory = async (): Promise<void> => {
+  if (Platform.OS === 'web') return;
+
+  try {
+    const presented = await Notifications.getPresentedNotificationsAsync();
+    await Promise.all(
+      presented.map(notification =>
+        persistNotificationHistoryItem(notificationToHistoryItem(notification)),
+      ),
+    );
+  } catch (error) {
+    console.warn('[Notifications] Could not sync displayed notifications:', error);
+  }
+};
+
+export const registerNotificationHistoryListeners = () => {
+  if (Platform.OS === 'web') return () => undefined;
+
+  const receivedSubscription = Notifications.addNotificationReceivedListener(notification => {
+    void persistNotificationHistoryItem(notificationToHistoryItem(notification));
+  });
+  const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+    void persistNotificationHistoryItem(notificationToHistoryItem(response.notification, true));
+  });
+
+  void Notifications.getLastNotificationResponseAsync().then(response => {
+    if (response) {
+      void persistNotificationHistoryItem(notificationToHistoryItem(response.notification, true));
+    }
+  }).catch(() => undefined);
+
+  return () => {
+    receivedSubscription.remove();
+    responseSubscription.remove();
+  };
+};
 
 export const setupNotificationChannel = async () => {
   if (Platform.OS === 'android') {

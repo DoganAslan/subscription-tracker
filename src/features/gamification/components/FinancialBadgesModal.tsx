@@ -5,6 +5,7 @@ import { Subscription } from '@/services/firebase/types';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { calculateUserBadges, UserGamificationSummary } from '../services/badgeService';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
   visible: boolean;
@@ -16,6 +17,7 @@ export function FinancialBadgesModal({ visible, onClose, subscriptions }: Props)
   const { colors } = useTheme();
   const { currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
+  const insets = useSafeAreaInsets();
 
   const stats: UserGamificationSummary = React.useMemo(() => {
     return calculateUserBadges(subscriptions);
@@ -26,18 +28,24 @@ export function FinancialBadgesModal({ visible, onClose, subscriptions }: Props)
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.modalContent, {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          paddingBottom: Math.max(20, insets.bottom + 16),
+          paddingLeft: Math.max(20, insets.left + 16),
+          paddingRight: Math.max(20, insets.right + 16),
+        }]}>
           {/* Modal Header */}
           <View style={styles.header}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={styles.headerIdentity}>
               <View style={styles.trophyIcon}>
                 <Ionicons name="trophy" size={22} color="#F59E0B" />
               </View>
-              <View>
-                <Text style={[styles.title, { color: colors.text }]}>
+              <View style={styles.headerCopy}>
+                <Text numberOfLines={2} style={[styles.title, { color: colors.text }]}>
                   {isTurkish ? '🏆 Başarı & Rozetleriniz' : '🏆 Gamified Badges'}
                 </Text>
-                <Text style={[styles.subTitle, { color: colors.textSecondary }]}>
+                <Text numberOfLines={2} style={[styles.subTitle, { color: colors.textSecondary }]}>
                   {isTurkish ? 'Aboneliklerinizi yönetin, rozet ve XP kazanın' : 'Earn XP and level up your financial score'}
                 </Text>
               </View>
@@ -90,9 +98,9 @@ export function FinancialBadgesModal({ visible, onClose, subscriptions }: Props)
                     <Ionicons name={b.iconName as any} size={24} color={b.unlocked ? '#F59E0B' : colors.textSecondary} />
                   </View>
 
-                  <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Text style={[styles.badgeTitle, { color: colors.text }]}>{b.title}</Text>
+                  <View style={styles.badgeCopy}>
+                    <View style={styles.badgeTitleRow}>
+                      <Text numberOfLines={2} style={[styles.badgeTitle, { color: colors.text }]}>{b.title}</Text>
                       <Text style={[styles.badgeXp, { color: b.unlocked ? '#F59E0B' : colors.textSecondary }]}>
                         +{b.xpValue} XP
                       </Text>
@@ -130,6 +138,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 16,
   },
+  headerIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 8 },
+  headerCopy: { flex: 1, minWidth: 0 },
   trophyIcon: {
     width: 40,
     height: 40,
@@ -148,6 +158,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     padding: 4,
+    flexShrink: 0,
   },
   levelBanner: {
     borderRadius: 18,
@@ -199,6 +210,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1.5,
   },
+  badgeCopy: { flex: 1, minWidth: 0 },
+  badgeTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   badgeIconBox: {
     width: 46,
     height: 46,
@@ -209,10 +222,13 @@ const styles = StyleSheet.create({
   badgeTitle: {
     fontSize: 14,
     fontWeight: '800',
+    flex: 1,
+    minWidth: 0,
   },
   badgeXp: {
     fontSize: 12,
     fontWeight: '800',
+    flexShrink: 0,
   },
   badgeDesc: {
     fontSize: 11,

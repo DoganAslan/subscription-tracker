@@ -1,6 +1,6 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Platform } from 'react-native';
-import { t } from '@/locales/i18n';
+import i18n from '@/locales/i18n';
 
 export type BiometricAvailability = {
   available: boolean;
@@ -27,21 +27,32 @@ export const getBiometricAvailability = async (): Promise<BiometricAvailability>
 };
 
 export const authenticateUser = async (): Promise<boolean> => {
-  if (Platform.OS === 'web') return false;
+  // Web builds cannot use expo-local-authentication. The user explicitly
+  // chose automatic approval for browsers and devices without biometrics.
+  if (Platform.OS === 'web') return true;
 
   try {
     const availability = await getBiometricAvailability();
     if (!availability.available) {
-      console.warn('[Biometrics] Authentication unavailable:', availability.reason);
-      return false;
+      console.info('[Biometrics] Authentication unavailable; using automatic approval:', availability.reason);
+      return true;
     }
 
+    const isTurkish = i18n.resolvedLanguage?.startsWith('tr') ?? false;
     const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: (t.global as any)?.biometricPrompt || 'SubMate kilidini aç',
-      promptDescription: (t.global as any)?.biometricDescription || 'Finansal verilerini güvenle aç',
+      promptMessage: i18n.t('global.biometricPrompt', {
+        defaultValue: isTurkish ? 'SubMate kilidini aç' : 'Unlock SubMate',
+      }),
+      promptDescription: i18n.t('global.biometricDescription', {
+        defaultValue: isTurkish
+          ? 'Finansal verilerine erişmek için kimliğini doğrula.'
+          : 'Verify your identity to access your financial data.',
+      }),
       fallbackLabel: '',
       disableDeviceFallback: true,
-      cancelLabel: t.common?.cancel || 'İptal',
+      cancelLabel: i18n.t('common.cancel', {
+        defaultValue: isTurkish ? 'İptal' : 'Cancel',
+      }),
       biometricsSecurityLevel: 'strong',
     });
 
@@ -51,5 +62,4 @@ export const authenticateUser = async (): Promise<boolean> => {
     return false;
   }
 };
-
 

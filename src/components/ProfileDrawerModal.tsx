@@ -8,8 +8,9 @@ import {
   ScrollView,
   Platform,
   TouchableWithoutFeedback,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
@@ -29,9 +30,6 @@ interface ProfileDrawerModalProps {
   onOpenWrapped: () => void;
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.82, 340);
-
 export function ProfileDrawerModal({
   visible,
   onClose,
@@ -45,6 +43,9 @@ export function ProfileDrawerModal({
   const { currentLanguage, changeLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const drawerWidth = Math.min(width * 0.86, 340);
 
   if (!visible) return null;
 
@@ -90,13 +91,23 @@ export function ProfileDrawerModal({
           style={[
             styles.drawerPanel,
             {
-              width: DRAWER_WIDTH,
+              width: drawerWidth,
+              paddingTop: Math.max(insets.top + 12, Platform.OS === 'web' ? 24 : 20),
               backgroundColor: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(255, 255, 255, 0.96)',
               borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
             },
           ]}
         >
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.scrollContent,
+              {
+                paddingLeft: Math.max(16, insets.left + 12),
+                paddingBottom: Math.max(40, insets.bottom + 20),
+              },
+            ]}
+          >
             {/* 1. USER PROFILE CARD */}
             <View style={[styles.profileCard, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
               <View style={styles.avatarWrapper}>
@@ -109,7 +120,7 @@ export function ProfileDrawerModal({
                 )}
               </View>
 
-              <View style={{ flex: 1 }}>
+              <View style={styles.profileCopy}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Text style={[styles.userNameText, { color: colors.text }]} numberOfLines={1}>
                     {userName || (isTurkish ? 'SubMate kullanıcısı' : 'SubMate user')}
@@ -131,7 +142,7 @@ export function ProfileDrawerModal({
             <View style={[styles.toggleRow, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}>
               <TouchableOpacity style={styles.toggleItem} onPress={handleThemeToggle} activeOpacity={0.7}>
                 <Ionicons name={isDark ? 'moon' : 'sunny'} size={18} color={isDark ? '#F59E0B' : '#3B82F6'} />
-                <Text style={[styles.toggleText, { color: colors.text }]}>
+                <Text numberOfLines={1} style={[styles.toggleText, { color: colors.text }]}>
                   {isDark ? (isTurkish ? 'Karanlık Mod' : 'Dark Mode') : (isTurkish ? 'Aydınlık Mod' : 'Light Mode')}
                 </Text>
               </TouchableOpacity>
@@ -140,8 +151,8 @@ export function ProfileDrawerModal({
 
               <TouchableOpacity style={styles.toggleItem} onPress={handleLanguageToggle} activeOpacity={0.7}>
                 <Ionicons name="language" size={18} color="#10B981" />
-                <Text style={[styles.toggleText, { color: colors.text }]}>
-                  {isTurkish ? '🇹🇷 Türkçe' : '🇬🇧 English'}
+                <Text numberOfLines={1} style={[styles.toggleText, { color: colors.text }]}>
+                  {isTurkish ? 'Türkçe' : 'English'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -248,7 +259,6 @@ const styles = StyleSheet.create({
   drawerPanel: {
     height: '100%',
     borderRightWidth: 1,
-    paddingTop: Platform.OS === 'ios' ? 54 : 36,
     shadowColor: '#000000',
     shadowOffset: { width: 4, height: 0 },
     shadowOpacity: 0.3,
@@ -266,6 +276,10 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 18,
     marginBottom: 16,
+  },
+  profileCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   avatarWrapper: {
     position: 'relative',
@@ -344,10 +358,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 8,
+    minWidth: 0,
   },
   toggleText: {
     fontSize: 12,
     fontWeight: '700',
+    flexShrink: 1,
   },
   toggleDivider: {
     width: 1,

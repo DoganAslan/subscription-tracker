@@ -1,17 +1,25 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+const SENSITIVE_WEB_KEY_PATTERN = /(?:api[-_]?key|secret|password|credential|auth[-_]?token|access[-_]?token|refresh[-_]?token|session)/i;
+
+const canUseWebStorageForKey = (key: string): boolean => !SENSITIVE_WEB_KEY_PATTERN.test(key);
+
 export const saveSecureData = async (key: string, value: string): Promise<boolean> => {
   if (!key || value === undefined) return false;
 
-  // WEB FALLBACK: Browsers lack Hardware Secure Enclaves. Route to standard localStorage safely.
+  // Browsers do not provide an equivalent to iOS Keychain / Android Keystore.
+  // localStorage is therefore limited to non-sensitive preferences only.
   if (Platform.OS === 'web') {
+    if (!canUseWebStorageForKey(key) || typeof localStorage === 'undefined') {
+      console.warn('Sensitive data was not persisted in browser storage.');
+      return false;
+    }
     try {
       localStorage.setItem(key, value);
-      console.log(`️ Web Storage Bridge: Saved [${key}] safely.`);
       return true;
-    } catch (e) {
-      console.error("Web Storage Exception:", e);
+    } catch (error) {
+      console.error('Browser storage write failed.', error);
       return false;
     }
   }
@@ -23,36 +31,38 @@ export const saveSecureData = async (key: string, value: string): Promise<boolea
     });
     return true;
   } catch (error) {
-    console.error(`SecureStore Hardware Encryption Failed for [${key}]:`, error);
+    console.error('SecureStore write failed.', error);
     return false;
   }
 };
 
 export const getSecureData = async (key: string): Promise<string | null> => {
   if (Platform.OS === 'web') {
+    if (!canUseWebStorageForKey(key) || typeof localStorage === 'undefined') return null;
     try {
       return localStorage.getItem(key);
-    } catch (e) { return null; }
+    } catch { return null; }
   }
 
   try {
     return await SecureStore.getItemAsync(key);
   } catch (error) {
-    console.error(`SecureStore Retrieval Failed for [${key}]:`, error);
+    console.error('SecureStore read failed.', error);
     return null;
   }
 };
 
 export const deleteSecureData = async (key: string): Promise<void> => {
   if (Platform.OS === 'web') {
-    try { localStorage.removeItem(key); } catch (e) {}
+    if (typeof localStorage === 'undefined') return;
+    try { localStorage.removeItem(key); } catch {}
     return;
   }
 
   try {
     await SecureStore.deleteItemAsync(key);
   } catch (error) {
-    console.error(`SecureStore Deletion Failed for [${key}]:`, error);
+    console.error('SecureStore deletion failed.', error);
   }
 };
 
@@ -63,5 +73,4 @@ export const secureStorageAdapter = {
   },
   removeItem: deleteSecureData,
 };
-
 

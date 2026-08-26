@@ -3,7 +3,6 @@
     "name": "SubMate",
     "slug": "submate",
     "version": "1.5.1",
-    "jsEngine": "hermes",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "submate",
@@ -11,8 +10,7 @@
     "ios": {
       "bundleIdentifier": "com.doganaslan.submate",
       "buildNumber": "6",
-      "icon": "./assets/images/logo.png",
-      "jsEngine": "hermes"
+      "icon": "./assets/images/logo.png"
     },
     "android": {
       "package": "com.doganaslan.submate",
@@ -28,8 +26,7 @@
         "SCHEDULE_EXACT_ALARM"
       ],
       "predictiveBackGestureEnabled": false,
-      "googleServicesFile": "./google-services.json",
-      "jsEngine": "hermes"
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
@@ -37,6 +34,7 @@
     },
     "plugins": [
       "expo-router",
+      "@react-native-google-signin/google-signin",
       [
         "expo-splash-screen",
         {
@@ -77,13 +75,6 @@
               "updatePeriodMillis": 1800000
             }
           ]
-        }
-      ],
-      [
-        "@react-native-firebase/app",
-        {
-          "googleServicesFile": "process.env.GOOGLE_SERVICES_JSON",
-          "iosGoogleServicesFile": "process.env.GOOGLE_SERVICES_PLIST"
         }
       ]
     ],
