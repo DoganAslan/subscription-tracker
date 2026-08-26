@@ -32,6 +32,16 @@ describe('parseSubscriptionDate', () => {
     expectLocalDate(parseSubscriptionDate({ toDate: () => date }), 2027, 1, 31);
     expect(parseSubscriptionDate('not a date')).toBeNull();
   });
+
+  it('rejects malformed ISO calendar dates without rejecting valid timezone-bearing datetimes', () => {
+    expect(parseSubscriptionDate('2027-02-29T12:00:00')).toBeNull();
+    expect(parseSubscriptionDate('2027-02-29T12:00:00+03:00')).toBeNull();
+    expect(parseSubscriptionDate('2028-02-29T12:00:00.000Z')).not.toBeNull();
+  });
+
+  it('fails closed when a timestamp-like value throws from toDate', () => {
+    expect(parseSubscriptionDate({ toDate: () => { throw new Error('unavailable'); } })).toBeNull();
+  });
 });
 
 describe('getNextRenewal', () => {
@@ -53,6 +63,30 @@ describe('getNextRenewal', () => {
       ),
       2027,
       2,
+      14,
+    );
+  });
+
+  it('falls back to the normal renewal schedule after a trial has expired', () => {
+    expectLocalDate(
+      getNextRenewal(
+        subscription({ isTrial: true, trialEndDate: localNoon(2027, 1, 15) }),
+        localNoon(2027, 2, 1),
+      ),
+      2027,
+      2,
+      28,
+    );
+  });
+
+  it('uses local calendar weeks across a timezone-offset transition', () => {
+    expectLocalDate(
+      getNextRenewal(
+        subscription({ billingCycle: 'weekly', renewalDate: '2027-03-07T00:00:00-05:00' }),
+        '2027-03-14T00:00:00-04:00',
+      ),
+      2027,
+      3,
       14,
     );
   });
@@ -81,5 +115,22 @@ describe('getRenewalsInRange', () => {
 
     expect(getRenewalsInRange(subscription({ isPaused: true }), range)).toEqual([]);
     expect(getRenewalsInRange(subscription({ renewalDate: 'not a date' }), range)).toEqual([]);
+  });
+
+  it('returns an empty range when the bounds are reversed', () => {
+    expect(getRenewalsInRange(subscription(), {
+      start: localNoon(2027, 3, 31),
+      end: localNoon(2027, 1, 1),
+    })).toEqual([]);
+  });
+
+  it('rejects a range whose known recurrence bound exceeds the safety limit', () => {
+    expect(getRenewalsInRange(subscription({
+      billingCycle: 'weekly',
+      renewalDate: localNoon(2000, 1, 1),
+    }), {
+      start: localNoon(2000, 1, 1),
+      end: localNoon(2200, 1, 1),
+    })).toEqual([]);
   });
 });

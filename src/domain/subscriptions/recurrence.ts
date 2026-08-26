@@ -29,6 +29,7 @@ const MONTHS_PER_CYCLE: Readonly<Record<Exclude<BillingCycle, 'weekly'>, number>
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_RENEWALS_PER_RANGE = 10_000;
 
 const toLocalMidnight = (date: Date): Date => new Date(
   date.getFullYear(),
@@ -38,14 +39,26 @@ const toLocalMidnight = (date: Date): Date => new Date(
 
 const isValidDate = (date: Date): boolean => !Number.isNaN(date.getTime());
 
+const createLocalDate = (year: number, month: number, day: number): Date => {
+  const date = new Date(0);
+  date.setHours(0, 0, 0, 0);
+  date.setFullYear(year, month, day);
+  return date;
+};
+
+const isValidCalendarDate = (year: number, month: number, day: number): boolean => {
+  const date = createLocalDate(year, month, day);
+  return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day;
+};
+
 const dateFromValue = (value: unknown): Date | null => {
   if (value instanceof Date) return new Date(value.getTime());
 
-  if (value && typeof value === 'object' && 'toDate' in value) {
-    const toDate = value.toDate;
-    if (typeof toDate !== 'function') return null;
-
+  if (value && typeof value === 'object') {
     try {
+      if (!('toDate' in value)) return null;
+      const toDate = value.toDate;
+      if (typeof toDate !== 'function') return null;
       const converted = toDate.call(value);
       return converted instanceof Date ? new Date(converted.getTime()) : null;
     } catch {
@@ -55,17 +68,15 @@ const dateFromValue = (value: unknown): Date | null => {
 
   if (typeof value !== 'string' && typeof value !== 'number') return null;
 
-  const localDateOnly = typeof value === 'string'
-    ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  const calendarDate = typeof value === 'string'
+    ? /^(\d{4})-(\d{2})-(\d{2})(?:$|T)/.exec(value)
     : null;
-  if (localDateOnly) {
-    const year = Number(localDateOnly[1]);
-    const month = Number(localDateOnly[2]) - 1;
-    const day = Number(localDateOnly[3]);
-    const parsed = new Date(year, month, day);
-    return parsed.getFullYear() === year && parsed.getMonth() === month && parsed.getDate() === day
-      ? parsed
-      : null;
+  if (typeof value === 'string' && calendarDate) {
+    const year = Number(calendarDate[1]);
+    const month = Number(calendarDate[2]) - 1;
+    const day = Number(calendarDate[3]);
+    if (!isValidCalendarDate(year, month, day)) return null;
+    if (value.length === 10) return createLocalDate(year, month, day);
   }
 
   const parsed = new Date(value);
@@ -152,10 +163,10 @@ const getFirstOccurrenceOnOrAfter = (
 
 const getRangeLimit = (cycle: BillingCycle, start: Date, end: Date): number => {
   if (cycle === 'weekly') {
-    return Math.floor((localDayNumber(end) - localDayNumber(start)) / 7) + 2;
+    return Math.floor((localDayNumber(end) - localDayNumber(start)) / 7) + 1;
   }
 
-  return Math.floor((monthIndex(end) - monthIndex(start)) / MONTHS_PER_CYCLE[cycle]) + 2;
+  return Math.floor((monthIndex(end) - monthIndex(start)) / MONTHS_PER_CYCLE[cycle]) + 1;
 };
 
 export function getNextRenewal(
@@ -191,6 +202,7 @@ export function getRenewalsInRange(
 
   const renewals: Date[] = [];
   const limit = getRangeLimit(subscription.billingCycle, start, end);
+  if (limit > MAX_RENEWALS_PER_RANGE) return [];
   for (let offset = 0; offset < limit; offset += 1) {
     const renewal = getOccurrence(anchor, subscription.billingCycle, first.index + offset);
     if (!renewal || renewal.getTime() > end.getTime()) break;
