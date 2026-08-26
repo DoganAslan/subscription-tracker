@@ -31,12 +31,6 @@ const MONTHS_PER_CYCLE: Readonly<Record<Exclude<BillingCycle, 'weekly'>, number>
 const DAY_MS = 24 * 60 * 60 * 1000;
 const MAX_RENEWALS_PER_RANGE = 10_000;
 
-const toLocalMidnight = (date: Date): Date => new Date(
-  date.getFullYear(),
-  date.getMonth(),
-  date.getDate(),
-);
-
 const isValidDate = (date: Date): boolean => !Number.isNaN(date.getTime());
 
 const createLocalDate = (year: number, month: number, day: number): Date => {
@@ -45,6 +39,12 @@ const createLocalDate = (year: number, month: number, day: number): Date => {
   date.setFullYear(year, month, day);
   return date;
 };
+
+const toLocalMidnight = (date: Date): Date => createLocalDate(
+  date.getFullYear(),
+  date.getMonth(),
+  date.getDate(),
+);
 
 const isValidCalendarDate = (year: number, month: number, day: number): boolean => {
   const date = createLocalDate(year, month, day);
@@ -116,19 +116,19 @@ const localDayNumber = (date: Date): number => Date.UTC(
 
 const monthIndex = (date: Date): number => date.getFullYear() * 12 + date.getMonth();
 
-const daysInMonth = (year: number, month: number): number => new Date(year, month + 1, 0).getDate();
+const daysInMonth = (year: number, month: number): number => createLocalDate(year, month + 1, 0).getDate();
 
 const getMonthOccurrence = (anchor: Date, monthsToAdd: number): Date | null => {
   const targetMonth = monthIndex(anchor) + monthsToAdd;
   const year = Math.floor(targetMonth / 12);
   const month = targetMonth % 12;
-  const date = new Date(year, month, Math.min(anchor.getDate(), daysInMonth(year, month)));
+  const date = createLocalDate(year, month, Math.min(anchor.getDate(), daysInMonth(year, month)));
   return isValidDate(date) ? date : null;
 };
 
 const getOccurrence = (anchor: Date, cycle: BillingCycle, index: number): Date | null => {
   if (cycle === 'weekly') {
-    const date = new Date(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + index * 7);
+    const date = createLocalDate(anchor.getFullYear(), anchor.getMonth(), anchor.getDate() + index * 7);
     return isValidDate(date) ? date : null;
   }
 

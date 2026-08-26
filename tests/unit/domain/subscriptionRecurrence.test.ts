@@ -91,6 +91,25 @@ describe('getNextRenewal', () => {
     );
   });
 
+  const lowYearCases: Array<['monthly' | 'weekly', string]> = [
+    ['monthly', '0099-02-28'],
+    ['weekly', '0099-02-07'],
+  ];
+
+  it.each(lowYearCases)('preserves low calendar years for %s renewals', (billingCycle, expected) => {
+    const [year, month, day] = expected.split('-').map(Number);
+
+    expectLocalDate(
+      getNextRenewal(
+        subscription({ billingCycle, renewalDate: '0099-01-31' }),
+        '0099-02-01',
+      ),
+      year,
+      month,
+      day,
+    );
+  });
+
   it('returns null for paused or invalid subscriptions', () => {
     expect(getNextRenewal(subscription({ isPaused: true }), localNoon(2027, 1, 1))).toBeNull();
     expect(getNextRenewal(subscription({ renewalDate: 'not a date' }), localNoon(2027, 1, 1))).toBeNull();
