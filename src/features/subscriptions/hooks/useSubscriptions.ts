@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SubscriptionService } from '@/services/firebase/firestore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Subscription } from '@/services/firebase/types';
+import { subscriptionRepository } from '../data/subscriptionRepository';
+import { subscriptionKeys } from '../application/subscriptionKeys';
 import { SubscriptionFormData } from '../schemas/subscription.schema';
 import { triggerHaptic } from '@/utils/haptics';
 import Toast from 'react-native-toast-message';
@@ -17,10 +18,7 @@ import { Timestamp } from 'firebase/firestore';
 import { triggerWidgetSync, updateWidgetData } from '@/services/background/widgetSync';
 import { useTranslation } from '@/context/LanguageContext';
 
-export const subscriptionKeys = {
-  all: ['subscriptions'] as const,
-  list: (userId: string) => [...subscriptionKeys.all, 'list', userId] as const,
-};
+export { subscriptionKeys } from '../application/subscriptionKeys';
 
 const safeToTimestamp = (val: any): Timestamp | null => {
   if (!val) return null;
@@ -41,36 +39,22 @@ const safeToDate = (val: any): Date => {
 
 export function useSubscriptions() {
   const user = useAuthStore((state) => state.user);
+  const userId = user?.uid;
 
   return useQuery({
-    queryKey: subscriptionKeys.list(user?.uid || ''),
-    queryFn: () => SubscriptionService.getSubscriptions(user!.uid),
-    enabled: !!user?.uid,
+    queryKey: subscriptionKeys.list(userId ?? ''),
+    queryFn: () => {
+      if (!userId) throw new Error('User not authenticated');
+      return subscriptionRepository.fetch(userId);
+    },
+    enabled: false,
     staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
 }
 
+/** @deprecated SubscriptionFeedProvider owns the live listener. */
 export function useLiveSubscriptions() {
-  const user = useAuthStore((state) => state.user);
-  const queryClient = useQueryClient();
-  const queryResult = useSubscriptions();
-
-  useEffect(() => {
-    if (!user?.uid) return;
-
-    return SubscriptionService.subscribeToSubscriptions(
-      user.uid,
-      subscriptions => {
-        queryClient.setQueryData(subscriptionKeys.list(user.uid), subscriptions);
-        void updateWidgetData(subscriptions);
-      },
-      error => {
-        console.warn('[Subscriptions] Live synchronization failed:', error);
-      },
-    );
-  }, [queryClient, user?.uid]);
-
-  return queryResult;
+  return useSubscriptions();
 }
 
 export function useAddSubscription() {
