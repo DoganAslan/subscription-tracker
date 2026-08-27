@@ -37,8 +37,10 @@ export function SubscriptionFeedProvider({
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const lifecycleGeneration = lifecycleGenerationRef.current + 1;
-    lifecycleGenerationRef.current = lifecycleGeneration;
+    // The generation is invalidated by the previous effect's cleanup. Do not
+    // advance it here: descendant mount effects may call refresh() before this
+    // passive effect runs, and their valid initial work must share this scope.
+    const lifecycleGeneration = lifecycleGenerationRef.current;
     const previousUserId = previousUserIdRef.current;
     if (previousUserId && previousUserId !== activeUserId) {
       queryClient.removeQueries({ queryKey: subscriptionKeys.list(previousUserId), exact: true });

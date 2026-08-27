@@ -98,6 +98,17 @@ function FeedProbe({ onSnapshot }: { onSnapshot: (snapshot: FeedSnapshot) => voi
   return <Text testID="cache-size">{queryClient.getQueryCache().getAll().length}</Text>;
 }
 
+function MountRefreshProbe({ onRefreshStart }: { onRefreshStart: () => void }) {
+  const { refresh } = useSubscriptionFeedStatus();
+
+  useEffect(() => {
+    onRefreshStart();
+    void refresh();
+  }, [onRefreshStart, refresh]);
+
+  return null;
+}
+
 describe('SubscriptionFeedProvider', () => {
   afterEach(() => {
     act(() => {
@@ -210,6 +221,37 @@ describe('SubscriptionFeedProvider', () => {
     });
 
     expect(queryClient.getQueryData(subscriptionKeys.list('user-a'))).toBeUndefined();
+    queryClient.clear();
+  });
+
+  it('applies a refresh started by a descendant mount effect', async () => {
+    const refresh = createDeferred<Subscription[]>();
+    const refreshedSubscriptions = [makeSubscription('mount-refresh')];
+    const fetch = jest.fn(() => refresh.promise);
+    const repository: SubscriptionRepository = {
+      subscribe: () => jest.fn(),
+      fetch,
+    };
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const onRefreshStart = jest.fn();
+    const view = renderWithAct(
+      <QueryClientProvider client={queryClient}>
+        <SubscriptionFeedProvider repository={repository} userId="user-a">
+          <MountRefreshProbe onRefreshStart={onRefreshStart} />
+        </SubscriptionFeedProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(onRefreshStart).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith('user-a');
+
+    await act(async () => {
+      refresh.resolve(refreshedSubscriptions);
+      await refresh.promise;
+    });
+
+    expect(queryClient.getQueryData(subscriptionKeys.list('user-a'))).toEqual(refreshedSubscriptions);
+    unmountWithAct(view);
     queryClient.clear();
   });
 
