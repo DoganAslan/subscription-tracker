@@ -15,8 +15,12 @@ import {
 } from '@/services/notificationService';
 import { getNextRenewalDate } from '@/features/dashboard/utils/calculations';
 import { Timestamp } from 'firebase/firestore';
-import { triggerWidgetSync, updateWidgetData } from '@/services/background/widgetSync';
 import { useTranslation } from '@/context/LanguageContext';
+import {
+  addCachedSubscription,
+  removeCachedSubscription,
+  updateCachedSubscription,
+} from '../application/subscriptionCacheUpdates';
 
 export { subscriptionKeys } from '../application/subscriptionKeys';
 
@@ -96,19 +100,15 @@ export function useAddSubscription() {
     onSuccess: (result) => {
       triggerHaptic('success');
       if (user) {
-        const updatedSubscriptions = queryClient.setQueryData<Subscription[]>(subscriptionKeys.list(user.uid), current => [
-          ...(current || []),
-          {
+        queryClient.setQueryData<Subscription[]>(subscriptionKeys.list(user.uid), current =>
+          addCachedSubscription(current, {
             id: result.id,
             userId: user.uid,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
             ...result.payload,
-          } as Subscription,
-        ]);
-        if (updatedSubscriptions) void updateWidgetData(updatedSubscriptions);
-        else void triggerWidgetSync(user.uid);
-        queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
+          } as Subscription),
+        );
       }
       Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionAdded || 'Subscription Added', position: 'top' });
       try {
@@ -189,16 +189,9 @@ export function useUpdateSubscription() {
     onSuccess: (result) => {
       triggerHaptic('success');
       if (user) {
-        const updatedSubscriptions = queryClient.setQueryData<Subscription[]>(subscriptionKeys.list(user.uid), current =>
-          (current || []).map(subscription =>
-            subscription.id === result.id
-              ? { ...subscription, ...result.payload, updatedAt: Timestamp.now() }
-              : subscription,
-          ),
+        queryClient.setQueryData<Subscription[]>(subscriptionKeys.list(user.uid), current =>
+          updateCachedSubscription(current, result.id, { ...result.payload, updatedAt: Timestamp.now() }),
         );
-        if (updatedSubscriptions) void updateWidgetData(updatedSubscriptions);
-        else void triggerWidgetSync(user.uid);
-        queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
       }
       Toast.show({ type: 'success', text1: (t.global as any)?.subscriptionUpdated || 'Subscription Updated', position: 'top' });
       try {
@@ -249,12 +242,9 @@ export function useDeleteSubscription() {
     onSuccess: (id) => {
       triggerHaptic('medium');
       if (user) {
-        const updatedSubscriptions = queryClient.setQueryData<Subscription[]>(subscriptionKeys.list(user.uid), current =>
-          (current || []).filter(subscription => subscription.id !== id),
+        queryClient.setQueryData<Subscription[]>(subscriptionKeys.list(user.uid), current =>
+          removeCachedSubscription(current, id),
         );
-        if (updatedSubscriptions) void updateWidgetData(updatedSubscriptions);
-        else void triggerWidgetSync(user.uid);
-        queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
       }
       cancelSubReminder(id).catch(console.error);
       cancelContractDoomReminder(id).catch(console.error);
@@ -286,16 +276,9 @@ export function useTogglePauseSubscription() {
     onSuccess: ({ id, status, pauseEndDate }) => {
       triggerHaptic('selection');
       if (user) {
-        const updatedSubscriptions = queryClient.setQueryData<Subscription[]>(subscriptionKeys.list(user.uid), current =>
-          (current || []).map(subscription =>
-            subscription.id === id
-              ? { ...subscription, status, pauseEndDate, updatedAt: Timestamp.now() }
-              : subscription,
-          ),
+        queryClient.setQueryData<Subscription[]>(subscriptionKeys.list(user.uid), current =>
+          updateCachedSubscription(current, id, { status, pauseEndDate, updatedAt: Timestamp.now() }),
         );
-        if (updatedSubscriptions) void updateWidgetData(updatedSubscriptions);
-        else void triggerWidgetSync(user.uid);
-        queryClient.invalidateQueries({ queryKey: subscriptionKeys.list(user.uid) });
       }
       if (status === 'paused') {
         cancelSubReminder(id).catch(console.error);
