@@ -42,7 +42,6 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useProfileStore } from '@/store/useProfileStore';
 import { triggerHaptic } from '@/utils/haptics';
 import { getUnreadNotificationCount, requestNotificationPermissions } from '@/services/notificationService';
-import { updateWidgetData } from '@/services/background/widgetSync';
 import { getMarketRatesWithDynamicCache, ExchangeRates, SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { calculateDoomStatus, getTrialHoursLeft } from '@/utils/date';
 
@@ -94,13 +93,6 @@ export default function DashboardScreen() {
       refreshNotificationBadge();
     }, [refreshNotificationBadge]),
   );
-
-  // Keep every installed Android home-screen widget in sync whenever the
-  // subscription list or the user's display currency changes.
-  useEffect(() => {
-    if (!subscriptions) return;
-    updateWidgetData(subscriptions, baseCurrency).catch(() => undefined);
-  }, [subscriptions, baseCurrency]);
 
   const activeCurrency = baseCurrency || 'USD';
   const currencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === activeCurrency)?.symbol || activeCurrency;

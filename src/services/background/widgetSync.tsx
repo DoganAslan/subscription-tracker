@@ -11,9 +11,15 @@ import { Platform } from 'react-native';
 import { getSecureData } from '@/utils/secureStorage';
 import { Subscription } from '@/services/firebase/types';
 import { buildWidgetData } from './widgetData';
+import { createLatestWinsCoordinator } from './latestWinsCoordinator';
 
 export const BACKGROUND_WIDGET_SYNC_TASK = 'BACKGROUND_WIDGET_SYNC_TASK';
-let widgetUpdateQueue: Promise<unknown> = Promise.resolve();
+
+type WidgetUpdateInput = {
+  subscriptions: Subscription[];
+  baseCurrency?: string;
+  language?: string;
+};
 
 const getStoredBaseCurrency = async (): Promise<string> => {
   try {
@@ -28,10 +34,57 @@ const getStoredBaseCurrency = async (): Promise<string> => {
 /**
  * Updates AsyncStorage widget data and triggers a native Android widget re-render
  */
-const performWidgetDataUpdate = async (subscriptions: Subscription[], targetBaseCurrency?: string) => {
+const dateKey = (value: unknown): string => {
+  if (value instanceof Date) return value.toISOString();
+  if (value && typeof value === 'object' && 'toDate' in value) {
+    const toDate = (value as { toDate?: unknown }).toDate;
+    if (typeof toDate === 'function') {
+      const date = toDate.call(value);
+      if (date instanceof Date) return date.toISOString();
+    }
+  }
+  return value == null ? '' : String(value);
+};
+
+const widgetContentKey = ({ subscriptions, baseCurrency, language }: WidgetUpdateInput): string => JSON.stringify({
+  baseCurrency: baseCurrency ?? '',
+  language: language ?? '',
+  subscriptions: subscriptions
+    .map(subscription => ({
+      id: subscription.id ?? '',
+      name: subscription.name,
+      amount: subscription.amount,
+      currency: subscription.currency,
+      billingCycle: subscription.billingCycle,
+      renewalDate: dateKey(subscription.renewalDate),
+      status: subscription.status ?? '',
+      isPaused: subscription.isPaused === true,
+      isTrial: subscription.isTrial === true,
+      isFreeTrial: subscription.isFreeTrial === true,
+      trialEndDate: dateKey(subscription.trialEndDate),
+      isSplit: subscription.isSplit === true,
+      splitMembers: (subscription.splitMembers ?? [])
+        .map(member => ({
+          id: member.id ?? '',
+          name: member.name ?? '',
+          phone: member.phone ?? '',
+          shareAmount: member.shareAmount ?? '',
+          isPaid: member.isPaid === true,
+        }))
+        .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
+    }))
+    .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
+});
+
+const performWidgetDataUpdate = async (
+  subscriptions: Subscription[],
+  targetBaseCurrency?: string,
+  targetLanguage?: string,
+) => {
   try {
     const baseCurrency = targetBaseCurrency || await getStoredBaseCurrency();
-    const isTurkish = (await AsyncStorage.getItem('@submate_lang')) !== 'en';
+    const language = targetLanguage ?? await AsyncStorage.getItem('@submate_lang');
+    const isTurkish = language !== 'en';
 
     const rates = await getMarketRatesWithDynamicCache(baseCurrency);
 
@@ -73,14 +126,16 @@ const performWidgetDataUpdate = async (subscriptions: Subscription[], targetBase
   }
 };
 
-export const updateWidgetData = (subscriptions: Subscription[], targetBaseCurrency?: string) => {
-  const snapshot = [...subscriptions];
-  const queuedUpdate = widgetUpdateQueue
-    .catch(() => undefined)
-    .then(() => performWidgetDataUpdate(snapshot, targetBaseCurrency));
-  widgetUpdateQueue = queuedUpdate;
-  return queuedUpdate;
-};
+const widgetUpdateCoordinator = createLatestWinsCoordinator<WidgetUpdateInput, Awaited<ReturnType<typeof performWidgetDataUpdate>>>({
+  keyOf: widgetContentKey,
+  run: ({ subscriptions, baseCurrency, language }) => performWidgetDataUpdate(subscriptions, baseCurrency, language),
+});
+
+export const updateWidgetData = (subscriptions: Subscription[], targetBaseCurrency?: string, targetLanguage?: string) => widgetUpdateCoordinator.submit({
+  subscriptions: [...subscriptions],
+  baseCurrency: targetBaseCurrency,
+  language: targetLanguage,
+});
 
 /**
  * Manually trigger widget sync for a user

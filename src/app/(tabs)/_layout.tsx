@@ -6,7 +6,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { triggerHaptic } from '@/utils/haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@/context/LanguageContext';
-import { useLiveSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
+import { SubscriptionFeedProvider } from '@/features/subscriptions/application/SubscriptionFeedProvider';
+import { WidgetSyncBridge } from '@/services/background/WidgetSyncBridge';
 
 function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
   const { colors, isDark } = useTheme();
@@ -212,19 +213,18 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
 
 export default function TabsLayout() {
   useTheme();
-  // A single real-time listener keeps every tab and modal in sync through the
-  // shared React Query cache. Individual screens no longer open duplicate streams.
-  useLiveSubscriptions();
   const { t, currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
 
   return (
-    <Tabs
-      tabBar={(props) => <LiquidGlassTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
+    <SubscriptionFeedProvider>
+      <WidgetSyncBridge />
+      <Tabs
+        tabBar={(props) => <LiquidGlassTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
       <Tabs.Screen
         name="index"
         options={{
@@ -268,7 +268,8 @@ export default function TabsLayout() {
           tabBarLabel: isTurkish ? 'Ayarlar' : 'Settings',
         }}
       />
-    </Tabs>
+      </Tabs>
+    </SubscriptionFeedProvider>
   );
 }
 
