@@ -6,6 +6,7 @@ type DeferredCaller<R> = {
 type PendingBatch<T, R> = {
   input: T;
   key: string;
+  generation: number;
   callers: DeferredCaller<R>[];
 };
 
@@ -23,32 +24,42 @@ export function createLatestWinsCoordinator<T, R>({
 }): LatestWinsCoordinator<T, R> {
   let pending: PendingBatch<T, R> | null = null;
   let running = false;
+  let runningKey: string | null = null;
   let lastCompletedKey: string | null = null;
   let drainPromise: Promise<void> | null = null;
+  let resetGeneration = 0;
+
+  const releaseDrain = () => {
+    running = false;
+    runningKey = null;
+    drainPromise = null;
+  };
 
   const drain = async () => {
     while (pending) {
       const batch = pending;
       pending = null;
       running = true;
+      runningKey = batch.key;
 
       try {
         const result = await run(batch.input);
-        lastCompletedKey = batch.key;
+        if (batch.generation === resetGeneration) {
+          lastCompletedKey = batch.key;
+        }
+        if (!pending) releaseDrain();
         batch.callers.forEach(({ resolve }) => resolve(result));
       } catch (error) {
+        if (!pending) releaseDrain();
         batch.callers.forEach(({ reject }) => reject(error));
-      } finally {
-        running = false;
       }
     }
+    releaseDrain();
   };
 
   const beginDrain = () => {
     if (drainPromise) return;
-    drainPromise = drain().finally(() => {
-      drainPromise = null;
-    });
+    drainPromise = drain();
   };
 
   return {
@@ -57,20 +68,29 @@ export function createLatestWinsCoordinator<T, R>({
       if (!running && !pending && key === lastCompletedKey) {
         return Promise.resolve(null);
       }
+      if (key === runningKey || key === pending?.key) {
+        return Promise.resolve(null);
+      }
 
       return new Promise<R | null>((resolve, reject) => {
         if (pending) {
           pending.input = input;
           pending.key = key;
+          pending.generation = resetGeneration;
           pending.callers.push({ resolve, reject });
         } else {
-          pending = { input, key, callers: [{ resolve, reject }] };
+          pending = { input, key, generation: resetGeneration, callers: [{ resolve, reject }] };
         }
         beginDrain();
       });
     },
     reset() {
+      resetGeneration += 1;
       lastCompletedKey = null;
+      if (pending) {
+        pending.callers.forEach(({ resolve }) => resolve(null));
+        pending = null;
+      }
     },
   };
 }

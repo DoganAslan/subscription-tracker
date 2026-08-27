@@ -22,6 +22,24 @@ const flushCoordinator = async () => {
   await Promise.resolve();
 };
 
+const settleWithinMicrotasks = async <T,>(promise: Promise<T>) => {
+  let settled = false;
+  let value: T | undefined;
+  let reason: unknown;
+  void promise.then(
+    result => {
+      settled = true;
+      value = result;
+    },
+    error => {
+      settled = true;
+      reason = error;
+    },
+  );
+  await flushCoordinator();
+  return { settled, value, reason };
+};
+
 describe('createLatestWinsCoordinator', () => {
   it('executes the running request and only the newest request submitted while it runs', async () => {
     const firstRun = createDeferred<string>();
@@ -58,6 +76,78 @@ describe('createLatestWinsCoordinator', () => {
     await expect(coordinator.submit({ id: 'same' })).resolves.toBeNull();
 
     expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it('settles a request submitted immediately after an awaited successful request', async () => {
+    const run = jest.fn(async (input: string) => `rendered ${input}`);
+    const coordinator = createLatestWinsCoordinator({ keyOf: (input: string) => input, run });
+
+    expect(await coordinator.submit('A')).toBe('rendered A');
+    expect(await settleWithinMicrotasks(coordinator.submit('B'))).toEqual({
+      settled: true,
+      value: 'rendered B',
+      reason: undefined,
+    });
+
+    expect(run).toHaveBeenNthCalledWith(1, 'A');
+    expect(run).toHaveBeenNthCalledWith(2, 'B');
+  });
+
+  it('settles a request submitted immediately after an awaited rejection', async () => {
+    const run = jest.fn((input: string) => input === 'A'
+      ? Promise.reject(new Error('render failed'))
+      : Promise.resolve('rendered B'));
+    const coordinator = createLatestWinsCoordinator({ keyOf: (input: string) => input, run });
+
+    try {
+      await coordinator.submit('A');
+      throw new Error('expected the first render to reject');
+    } catch (error) {
+      expect(error).toHaveProperty('message', 'render failed');
+    }
+    expect(await settleWithinMicrotasks(coordinator.submit('B'))).toEqual({
+      settled: true,
+      value: 'rendered B',
+      reason: undefined,
+    });
+
+    expect(run).toHaveBeenNthCalledWith(1, 'A');
+    expect(run).toHaveBeenNthCalledWith(2, 'B');
+  });
+
+  it('settles an active duplicate with null without rendering it a second time', async () => {
+    const deferred = createDeferred<string>();
+    const run = jest.fn(() => deferred.promise);
+    const coordinator = createLatestWinsCoordinator({ keyOf: (input: string) => input, run });
+
+    const active = coordinator.submit('A');
+    await flushCoordinator();
+
+    expect(await settleWithinMicrotasks(coordinator.submit('A'))).toEqual({
+      settled: true,
+      value: null,
+      reason: undefined,
+    });
+    expect(run).toHaveBeenCalledTimes(1);
+
+    deferred.resolve('rendered A');
+    await expect(active).resolves.toBe('rendered A');
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not restore a completed key from work that finishes after reset', async () => {
+    const deferred = createDeferred<string>();
+    const run = jest.fn((input: string) => input === 'A' ? deferred.promise : Promise.resolve(`rendered ${input}`));
+    const coordinator = createLatestWinsCoordinator({ keyOf: (input: string) => input, run });
+
+    const active = coordinator.submit('A');
+    await flushCoordinator();
+    coordinator.reset();
+    deferred.resolve('rendered A');
+
+    await expect(active).resolves.toBe('rendered A');
+    await expect(coordinator.submit('A')).resolves.toBe('rendered A');
+    expect(run).toHaveBeenCalledTimes(2);
   });
 
   it('settles callers replaced into a rejected final batch and recovers for a later request', async () => {

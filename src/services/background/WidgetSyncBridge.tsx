@@ -2,16 +2,21 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from '@/context/LanguageContext';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import type { Subscription } from '@/services/firebase/types';
+import { useAuthStore } from '@/store/useAuthStore';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
-import { updateWidgetData } from './widgetSync';
+import { clearWidgetData as clearWidgetDataForLogout, resetWidgetSync, updateWidgetData } from './widgetSync';
 
 type WidgetScheduleUpdate = (subscriptions: Subscription[], baseCurrency?: string, language?: string) => Promise<unknown>;
+type ClearWidgetData = (baseCurrency?: string, language?: string) => Promise<unknown>;
 
 export interface WidgetSyncBridgeProps {
   subscriptions?: Subscription[];
   baseCurrency?: string;
   language?: string;
+  userId?: string | null;
   scheduleUpdate?: WidgetScheduleUpdate;
+  resetWidgetSync?: () => void;
+  clearWidgetData?: ClearWidgetData;
 }
 
 const dateKey = (value: unknown): string => {
@@ -25,6 +30,10 @@ const dateKey = (value: unknown): string => {
   }
   return value == null ? '' : String(value);
 };
+
+const legacySplitMemberAmount = (member: unknown): unknown => (
+  (member as { amount?: unknown }).amount
+);
 
 const snapshotKey = (subscriptions: Subscription[], baseCurrency: string, language: string): string => JSON.stringify({
   baseCurrency,
@@ -48,7 +57,7 @@ const snapshotKey = (subscriptions: Subscription[], baseCurrency: string, langua
           id: member.id ?? '',
           name: member.name ?? '',
           phone: member.phone ?? '',
-          shareAmount: member.shareAmount ?? '',
+          shareAmount: member.shareAmount ?? legacySplitMemberAmount(member) ?? '',
           isPaid: member.isPaid === true,
         }))
         .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
@@ -60,26 +69,48 @@ export function WidgetSyncBridge({
   subscriptions: injectedSubscriptions,
   baseCurrency: injectedBaseCurrency,
   language: injectedLanguage,
+  userId: injectedUserId,
   scheduleUpdate = updateWidgetData,
+  resetWidgetSync: reset = resetWidgetSync,
+  clearWidgetData = clearWidgetDataForLogout,
 }: WidgetSyncBridgeProps) {
   const { data: cachedSubscriptions } = useSubscriptions();
   const storedBaseCurrency = useCurrencyStore(state => state.baseCurrency);
   const { currentLanguage } = useTranslation();
+  const authUserId = useAuthStore(state => state.user?.uid ?? null);
   const subscriptions = injectedSubscriptions ?? cachedSubscriptions;
   const baseCurrency = injectedBaseCurrency ?? storedBaseCurrency;
   const language = injectedLanguage ?? currentLanguage;
+  const userId = injectedUserId === undefined ? authUserId : injectedUserId;
   const contentKey = useMemo(
     () => subscriptions ? snapshotKey(subscriptions, baseCurrency, language) : null,
     [subscriptions, baseCurrency, language],
   );
   const lastScheduledKeyRef = useRef<string | null>(null);
+  const previousUserIdRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
-    if (!subscriptions || !contentKey || contentKey === lastScheduledKeyRef.current) return;
+    const previousUserId = previousUserIdRef.current;
+    if (previousUserId === undefined) {
+      previousUserIdRef.current = userId;
+      return;
+    }
+    if (previousUserId === userId) return;
+
+    previousUserIdRef.current = userId;
+    lastScheduledKeyRef.current = null;
+    reset();
+    if (!userId) {
+      void clearWidgetData(baseCurrency, language).catch(() => undefined);
+    }
+  }, [baseCurrency, clearWidgetData, language, reset, userId]);
+
+  useEffect(() => {
+    if (!userId || !subscriptions || !contentKey || contentKey === lastScheduledKeyRef.current) return;
 
     lastScheduledKeyRef.current = contentKey;
     void scheduleUpdate(subscriptions, baseCurrency, language).catch(() => undefined);
-  }, [baseCurrency, contentKey, language, scheduleUpdate, subscriptions]);
+  }, [baseCurrency, contentKey, language, scheduleUpdate, subscriptions, userId]);
 
   return null;
 }

@@ -17,17 +17,29 @@ export const BACKGROUND_WIDGET_SYNC_TASK = 'BACKGROUND_WIDGET_SYNC_TASK';
 
 type WidgetUpdateInput = {
   subscriptions: Subscription[];
-  baseCurrency?: string;
-  language?: string;
+  baseCurrency: string;
+  language: string;
 };
 
 const getStoredBaseCurrency = async (): Promise<string> => {
   try {
     const storedState = await getSecureData('currency-storage');
-    const parsedState = storedState ? JSON.parse(storedState) : null;
-    return parsedState?.state?.baseCurrency || 'TRY';
+    const parsedState: unknown = storedState ? JSON.parse(storedState) : null;
+    if (!parsedState || typeof parsedState !== 'object') return 'TRY';
+    const state = (parsedState as { state?: unknown }).state;
+    if (!state || typeof state !== 'object') return 'TRY';
+    const baseCurrency = (state as { baseCurrency?: unknown }).baseCurrency;
+    return typeof baseCurrency === 'string' && baseCurrency ? baseCurrency : 'TRY';
   } catch {
     return 'TRY';
+  }
+};
+
+const getStoredLanguage = async (): Promise<string> => {
+  try {
+    return (await AsyncStorage.getItem('@submate_lang')) || 'tr';
+  } catch {
+    return 'tr';
   }
 };
 
@@ -46,9 +58,13 @@ const dateKey = (value: unknown): string => {
   return value == null ? '' : String(value);
 };
 
+const legacySplitMemberAmount = (member: unknown): unknown => (
+  (member as { amount?: unknown }).amount
+);
+
 const widgetContentKey = ({ subscriptions, baseCurrency, language }: WidgetUpdateInput): string => JSON.stringify({
-  baseCurrency: baseCurrency ?? '',
-  language: language ?? '',
+  baseCurrency,
+  language,
   subscriptions: subscriptions
     .map(subscription => ({
       id: subscription.id ?? '',
@@ -68,7 +84,7 @@ const widgetContentKey = ({ subscriptions, baseCurrency, language }: WidgetUpdat
           id: member.id ?? '',
           name: member.name ?? '',
           phone: member.phone ?? '',
-          shareAmount: member.shareAmount ?? '',
+          shareAmount: member.shareAmount ?? legacySplitMemberAmount(member) ?? '',
           isPaid: member.isPaid === true,
         }))
         .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right))),
@@ -78,12 +94,10 @@ const widgetContentKey = ({ subscriptions, baseCurrency, language }: WidgetUpdat
 
 const performWidgetDataUpdate = async (
   subscriptions: Subscription[],
-  targetBaseCurrency?: string,
-  targetLanguage?: string,
+  baseCurrency: string,
+  language: string,
 ) => {
   try {
-    const baseCurrency = targetBaseCurrency || await getStoredBaseCurrency();
-    const language = targetLanguage ?? await AsyncStorage.getItem('@submate_lang');
     const isTurkish = language !== 'en';
 
     const rates = await getMarketRatesWithDynamicCache(baseCurrency);
@@ -131,11 +145,28 @@ const widgetUpdateCoordinator = createLatestWinsCoordinator<WidgetUpdateInput, A
   run: ({ subscriptions, baseCurrency, language }) => performWidgetDataUpdate(subscriptions, baseCurrency, language),
 });
 
-export const updateWidgetData = (subscriptions: Subscription[], targetBaseCurrency?: string, targetLanguage?: string) => widgetUpdateCoordinator.submit({
-  subscriptions: [...subscriptions],
-  baseCurrency: targetBaseCurrency,
-  language: targetLanguage,
-});
+export const updateWidgetData = async (
+  subscriptions: Subscription[],
+  targetBaseCurrency?: string,
+  targetLanguage?: string,
+) => {
+  const baseCurrency = targetBaseCurrency ?? await getStoredBaseCurrency();
+  const language = targetLanguage ?? await getStoredLanguage();
+  return widgetUpdateCoordinator.submit({
+    subscriptions: [...subscriptions],
+    baseCurrency,
+    language,
+  });
+};
+
+export const resetWidgetSync = () => {
+  widgetUpdateCoordinator.reset();
+};
+
+export const clearWidgetData = async (targetBaseCurrency?: string, targetLanguage?: string) => {
+  resetWidgetSync();
+  return updateWidgetData([], targetBaseCurrency, targetLanguage);
+};
 
 /**
  * Manually trigger widget sync for a user
@@ -155,7 +186,7 @@ if (Platform.OS !== 'web') {
   TaskManager.defineTask(BACKGROUND_WIDGET_SYNC_TASK, async () => {
     console.log('[Background Sync] Task triggered');
     try {
-      const user = await new Promise((resolve) => {
+      const user = await new Promise<{ uid: string } | null>((resolve) => {
         if (auth.currentUser) {
           resolve(auth.currentUser);
         } else {
@@ -176,8 +207,7 @@ if (Platform.OS !== 'web') {
         return BackgroundFetch.BackgroundFetchResult.NoData;
       }
 
-      console.log('[Background Sync] Fetching subscriptions for user:', (user as any).uid);
-      const subscriptions = await SubscriptionService.getSubscriptions((user as any).uid);
+      const subscriptions = await SubscriptionService.getSubscriptions(user.uid);
 
       await updateWidgetData(subscriptions);
 

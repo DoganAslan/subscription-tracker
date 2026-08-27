@@ -1,0 +1,106 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Timestamp } from 'firebase/firestore';
+import { getMarketRatesWithDynamicCache } from '@/utils/currency';
+import { getSecureData } from '@/utils/secureStorage';
+import {
+  clearWidgetData,
+  resetWidgetSync,
+  updateWidgetData,
+} from '@/services/background/widgetSync';
+import type { Subscription } from '@/services/firebase/types';
+
+jest.mock('expo-background-fetch', () => ({
+  BackgroundFetchResult: { NoData: 'no-data', NewData: 'new-data', Failed: 'failed' },
+  registerTaskAsync: jest.fn(),
+}));
+
+jest.mock('expo-task-manager', () => ({
+  defineTask: jest.fn(),
+  isTaskRegisteredAsync: jest.fn(),
+}));
+
+jest.mock('react-native-android-widget', () => ({ requestWidgetUpdate: jest.fn() }));
+
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+}));
+
+jest.mock('@/services/firebase/config', () => ({ auth: { currentUser: null, onAuthStateChanged: jest.fn() } }));
+
+jest.mock('@/services/firebase/firestore', () => ({ SubscriptionService: { getSubscriptions: jest.fn() } }));
+
+jest.mock('@/widgets/SummaryWidget', () => ({ SummaryWidget: () => null }));
+
+jest.mock('@/utils/currency', () => ({
+  getMarketRatesWithDynamicCache: jest.fn(),
+  SUPPORTED_CURRENCIES: [{ code: 'TRY', symbol: '₺' }, { code: 'USD', symbol: '$' }],
+}));
+
+jest.mock('@/utils/secureStorage', () => ({ getSecureData: jest.fn() }));
+
+const makeSubscription = (): Subscription => ({
+  id: 'netflix',
+  name: 'Netflix',
+  category: 'Entertainment',
+  amount: 100,
+  currency: 'TRY',
+  billingCycle: 'monthly',
+  renewalDate: Timestamp.fromDate(new Date('2026-09-01T00:00:00.000Z')),
+  notes: null,
+  createdAt: Timestamp.fromDate(new Date('2026-08-01T00:00:00.000Z')),
+  updatedAt: Timestamp.fromDate(new Date('2026-08-01T00:00:00.000Z')),
+});
+
+describe('widgetSync production scheduling', () => {
+  beforeEach(() => {
+    resetWidgetSync();
+    jest.mocked(getMarketRatesWithDynamicCache).mockResolvedValue({ TRY: 1, USD: 0.03, EUR: 0.027 });
+    jest.mocked(getSecureData).mockResolvedValue(JSON.stringify({ state: { baseCurrency: 'TRY' } }));
+    jest.mocked(AsyncStorage.getItem).mockResolvedValue('tr');
+    jest.mocked(AsyncStorage.setItem).mockResolvedValue();
+  });
+
+  afterEach(() => jest.clearAllMocks());
+
+  it('resolves stored currency and language before deduplication', async () => {
+    await updateWidgetData([makeSubscription()]);
+
+    jest.mocked(getSecureData).mockResolvedValue(JSON.stringify({ state: { baseCurrency: 'USD' } }));
+    jest.mocked(AsyncStorage.getItem).mockResolvedValue('en');
+    await updateWidgetData([makeSubscription()]);
+
+    expect(getMarketRatesWithDynamicCache).toHaveBeenNthCalledWith(1, 'TRY');
+    expect(getMarketRatesWithDynamicCache).toHaveBeenNthCalledWith(2, 'USD');
+    expect(AsyncStorage.setItem).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses legacy split-member amount changes as distinct render inputs', async () => {
+    const legacySubscription = (amount: number) => ({
+      ...makeSubscription(),
+      isSplit: true,
+      splitMembers: [{
+        id: 'member-a',
+        name: 'Ada',
+        phone: '905550000000',
+        shareAmount: undefined,
+        amount,
+        isPaid: false,
+      }],
+    }) as unknown as Subscription;
+
+    await updateWidgetData([legacySubscription(25)], 'TRY', 'tr');
+    await updateWidgetData([legacySubscription(30)], 'TRY', 'tr');
+
+    expect(AsyncStorage.setItem).toHaveBeenCalledTimes(2);
+  });
+
+  it('replaces persisted data with a neutral widget after reset', async () => {
+    await updateWidgetData([makeSubscription()], 'TRY', 'tr');
+    await clearWidgetData('TRY', 'tr');
+
+    const lastWrite = jest.mocked(AsyncStorage.setItem).mock.calls.at(-1);
+    expect(lastWrite?.[0]).toBe('widget_data');
+    expect(JSON.parse(lastWrite?.[1] ?? '{}')).toMatchObject({ activeCount: 0 });
+  });
+});
