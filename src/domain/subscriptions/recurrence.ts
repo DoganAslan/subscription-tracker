@@ -108,11 +108,18 @@ const getAnchor = (subscription: RecurringSubscription, from: Date): Date | null
   return renewalAnchor;
 };
 
-const localDayNumber = (date: Date): number => Date.UTC(
+const utcDayNumber = (year: number, month: number, day: number): number => {
+  const date = new Date(0);
+  date.setUTCHours(0, 0, 0, 0);
+  date.setUTCFullYear(year, month, day);
+  return date.getTime() / DAY_MS;
+};
+
+const localDayNumber = (date: Date): number => utcDayNumber(
   date.getFullYear(),
   date.getMonth(),
   date.getDate(),
-) / DAY_MS;
+);
 
 const monthIndex = (date: Date): number => date.getFullYear() * 12 + date.getMonth();
 

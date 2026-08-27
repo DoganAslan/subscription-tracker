@@ -110,6 +110,18 @@ describe('getNextRenewal', () => {
     );
   });
 
+  it('calculates weekly renewals across the low-year century boundary', () => {
+    expectLocalDate(
+      getNextRenewal(
+        subscription({ billingCycle: 'weekly', renewalDate: '0099-12-31' }),
+        '0100-01-07',
+      ),
+      100,
+      1,
+      7,
+    );
+  });
+
   it('returns null for paused or invalid subscriptions', () => {
     expect(getNextRenewal(subscription({ isPaused: true }), localNoon(2027, 1, 1))).toBeNull();
     expect(getNextRenewal(subscription({ renewalDate: 'not a date' }), localNoon(2027, 1, 1))).toBeNull();
