@@ -36,6 +36,19 @@ describe('subscription cache updates', () => {
     expect(current).toEqual([existing]);
   });
 
+  it('preserves a server snapshot item when add success arrives after the stream', () => {
+    const serverItem = subscription('created', { amount: 125, notes: 'from Firestore' });
+    const addSuccessItem = subscription('created', { amount: 100, notes: 'optimistic' });
+    const current = Object.freeze([serverItem]) as unknown as Subscription[];
+
+    const result = addCachedSubscription(current, addSuccessItem);
+
+    expect(result).toEqual([serverItem]);
+    expect(result).not.toBe(current);
+    expect(result[0]).toBe(serverItem);
+    expect(current).toEqual([serverItem]);
+  });
+
   it('updates only the matching subscription without mutating frozen cache data', () => {
     const unchanged = subscription('unchanged');
     const target = subscription('target', { amount: 100, notes: 'before' });

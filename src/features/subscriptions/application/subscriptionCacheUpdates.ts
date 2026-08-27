@@ -4,7 +4,11 @@ export function addCachedSubscription(
   current: Subscription[] | undefined,
   item: Subscription,
 ): Subscription[] {
-  return [...(current ?? []), item];
+  const cached = current ?? [];
+  if (item.id != null && cached.some(subscription => subscription.id === item.id)) {
+    return [...cached];
+  }
+  return [...cached, item];
 }
 
 export function updateCachedSubscription(
