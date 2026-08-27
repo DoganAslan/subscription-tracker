@@ -1,78 +1,78 @@
-import { convertCurrency } from './currency';
+import {
+  calculateSubscriptionCost,
+  MONTHLY_FACTOR_BY_CYCLE,
+  type CostedSubscription,
+} from '@/domain/subscriptions/billing';
+import type { BillingCycle } from '@/services/firebase/types';
+import { CURRENCY_RATES, type ExchangeRates } from './currency';
 
-const safeFinancialRound = (num: number): number => {
-  if (isNaN(num) || !isFinite(num)) return 0;
-  return Math.round((num + Number.EPSILON) * 100) / 100;
+type CompatibilitySplitMember = {
+  shareAmount?: number | string | null;
+  amount?: number | string | null;
 };
 
-export const calculateMonthlyCosts = (sub: any, activeCurrency: string) => {
-  // 1. If paused, it contributes 0 to active cashflow
-  if (sub.status === 'paused') return { gross: 0, net: 0 };
+type CompatibilitySubscription = {
+  amount?: number | string | null;
+  price?: number | string | null;
+  currency?: string | null;
+  billingCycle?: string | null;
+  cycle?: string | null;
+  period?: string | null;
+  status?: 'active' | 'paused' | string | null;
+  isPaused?: boolean | null;
+  isSplit?: boolean | null;
+  splitMembers?: CompatibilitySplitMember[] | null;
+  splitParticipants?: CompatibilitySplitMember[] | null;
+};
 
-  // 2. Base Conversion (Prioritize sub.amount over sub.price to prevent multiplied values)
-  const rawAmount = sub.amount !== undefined && sub.amount !== null 
-    ? parseFloat(String(sub.amount)) 
-    : parseFloat(String(sub.price || 0));
-  
-  const safeAmount = isNaN(rawAmount) ? 0 : rawAmount;
-  const subCurrency = sub.currency || 'USD';
+const toBillingCycle = (value: unknown): BillingCycle => {
+  const cycle = String(value || 'monthly').toLowerCase();
+  return Object.prototype.hasOwnProperty.call(MONTHLY_FACTOR_BY_CYCLE, cycle)
+    ? cycle as BillingCycle
+    : 'monthly';
+};
 
-  let convertedPrice = convertCurrency(safeAmount, subCurrency, activeCurrency);
-  
-  // Guard against missing or 0 currency rates (NaN / Infinity)
-  if (isNaN(convertedPrice) || !isFinite(convertedPrice)) {
-    convertedPrice = safeAmount; // fallback safely
-  }
-  
-  let grossMonthly = safeFinancialRound(convertedPrice);
+const toFiniteAmount = (value: number | string | null | undefined): number => {
+  const amount = Number.parseFloat(String(value));
+  return Number.isFinite(amount) ? amount : 0;
+};
 
-  // 3. Cycle Normalization
-  const cycle = String(sub.billingCycle || sub.cycle || sub.period || 'monthly').toLowerCase();
-  if (cycle.includes('year') || cycle.includes('annual')) {
-    grossMonthly = safeFinancialRound(grossMonthly / 12);
-  } else if (cycle.includes('week')) {
-    grossMonthly = safeFinancialRound(grossMonthly * (52 / 12));
-  } else if (cycle.includes('quarter')) {
-    grossMonthly = safeFinancialRound(grossMonthly / 3);
-  } else if (cycle.includes('biannual')) {
-    grossMonthly = safeFinancialRound(grossMonthly / 6);
-  }
+const toSplitAmount = (value: number | string | null | undefined): number => {
+  const amount = Number.parseFloat(String(value).replace(/[^0-9.]/g, ''));
+  return Number.isFinite(amount) ? amount : 0;
+};
 
-  // 4. Split Deductions
-  let netMonthly = grossMonthly;
-  if (sub.isSplit) {
-    const participants = Array.isArray(sub.splitMembers) && sub.splitMembers.length > 0 
-      ? sub.splitMembers 
-      : Array.isArray(sub.splitParticipants) ? sub.splitParticipants : [];
-    
-    const validParticipantCount = Math.max(1, participants.length); 
-    
-    if (validParticipantCount > 0) {
-      participants.forEach((p: any) => {
-        const friendShare = parseFloat(String(p.shareAmount || p.amount || 0).replace(/[^0-9.]/g, '')) || 0;
-        let convertedShare = convertCurrency(friendShare, subCurrency, activeCurrency);
-        
-        if (isNaN(convertedShare) || !isFinite(convertedShare)) {
-          convertedShare = friendShare;
-        }
-        
-        if (cycle.includes('year') || cycle.includes('annual')) {
-          convertedShare = safeFinancialRound(convertedShare / 12);
-        } else if (cycle.includes('week')) {
-          convertedShare = safeFinancialRound(convertedShare * (52 / 12));
-        } else if (cycle.includes('quarter')) {
-          convertedShare = safeFinancialRound(convertedShare / 3);
-        } else {
-          convertedShare = safeFinancialRound(convertedShare);
-        }
+const toCostedSubscription = (subscription: CompatibilitySubscription): CostedSubscription => {
+  const members = Array.isArray(subscription.splitMembers) && subscription.splitMembers.length > 0
+    ? subscription.splitMembers
+    : Array.isArray(subscription.splitParticipants) ? subscription.splitParticipants : [];
 
-        netMonthly = safeFinancialRound(netMonthly - convertedShare);
-      });
-    }
-  }
-
-  return { 
-    gross: Math.max(0, safeFinancialRound(grossMonthly)), 
-    net: Math.max(0, safeFinancialRound(netMonthly)) 
+  return {
+    amount: toFiniteAmount(subscription.amount),
+    price: subscription.price,
+    currency: subscription.currency || 'USD',
+    billingCycle: toBillingCycle(subscription.billingCycle || subscription.cycle || subscription.period),
+    status: subscription.status === 'paused' ? 'paused' : 'active',
+    isPaused: subscription.isPaused === true,
+    isSplit: subscription.isSplit === true,
+    splitMembers: members.map((member, index) => ({
+      id: `compatibility-member-${index}`,
+      name: '',
+      phone: '',
+      shareAmount: toSplitAmount(member.shareAmount ?? member.amount),
+      isPaid: false,
+    })),
   };
+};
+
+export const calculateMonthlyCosts = (
+  subscription: CompatibilitySubscription,
+  activeCurrency: string,
+): { gross: number; net: number } => {
+  const costs = calculateSubscriptionCost(toCostedSubscription(subscription), {
+    baseCurrency: activeCurrency,
+    rates: CURRENCY_RATES as Readonly<ExchangeRates>,
+  });
+
+  return { gross: costs.monthlyGross, net: costs.monthlyNet };
 };

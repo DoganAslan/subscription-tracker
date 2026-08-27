@@ -6,7 +6,7 @@ import { auth } from '../firebase/config';
 import { SubscriptionService } from '../firebase/firestore';
 import React from 'react';
 import { SummaryWidget } from '../../widgets/SummaryWidget';
-import { getMarketRatesWithDynamicCache, convertCurrency, SUPPORTED_CURRENCIES } from '@/utils/currency';
+import { getMarketRatesWithDynamicCache, SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { Platform } from 'react-native';
 import { getSecureData } from '@/utils/secureStorage';
 import { Subscription } from '@/services/firebase/types';
@@ -33,8 +33,7 @@ const performWidgetDataUpdate = async (subscriptions: Subscription[], targetBase
     const baseCurrency = targetBaseCurrency || await getStoredBaseCurrency();
     const isTurkish = (await AsyncStorage.getItem('@submate_lang')) !== 'en';
 
-    // Ensure exchange rates are loaded
-    await getMarketRatesWithDynamicCache(baseCurrency);
+    const rates = await getMarketRatesWithDynamicCache(baseCurrency);
 
     const matchedCurrency = SUPPORTED_CURRENCIES.find(c => c.code === baseCurrency);
     const symbol = matchedCurrency ? matchedCurrency.symbol : baseCurrency;
@@ -43,7 +42,7 @@ const performWidgetDataUpdate = async (subscriptions: Subscription[], targetBase
       baseCurrency,
       currencySymbol: symbol,
       isTurkish,
-      convertAmount: convertCurrency,
+      rates,
     });
 
     await AsyncStorage.setItem('widget_data', JSON.stringify(widgetData));

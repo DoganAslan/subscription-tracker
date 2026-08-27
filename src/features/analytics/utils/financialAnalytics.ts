@@ -1,7 +1,10 @@
-import { BillingCycle, Subscription } from '@/services/firebase/types';
-import { getMonthlyCost } from '@/features/dashboard/utils/calculations';
-import { convertCurrency } from '@/utils/currency';
-import { addMonthsClamped, getMidnight, parseSafeDate } from '@/utils/dateHelpers';
+import { calculateSubscriptionCost } from '@/domain/subscriptions/billing';
+import { getAssignedCardId } from '@/domain/subscriptions/cardAssignment';
+import { normalizeSubscriptionState } from '@/domain/subscriptions/normalization';
+import { getNextRenewal, getRenewalsInRange, parseSubscriptionDate } from '@/domain/subscriptions/recurrence';
+import { Subscription } from '@/services/firebase/types';
+import { CURRENCY_RATES, convertCurrency, type ExchangeRates } from '@/utils/currency';
+import { getMidnight } from '@/utils/dateHelpers';
 
 export interface CategoryAnalysis {
   category: string;
@@ -53,43 +56,31 @@ export interface FinancialAnalysis {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function getConvertedAmount(subscription: Subscription, baseCurrency: string): number {
-  const rawAmount = Number(subscription.amount) || 0;
-  return convertCurrency(rawAmount, subscription.currency || baseCurrency, baseCurrency);
-}
-
-function getRecoverableAmount(subscription: Subscription, baseCurrency: string): number {
-  if (!subscription.isSplit || !Array.isArray(subscription.splitMembers)) return 0;
-  const rawRecoverable = subscription.splitMembers.reduce(
-    (total, member) => total + (Number(member.shareAmount) || 0),
-    0,
-  );
-  return convertCurrency(rawRecoverable, subscription.currency || baseCurrency, baseCurrency);
-}
-
 function getNetPaymentAmount(subscription: Subscription, baseCurrency: string): number {
-  return Math.max(
-    0,
-    getConvertedAmount(subscription, baseCurrency) - getRecoverableAmount(subscription, baseCurrency),
+  const billingAmount = convertCurrency(
+    Number(subscription.amount) || 0,
+    subscription.currency || baseCurrency,
+    baseCurrency,
   );
+  const recoveredAmount = subscription.isSplit && Array.isArray(subscription.splitMembers)
+    ? subscription.splitMembers.reduce((total, member) => total + (Number(member.shareAmount) || 0), 0)
+    : 0;
+  const recoveredBillingAmount = convertCurrency(
+    recoveredAmount,
+    subscription.currency || baseCurrency,
+    baseCurrency,
+  );
+  return Math.max(0, billingAmount - recoveredBillingAmount);
 }
 
 export function getSubscriptionMonthlyNetCost(
   subscription: Subscription,
   baseCurrency: string,
 ): number {
-  const convertedAmount = getConvertedAmount(subscription, baseCurrency);
-  const convertedRecoverable = Math.min(
-    convertedAmount,
-    getRecoverableAmount(subscription, baseCurrency),
-  );
-  return Math.max(
-    0,
-    getMonthlyCost(
-      convertedAmount - convertedRecoverable,
-      subscription.billingCycle || 'monthly',
-    ),
-  );
+  return calculateSubscriptionCost(subscription, {
+    baseCurrency,
+    rates: CURRENCY_RATES as Readonly<ExchangeRates>,
+  }).monthlyNet;
 }
 
 function needsUsageReview(subscription: Subscription, now: Date): boolean {
@@ -101,43 +92,8 @@ function needsUsageReview(subscription: Subscription, now: Date): boolean {
 }
 
 function isFutureDate(value: unknown, now: Date): boolean {
-  if (!value) return false;
-  return parseSafeDate(value).getTime() >= getMidnight(now).getTime();
-}
-
-function addBillingCycle(date: Date, cycle: BillingCycle, originalDay: number): Date {
-  const next = new Date(date);
-  if (cycle === 'weekly') {
-    next.setDate(next.getDate() + 7);
-    return next;
-  }
-
-  const monthsByCycle: Record<Exclude<BillingCycle, 'weekly'>, number> = {
-    monthly: 1,
-    quarterly: 3,
-    biannually: 6,
-    yearly: 12,
-    biennially: 24,
-  };
-  return addMonthsClamped(next, monthsByCycle[cycle] || 1, originalDay);
-}
-
-function getFirstFuturePaymentDate(subscription: Subscription, now: Date): Date {
-  if (subscription.isTrial && isFutureDate(subscription.trialEndDate, now)) {
-    return getMidnight(parseSafeDate(subscription.trialEndDate));
-  }
-
-  let paymentDate = getMidnight(parseSafeDate(subscription.renewalDate));
-  const today = getMidnight(now);
-  const originalDay = paymentDate.getDate();
-  let guard = 0;
-
-  while (paymentDate.getTime() < today.getTime() && guard < 240) {
-    paymentDate = addBillingCycle(paymentDate, subscription.billingCycle || 'monthly', originalDay);
-    guard += 1;
-  }
-
-  return paymentDate;
+  const date = parseSubscriptionDate(value);
+  return Boolean(date && date.getTime() >= getMidnight(now).getTime());
 }
 
 function getMonthKey(date: Date): string {
@@ -157,7 +113,7 @@ export function calculateFinancialAnalysis(
   monthlyBudget: number | null = null,
   now = new Date(),
 ): FinancialAnalysis {
-  const active = subscriptions.filter(subscription => subscription.status !== 'paused');
+  const active = subscriptions.filter(subscription => !normalizeSubscriptionState(subscription).isPaused);
   const pausedCount = subscriptions.length - active.length;
   const today = getMidnight(now);
   const in30Days = new Date(today.getTime() + 30 * DAY_MS);
@@ -179,15 +135,15 @@ export function calculateFinancialAnalysis(
   const monthlyBySubscription: { subscription: Subscription; amount: number }[] = [];
 
   active.forEach(subscription => {
-    const convertedAmount = getConvertedAmount(subscription, baseCurrency);
-    const convertedRecoverable = Math.min(
-      convertedAmount,
-      getRecoverableAmount(subscription, baseCurrency),
-    );
-    const monthlyAmount = getMonthlyCost(convertedAmount, subscription.billingCycle || 'monthly');
-    const monthlyRecovered = getMonthlyCost(convertedRecoverable, subscription.billingCycle || 'monthly');
-    const monthlyNet = Math.max(0, monthlyAmount - monthlyRecovered);
-    const trialIsActive = subscription.isTrial && isFutureDate(subscription.trialEndDate, now);
+    const costs = calculateSubscriptionCost(subscription, {
+      baseCurrency,
+      rates: CURRENCY_RATES as Readonly<ExchangeRates>,
+    });
+    const monthlyAmount = costs.monthlyGross;
+    const monthlyRecovered = costs.monthlyRecovered;
+    const monthlyNet = costs.monthlyNet;
+    const state = normalizeSubscriptionState(subscription);
+    const trialIsActive = state.isTrial && isFutureDate(subscription.trialEndDate, now);
 
     monthlyGross += monthlyAmount;
     monthlyRecoverable += monthlyRecovered;
@@ -199,7 +155,7 @@ export function calculateFinancialAnalysis(
     if (needsUsageReview(subscription, now)) {
       lowUsageMonthly += monthlyNet;
     }
-    if (!subscription.cardId && !subscription.assignedCardId) unassignedPaymentCount += 1;
+    if (!getAssignedCardId(subscription)) unassignedPaymentCount += 1;
 
     const category = subscription.category || 'Other';
     const categoryValue = categoryMap.get(category) || { amount: 0, count: 0 };
@@ -209,60 +165,38 @@ export function calculateFinancialAnalysis(
     });
     monthlyBySubscription.push({ subscription, amount: monthlyNet });
 
-    if (subscription.isTrial && subscription.trialEndDate) {
-      const trialEnd = getMidnight(parseSafeDate(subscription.trialEndDate));
-      if (trialEnd >= today && trialEnd <= in14Days) trialsEndingSoon += 1;
+    if (state.isTrial && subscription.trialEndDate) {
+      const trialEnd = parseSubscriptionDate(subscription.trialEndDate);
+      if (trialEnd && trialEnd >= today && trialEnd <= in14Days) trialsEndingSoon += 1;
     }
     if (subscription.hasContract && subscription.contractEndDate) {
-      const contractEnd = getMidnight(parseSafeDate(subscription.contractEndDate));
-      if (contractEnd >= today && contractEnd <= in30Days) contractsEndingSoon += 1;
+      const contractEnd = parseSubscriptionDate(subscription.contractEndDate);
+      if (contractEnd && contractEnd >= today && contractEnd <= in30Days) contractsEndingSoon += 1;
     }
 
-    const firstPaymentDate = getFirstFuturePaymentDate(subscription, now);
+    const firstPaymentDate = getNextRenewal(subscription, today);
+    if (!firstPaymentDate) return;
     const paymentAmount = getNetPaymentAmount(subscription, baseCurrency);
-    let upcomingDate = firstPaymentDate;
-    const upcomingOriginalDay = upcomingDate.getDate();
-    let upcomingGuard = 0;
-    while (upcomingDate <= in30Days && upcomingGuard < 12) {
-      if (upcomingDate >= today) {
-        upcomingPayments.push({
-          subscription,
-          date: upcomingDate,
-          amount: paymentAmount,
-          daysLeft: Math.max(0, Math.round((upcomingDate.getTime() - today.getTime()) / DAY_MS)),
-        });
-      }
-      upcomingDate = addBillingCycle(
-        upcomingDate,
-        subscription.billingCycle || 'monthly',
-        upcomingOriginalDay,
-      );
-      upcomingGuard += 1;
-    }
+    getRenewalsInRange(subscription, { start: today, end: in30Days }).forEach(upcomingDate => {
+      upcomingPayments.push({
+        subscription,
+        date: upcomingDate,
+        amount: paymentAmount,
+        daysLeft: Math.max(0, Math.round((upcomingDate.getTime() - today.getTime()) / DAY_MS)),
+      });
+    });
 
-    let projectedDate = firstPaymentDate;
-    const originalDay = projectedDate.getDate();
-    let guard = 0;
-    while (projectedDate < cashFlowEnd && guard < 240) {
-      if (projectedDate >= today) {
-        const month = cashFlow.find(item => item.key === getMonthKey(projectedDate));
-        if (month) {
-          month.amount += paymentAmount;
-          month.payments.push({
-            subscription,
-            date: new Date(projectedDate),
-            amount: paymentAmount,
-            daysLeft: Math.max(0, Math.round((projectedDate.getTime() - today.getTime()) / DAY_MS)),
-          });
-        }
-      }
-      projectedDate = addBillingCycle(
-        projectedDate,
-        subscription.billingCycle || 'monthly',
-        originalDay,
-      );
-      guard += 1;
-    }
+    getRenewalsInRange(subscription, { start: today, end: cashFlowEnd }).forEach(projectedDate => {
+      const month = cashFlow.find(item => item.key === getMonthKey(projectedDate));
+      if (!month) return;
+      month.amount += paymentAmount;
+      month.payments.push({
+        subscription,
+        date: new Date(projectedDate),
+        amount: paymentAmount,
+        daysLeft: Math.max(0, Math.round((projectedDate.getTime() - today.getTime()) / DAY_MS)),
+      });
+    });
   });
 
   cashFlow.forEach(month => {

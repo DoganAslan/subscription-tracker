@@ -1,4 +1,5 @@
 const assert = require('node:assert/strict');
+const Module = require('node:module');
 const path = require('node:path');
 const test = require('node:test');
 const ts = require('typescript');
@@ -16,6 +17,14 @@ require.extensions['.ts'] = function transpileTypeScript(module, filename) {
   module._compile(output, filename);
 };
 
+const resolveFilename = Module._resolveFilename;
+Module._resolveFilename = function resolveProjectAlias(request, parent, isMain, options) {
+  if (request.startsWith('@/')) {
+    return resolveFilename(path.resolve(__dirname, '../src', request.slice(2)), parent, isMain, options);
+  }
+  return resolveFilename(request, parent, isMain, options);
+};
+
 const widgetDataModulePath = path.resolve(
   __dirname,
   '../src/services/background/widgetData.ts',
@@ -29,7 +38,7 @@ test('widget verisi ekleme, fiyat güncelleme ve silme anlık görüntüsünü d
     currencySymbol: '₺',
     isTurkish: true,
     now,
-    convertAmount: amount => amount,
+    rates: { TRY: 1, USD: 0.03, EUR: 0.027 },
   };
 
   const netflix = {
@@ -86,7 +95,7 @@ test('widget duraklatılmış abonelikleri toplam ve sıradaki ödemeden çıkar
     currencySymbol: '₺',
     isTurkish: true,
     now: new Date('2026-08-23T10:00:00.000Z'),
-    convertAmount: amount => amount,
+    rates: { TRY: 1, USD: 0.03, EUR: 0.027 },
   });
 
   assert.equal(data.monthlyTotal, '₺0.00');
@@ -94,3 +103,30 @@ test('widget duraklatılmış abonelikleri toplam ve sıradaki ödemeden çıkar
   assert.equal(data.nextPaymentName, 'Yaklaşan ödeme yok');
 });
 
+test('widget aktif deneme bitişini yenilemeden önceki sıradaki ödeme olarak göstermeli', () => {
+  const { buildWidgetData } = require(widgetDataModulePath);
+  const data = buildWidgetData({
+    subscriptions: [{
+      name: 'Deneme servisi',
+      amount: 120,
+      currency: 'TRY',
+      billingCycle: 'monthly',
+      renewalDate: '2026-10-15T10:00:00.000Z',
+      isTrial: true,
+      trialEndDate: '2026-08-25T10:00:00.000Z',
+      status: 'active',
+    }],
+    baseCurrency: 'TRY',
+    currencySymbol: '₺',
+    isTurkish: true,
+    now: new Date('2026-08-23T10:00:00.000Z'),
+    rates: { TRY: 1, USD: 0.03, EUR: 0.027 },
+  });
+
+  assert.equal(data.nextPaymentName, 'Deneme servisi');
+  assert.equal(data.nextPaymentDate, new Date('2026-08-25T10:00:00.000Z').toLocaleDateString('tr-TR', {
+    month: 'short',
+    day: 'numeric',
+  }));
+  assert.equal(data.nextPaymentMeta, '2 gün sonra');
+});

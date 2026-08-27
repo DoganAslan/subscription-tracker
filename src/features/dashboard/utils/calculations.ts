@@ -1,30 +1,16 @@
-import { Subscription, BillingCycle } from '@/services/firebase/types';
-import { convertCurrency } from '@/utils/currency';
-import { parseSafeDate, getMidnight, addMonthsClamped } from '@/utils/dateHelpers';
+import {
+  calculateSubscriptionCost,
+  MONTHLY_FACTOR_BY_CYCLE,
+} from '@/domain/subscriptions/billing';
+import { normalizeSubscriptionState } from '@/domain/subscriptions/normalization';
+import { getNextRenewal, parseSubscriptionDate } from '@/domain/subscriptions/recurrence';
+import { BillingCycle, Subscription } from '@/services/firebase/types';
+import { CURRENCY_RATES, type ExchangeRates } from '@/utils/currency';
+import { getMidnight, parseSafeDate } from '@/utils/dateHelpers';
 
-export const getMonthlyCost = (amount: number, cycle: BillingCycle): number => {
-  switch (cycle) {
-    case 'weekly': return amount * (52 / 12);
-    case 'monthly': return amount;
-    case 'quarterly': return amount / 3;
-    case 'biannually': return amount / 6;
-    case 'yearly': return amount / 12;
-    case 'biennially': return amount / 24;
-    default: return amount;
-  }
-};
+export const getMonthlyCost = (amount: number, cycle: BillingCycle): number => amount * MONTHLY_FACTOR_BY_CYCLE[cycle];
 
-export const getYearlyCost = (amount: number, cycle: BillingCycle): number => {
-  switch (cycle) {
-    case 'weekly': return amount * 52;
-    case 'monthly': return amount * 12;
-    case 'quarterly': return amount * 4;
-    case 'biannually': return amount * 2;
-    case 'yearly': return amount;
-    case 'biennially': return amount / 2;
-    default: return amount;
-  }
-};
+export const getYearlyCost = (amount: number, cycle: BillingCycle): number => getMonthlyCost(amount, cycle) * 12;
 
 export interface DashboardMetrics {
   monthlyTotal: number;
@@ -37,32 +23,12 @@ export interface DashboardMetrics {
   categoryBreakdown: { category: string; amount: number; percentage: number }[];
 }
 
-export const getNextRenewalDate = (currentRenewal: Date | any, cycle: BillingCycle): Date => {
-  const parsedRenewal = parseSafeDate(currentRenewal);
-  let nextDate = new Date(parsedRenewal);
-  const originalDay = nextDate.getDate();
-  const today = getMidnight(new Date());
-
-  // Move the date forward until it's today or in the future
-  while (getMidnight(nextDate).getTime() < today.getTime()) {
-    if (cycle === 'weekly') {
-      nextDate.setDate(nextDate.getDate() + 7);
-    } else if (cycle === 'monthly') {
-      nextDate = addMonthsClamped(nextDate, 1, originalDay);
-    } else if (cycle === 'quarterly') {
-      nextDate = addMonthsClamped(nextDate, 3, originalDay);
-    } else if (cycle === 'biannually') {
-      nextDate = addMonthsClamped(nextDate, 6, originalDay);
-    } else if (cycle === 'yearly') {
-      nextDate = addMonthsClamped(nextDate, 12, originalDay);
-    } else if (cycle === 'biennially') {
-      nextDate = addMonthsClamped(nextDate, 24, originalDay);
-    } else {
-      break; // Safe exit loop fallback
-    }
-  }
-  return nextDate;
-};
+export const getNextRenewalDate = (
+  currentRenewal: unknown,
+  cycle: BillingCycle,
+  from = new Date(),
+): Date => getNextRenewal({ billingCycle: cycle, renewalDate: currentRenewal, status: 'active' }, from)
+  ?? parseSafeDate(currentRenewal);
 
 export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: string = 'TRY'): DashboardMetrics => {
   if (!subscriptions || subscriptions.length === 0) {
@@ -74,7 +40,7 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
       activeCount: 0,
       mostExpensive: null,
       upcomingRenewals: [],
-      categoryBreakdown: []
+      categoryBreakdown: [],
     };
   }
 
@@ -85,48 +51,28 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
   let mostExpensive: Subscription | null = null;
   let maxMonthlyCost = -1;
   const categoryMap: Record<string, number> = {};
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = getMidnight(new Date());
   const next30Days = new Date(today);
   next30Days.setDate(today.getDate() + 30);
-
-
-
   const upcomingRenewals: Subscription[] = [];
 
   subscriptions.forEach(sub => {
-    if (sub.status === 'paused') {
-      return;
-    }
+    const state = normalizeSubscriptionState(sub);
+    if (state.isPaused) return;
 
-    const rawVal = sub.amount !== undefined && sub.amount !== null ? sub.amount : ((sub as any).price || 0);
-    const convertedAmount = convertCurrency(rawVal, sub.currency || 'USD', baseCurrency);
-    
-    const monthlyCost = getMonthlyCost(convertedAmount, sub.billingCycle);
-    const yearlyCost = getYearlyCost(convertedAmount, sub.billingCycle);
-
+    const costs = calculateSubscriptionCost(sub, {
+      baseCurrency,
+      rates: CURRENCY_RATES as Readonly<ExchangeRates>,
+    });
+    const monthlyCost = costs.monthlyGross;
+    const yearlyCost = getYearlyCost(costs.billingGross, sub.billingCycle);
     monthlyTotal += monthlyCost;
     yearlyTotal += yearlyCost;
+    monthlyRecoverable += costs.monthlyRecovered;
 
-    const hasActiveSplit = sub.isSplit === true || String(sub.isSplit).toLowerCase() === 'true';
-
-    if (sub.isTrial && sub.trialEndDate) {
-      const parsedTrialEnd = typeof sub.trialEndDate === 'string' ? new Date(sub.trialEndDate) : (sub.trialEndDate as any).toDate();
-      if (parsedTrialEnd.getTime() > today.getTime()) {
-        monthlyTrialSavings += monthlyCost;
-      }
-    }
-
-    if (hasActiveSplit && Array.isArray(sub.splitMembers)) {
-      sub.splitMembers.forEach(p => {
-        // 3. Absolute sanitation: strip any accidental letters/symbols and force to float
-        const cleanAmountString = String(p.shareAmount).replace(/[^0-9.]/g, '');
-        const rawNum = parseFloat(cleanAmountString) || 0;
-        const friendAmountConverted = convertCurrency(rawNum, sub.currency || 'USD', baseCurrency);
-        const friendMonthlyCost = getMonthlyCost(friendAmountConverted, sub.billingCycle);
-        monthlyRecoverable += friendMonthlyCost;
-      });
+    const trialEnd = parseSubscriptionDate(sub.trialEndDate);
+    if (state.isTrial && trialEnd && trialEnd.getTime() > today.getTime()) {
+      monthlyTrialSavings += costs.monthlyNet;
     }
 
     if (monthlyCost > maxMonthlyCost) {
@@ -136,29 +82,21 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
 
     categoryMap[sub.category] = (categoryMap[sub.category] || 0) + monthlyCost;
 
-    const rawRenewal = sub.renewalDate.toDate();
-    const nextRenewal = getNextRenewalDate(rawRenewal, sub.billingCycle);
-    
-    if (nextRenewal <= next30Days) {
-      // Clone the subscription with the projected future date for accurate UI display
-      // Needs type assertion since we are replacing the Timestamp with a plain Date momentarily 
-      // or we can recreate the Timestamp. Let's just assign the original Timestamp equivalent.
-      // Wait, we don't have access to Timestamp constructor here without importing.
-      // The UI uses .toDate(), so if we overwrite it with an object that has .toDate(), it works.
+    const nextRenewal = getNextRenewal(sub, today);
+    if (nextRenewal && nextRenewal <= next30Days) {
       upcomingRenewals.push({
         ...sub,
-        renewalDate: { toDate: () => nextRenewal, toMillis: () => nextRenewal.getTime() } as any
+        renewalDate: { toDate: () => nextRenewal, toMillis: () => nextRenewal.getTime() } as Subscription['renewalDate'],
       });
     }
   });
 
   upcomingRenewals.sort((a, b) => a.renewalDate.toMillis() - b.renewalDate.toMillis());
-
   const categoryBreakdown = Object.entries(categoryMap)
     .map(([category, amount]) => ({
       category,
       amount,
-      percentage: monthlyTotal > 0 ? (amount / monthlyTotal) * 100 : 0
+      percentage: monthlyTotal > 0 ? (amount / monthlyTotal) * 100 : 0,
     }))
     .sort((a, b) => b.amount - a.amount);
 
@@ -170,29 +108,24 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
     activeCount: subscriptions.length,
     mostExpensive,
     upcomingRenewals,
-    categoryBreakdown
+    categoryBreakdown,
   };
 };
 
 export const getContractDoomStatus = (contractEndDate?: Date | string | null): { isDoomed: boolean; daysLeft: number | null } => {
   if (!contractEndDate) return { isDoomed: false, daysLeft: null };
-  // Strictly apply Stage 1.2 rules: normalize both 'now' and 'target' to midnight 00:00:00 to prevent DST drift.
   const now = new Date();
-  now.setHours(0,0,0,0);
+  now.setHours(0, 0, 0, 0);
   const target = new Date(contractEndDate);
-  target.setHours(0,0,0,0);
+  target.setHours(0, 0, 0, 0);
   const diffDays = Math.round((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
-  return {
-    isDoomed: diffDays >= 0 && diffDays <= 30, // Trigger alarm if 30 days or less remaining!
-    daysLeft: diffDays
-  };
+  return { isDoomed: diffDays >= 0 && diffDays <= 30, daysLeft: diffDays };
 };
 
 export interface FinancialHealthResult {
-  score: number; // Clamped strictly between 0 and 100
-  statusKey: string; // i18n key for status title
-  adviceKeys: string[]; // Array of i18n keys for triggered warnings
+  score: number;
+  statusKey: string;
+  adviceKeys: string[];
 }
 
 export const calculateVampireScore = (subscriptions: any[], totalMonthlyCostTL: number): FinancialHealthResult => {
@@ -202,55 +135,38 @@ export const calculateVampireScore = (subscriptions: any[], totalMonthlyCostTL: 
 
   let currentScore = 100;
   const triggeredAdvice: string[] = [];
-
-  // RULE 1: Contract Doom (Stage 4.1 check)
   const doomedCount = subscriptions.filter(s => s.status !== 'paused' && getContractDoomStatus(s.contractEndDate).isDoomed).length;
-    if (doomedCount > 0) {
-      currentScore -= (doomedCount * 15);
-      triggeredAdvice.push('health.adviceDoom');
-    }
-  
-    // RULE 2: Date Clash (3 or more active subs renewing on the exact same day of the month)
-    const dayCounts: { [key: number]: number } = {};
+  if (doomedCount > 0) {
+    currentScore -= doomedCount * 15;
+    triggeredAdvice.push('health.adviceDoom');
+  }
+
+  const dayCounts: { [key: number]: number } = {};
+  subscriptions.filter(s => s.status !== 'paused').forEach(s => {
+    const day = new Date(s.startDate).getDate();
+    dayCounts[day] = (dayCounts[day] || 0) + 1;
+  });
+  if (Object.values(dayCounts).some(c => c >= 3)) {
+    currentScore -= 10;
+    triggeredAdvice.push('health.adviceDateClash');
+  }
+
+  if (subscriptions[0]?.category) {
+    const categoryCounts: { [key: string]: number } = {};
     subscriptions.filter(s => s.status !== 'paused').forEach(s => {
-      const day = new Date(s.startDate).getDate();
-      dayCounts[day] = (dayCounts[day] || 0) + 1;
+      categoryCounts[s.category] = (categoryCounts[s.category] || 0) + 1;
     });
-    if (Object.values(dayCounts).some(c => c >= 3)) {
-      currentScore -= 10;
-      triggeredAdvice.push('health.adviceDateClash');
-    }
-  
-    // RULE 3: Duplicate Category Overkill (if category field exists and has >1 sub)
-    if (subscriptions[0]?.category) {
-      const catCounts: { [key: string]: number } = {};
-      subscriptions.filter(s => s.status !== 'paused').forEach(s => {
-      catCounts[s.category] = (catCounts[s.category] || 0) + 1;
-    });
-    if (Object.values(catCounts).some(c => c > 1)) {
+    if (Object.values(categoryCounts).some(c => c > 1)) {
       currentScore -= 25;
       triggeredAdvice.push('health.adviceDuplicate');
     }
   }
 
-  // RULE 4: Heavy Financial Load threshold
-  if (totalMonthlyCostTL > 1500) {
-    currentScore -= 10;
-  }
+  if (totalMonthlyCostTL > 1500) currentScore -= 10;
 
-  // Clamp strictly 0 - 100
   const finalScore = Math.max(0, Math.min(100, Math.round(currentScore)));
-
   let status = 'health.statusExcellent';
   if (finalScore < 50) status = 'health.statusCritical';
   else if (finalScore < 80) status = 'health.statusGood';
-
-  return {
-    score: finalScore,
-    statusKey: status,
-    adviceKeys: triggeredAdvice
-  };
+  return { score: finalScore, statusKey: status, adviceKeys: triggeredAdvice };
 };
-
-
-

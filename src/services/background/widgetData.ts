@@ -1,10 +1,31 @@
+import { calculateSubscriptionCost, MONTHLY_FACTOR_BY_CYCLE, type CostedSubscription } from '@/domain/subscriptions/billing';
+import { normalizeSubscriptionState } from '@/domain/subscriptions/normalization';
+import { getNextRenewal } from '@/domain/subscriptions/recurrence';
+import type { BillingCycle } from '@/services/firebase/types';
+import type { ExchangeRates } from '@/utils/currency';
+
+export type WidgetSplitMember = {
+  id?: string;
+  name?: string;
+  phone?: string;
+  shareAmount?: number | string | null;
+  amount?: number | string | null;
+  isPaid?: boolean;
+};
+
 export type WidgetSubscription = {
   name: string;
   amount: number | string;
   currency?: string;
-  billingCycle?: string;
+  billingCycle?: BillingCycle | string;
   renewalDate?: unknown;
-  status?: string;
+  status?: 'active' | 'paused' | string;
+  isPaused?: boolean | null;
+  isTrial?: boolean | null;
+  isFreeTrial?: boolean | null;
+  trialEndDate?: unknown;
+  isSplit?: boolean | null;
+  splitMembers?: WidgetSplitMember[] | null;
 };
 
 export type WidgetData = {
@@ -21,64 +42,42 @@ export type WidgetData = {
   };
 };
 
-type BuildWidgetDataOptions = {
+export type BuildWidgetDataOptions = {
   subscriptions: WidgetSubscription[];
   baseCurrency: string;
   currencySymbol: string;
   isTurkish: boolean;
   now?: Date;
-  convertAmount: (amount: number, fromCurrency: string, toCurrency: string) => number;
+  rates: Readonly<ExchangeRates>;
 };
 
-const MONTHLY_FACTORS: Record<string, number> = {
-  weekly: 52 / 12,
-  monthly: 1,
-  quarterly: 1 / 3,
-  biannually: 1 / 6,
-  yearly: 1 / 12,
-  biennially: 1 / 24,
+const toBillingCycle = (value: unknown): BillingCycle => {
+  const cycle = String(value || 'monthly').toLowerCase();
+  return Object.prototype.hasOwnProperty.call(MONTHLY_FACTOR_BY_CYCLE, cycle)
+    ? cycle as BillingCycle
+    : 'monthly';
 };
 
-function toDate(value: unknown): Date | null {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) return new Date(value);
-  if (value && typeof (value as { toDate?: () => Date }).toDate === 'function') {
-    const date = (value as { toDate: () => Date }).toDate();
-    return Number.isNaN(date.getTime()) ? null : new Date(date);
-  }
-  const date = new Date(value as string | number);
-  return Number.isNaN(date.getTime()) ? null : date;
-}
+const toFiniteAmount = (value: number | string | null | undefined): number => {
+  const amount = Number.parseFloat(String(value));
+  return Number.isFinite(amount) ? amount : 0;
+};
 
-function addMonthsClamped(date: Date, months: number, originalDay: number): Date {
-  const result = new Date(date);
-  result.setDate(1);
-  result.setMonth(result.getMonth() + months);
-  const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
-  result.setDate(Math.min(originalDay, lastDay));
-  return result;
-}
-
-function getNextOccurrence(value: unknown, cycle: string, now: Date): Date | null {
-  let nextDate = toDate(value);
-  if (!nextDate) return null;
-
-  const originalDay = nextDate.getDate();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  let safetyCounter = 0;
-
-  while (nextDate.getTime() < startOfToday.getTime() && safetyCounter < 1_000) {
-    safetyCounter += 1;
-    if (cycle === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
-    else if (cycle === 'monthly') nextDate = addMonthsClamped(nextDate, 1, originalDay);
-    else if (cycle === 'quarterly') nextDate = addMonthsClamped(nextDate, 3, originalDay);
-    else if (cycle === 'biannually') nextDate = addMonthsClamped(nextDate, 6, originalDay);
-    else if (cycle === 'yearly') nextDate = addMonthsClamped(nextDate, 12, originalDay);
-    else if (cycle === 'biennially') nextDate = addMonthsClamped(nextDate, 24, originalDay);
-    else return null;
-  }
-
-  return nextDate;
-}
+const toCostedSubscription = (subscription: WidgetSubscription): CostedSubscription => ({
+  amount: toFiniteAmount(subscription.amount),
+  currency: subscription.currency || 'TRY',
+  billingCycle: toBillingCycle(subscription.billingCycle),
+  status: subscription.status === 'paused' ? 'paused' : 'active',
+  isPaused: subscription.isPaused === true,
+  isSplit: subscription.isSplit === true,
+  splitMembers: (subscription.splitMembers || []).map((member, index) => ({
+    id: member.id || `widget-member-${index}`,
+    name: member.name || '',
+    phone: member.phone || '',
+    shareAmount: toFiniteAmount(member.shareAmount ?? member.amount),
+    isPaid: member.isPaid === true,
+  })),
+});
 
 function getRelativeDueLabel(date: Date, now: Date, isTurkish: boolean): string {
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -98,19 +97,20 @@ export function buildWidgetData({
   currencySymbol,
   isTurkish,
   now = new Date(),
-  convertAmount,
+  rates,
 }: BuildWidgetDataOptions): WidgetData {
   const activeSubscriptions = Array.isArray(subscriptions)
-    ? subscriptions.filter(subscription => subscription.status !== 'paused')
+    ? subscriptions.filter(subscription => !normalizeSubscriptionState({
+      status: subscription.status === 'paused' ? 'paused' : 'active',
+      isPaused: subscription.isPaused,
+      isTrial: subscription.isTrial,
+      isFreeTrial: subscription.isFreeTrial,
+    }).isPaused)
     : [];
 
   const monthlyTotal = activeSubscriptions.reduce((total, subscription) => {
-    const amount = typeof subscription.amount === 'number'
-      ? subscription.amount
-      : Number.parseFloat(subscription.amount) || 0;
-    const converted = convertAmount(amount, subscription.currency || 'TRY', baseCurrency);
-    const monthlyFactor = MONTHLY_FACTORS[subscription.billingCycle || 'monthly'] ?? 1;
-    return total + (Number.isFinite(converted) ? converted * monthlyFactor : 0);
+    const costs = calculateSubscriptionCost(toCostedSubscription(subscription), { baseCurrency, rates });
+    return total + costs.monthlyGross;
   }, 0);
 
   let nextPaymentName = isTurkish ? 'Yaklaşan ödeme yok' : 'No upcoming payment';
@@ -122,11 +122,15 @@ export function buildWidgetData({
   const nextPayment = activeSubscriptions
     .map(subscription => ({
       subscription,
-      date: getNextOccurrence(
-        subscription.renewalDate,
-        subscription.billingCycle || 'monthly',
-        now,
-      ),
+      date: getNextRenewal({
+        billingCycle: toBillingCycle(subscription.billingCycle),
+        renewalDate: subscription.renewalDate,
+        status: subscription.status === 'paused' ? 'paused' : 'active',
+        isPaused: subscription.isPaused,
+        isTrial: subscription.isTrial,
+        isFreeTrial: subscription.isFreeTrial,
+        trialEndDate: subscription.trialEndDate,
+      }, now),
     }))
     .filter((item): item is { subscription: WidgetSubscription; date: Date } => Boolean(item.date))
     .sort((left, right) => left.date.getTime() - right.date.getTime())[0];
@@ -154,4 +158,3 @@ export function buildWidgetData({
     },
   };
 }
-
