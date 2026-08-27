@@ -158,6 +158,37 @@ describe('WidgetSyncBridge', () => {
     });
   });
 
+  it('neutralizes an initially signed-out session only after auth readiness resolves', () => {
+    const resetWidgetSync = jest.fn();
+    const clearWidgetData = jest.fn(async () => null);
+    const renderBridge = (authReady: boolean) => (
+      <WidgetSyncBridge
+        userId={null}
+        authReady={authReady}
+        baseCurrency="TRY"
+        language="tr"
+        resetWidgetSync={resetWidgetSync}
+        clearWidgetData={clearWidgetData}
+      />
+    );
+
+    let view!: TestRenderer.ReactTestRenderer;
+    act(() => {
+      view = TestRenderer.create(renderBridge(false));
+    });
+    expect(clearWidgetData).not.toHaveBeenCalled();
+
+    act(() => {
+      view.update(renderBridge(true));
+    });
+    expect(resetWidgetSync).toHaveBeenCalledTimes(1);
+    expect(clearWidgetData).toHaveBeenCalledWith('TRY', 'tr');
+
+    act(() => {
+      view.unmount();
+    });
+  });
+
   it('schedules when only a legacy split-member amount changes', () => {
     const scheduleUpdate = jest.fn(async () => null);
     const legacySubscription = (amount: number) => ({

@@ -25,6 +25,7 @@ export function createLatestWinsCoordinator<T, R>({
   let pending: PendingBatch<T, R> | null = null;
   let running = false;
   let runningKey: string | null = null;
+  let runningGeneration: number | null = null;
   let lastCompletedKey: string | null = null;
   let drainPromise: Promise<void> | null = null;
   let resetGeneration = 0;
@@ -32,6 +33,7 @@ export function createLatestWinsCoordinator<T, R>({
   const releaseDrain = () => {
     running = false;
     runningKey = null;
+    runningGeneration = null;
     drainPromise = null;
   };
 
@@ -41,6 +43,7 @@ export function createLatestWinsCoordinator<T, R>({
       pending = null;
       running = true;
       runningKey = batch.key;
+      runningGeneration = batch.generation;
 
       try {
         const result = await run(batch.input);
@@ -68,7 +71,10 @@ export function createLatestWinsCoordinator<T, R>({
       if (!running && !pending && key === lastCompletedKey) {
         return Promise.resolve(null);
       }
-      if (key === runningKey || key === pending?.key) {
+      if (
+        (key === runningKey && runningGeneration === resetGeneration)
+        || (key === pending?.key && pending?.generation === resetGeneration)
+      ) {
         return Promise.resolve(null);
       }
 

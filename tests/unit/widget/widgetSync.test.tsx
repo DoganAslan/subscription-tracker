@@ -9,6 +9,24 @@ import {
 } from '@/services/background/widgetSync';
 import type { Subscription } from '@/services/firebase/types';
 
+interface Deferred<T> {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+}
+
+const createDeferred = <T,>(): Deferred<T> => {
+  let resolvePromise!: (value: T) => void;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+  return { promise, resolve: resolvePromise };
+};
+
+const flushWidgetSync = async () => {
+  await Promise.resolve();
+  await Promise.resolve();
+};
+
 jest.mock('expo-background-fetch', () => ({
   BackgroundFetchResult: { NoData: 'no-data', NewData: 'new-data', Failed: 'failed' },
   registerTaskAsync: jest.fn(),
@@ -102,5 +120,39 @@ describe('widgetSync production scheduling', () => {
     const lastWrite = jest.mocked(AsyncStorage.setItem).mock.calls.at(-1);
     expect(lastWrite?.[0]).toBe('widget_data');
     expect(JSON.parse(lastWrite?.[1] ?? '{}')).toMatchObject({ activeCount: 0 });
+  });
+
+  it('runs an identical current-generation update after reset while old work is in flight', async () => {
+    const oldRates = createDeferred<{ TRY: number; USD: number; EUR: number }>();
+    jest.mocked(getMarketRatesWithDynamicCache)
+      .mockImplementationOnce(() => oldRates.promise)
+      .mockResolvedValueOnce({ TRY: 1, USD: 0.03, EUR: 0.027 });
+
+    const oldUpdate = updateWidgetData([makeSubscription()], 'TRY', 'tr');
+    await flushWidgetSync();
+    resetWidgetSync();
+    const currentUpdate = updateWidgetData([makeSubscription()], 'TRY', 'tr');
+    oldRates.resolve({ TRY: 1, USD: 0.03, EUR: 0.027 });
+
+    await expect(oldUpdate).resolves.toEqual(expect.anything());
+    await expect(currentUpdate).resolves.toEqual(expect.objectContaining({ activeCount: 1 }));
+    expect(AsyncStorage.setItem).toHaveBeenCalledTimes(2);
+  });
+
+  it('drops an older stored-preference request when a newer explicit update renders first', async () => {
+    const delayedStoredCurrency = createDeferred<string>();
+    jest.mocked(getSecureData).mockImplementationOnce(() => delayedStoredCurrency.promise);
+
+    const older = updateWidgetData([makeSubscription()]);
+    await flushWidgetSync();
+    const newer = updateWidgetData([{ ...makeSubscription(), amount: 200 }], 'USD', 'en');
+
+    await expect(newer).resolves.toEqual(expect.objectContaining({ activeCount: 1 }));
+    delayedStoredCurrency.resolve(JSON.stringify({ state: { baseCurrency: 'TRY' } }));
+
+    await expect(older).resolves.toBeNull();
+    expect(getMarketRatesWithDynamicCache).toHaveBeenCalledTimes(1);
+    expect(getMarketRatesWithDynamicCache).toHaveBeenCalledWith('USD');
+    expect(AsyncStorage.setItem).toHaveBeenCalledTimes(1);
   });
 });

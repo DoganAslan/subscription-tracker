@@ -145,13 +145,19 @@ const widgetUpdateCoordinator = createLatestWinsCoordinator<WidgetUpdateInput, A
   run: ({ subscriptions, baseCurrency, language }) => performWidgetDataUpdate(subscriptions, baseCurrency, language),
 });
 
+let updateInvocation = 0;
+let widgetSyncGeneration = 0;
+
 export const updateWidgetData = async (
   subscriptions: Subscription[],
   targetBaseCurrency?: string,
   targetLanguage?: string,
 ) => {
+  const invocation = ++updateInvocation;
+  const generation = widgetSyncGeneration;
   const baseCurrency = targetBaseCurrency ?? await getStoredBaseCurrency();
   const language = targetLanguage ?? await getStoredLanguage();
+  if (invocation !== updateInvocation || generation !== widgetSyncGeneration) return null;
   return widgetUpdateCoordinator.submit({
     subscriptions: [...subscriptions],
     baseCurrency,
@@ -160,6 +166,7 @@ export const updateWidgetData = async (
 };
 
 export const resetWidgetSync = () => {
+  widgetSyncGeneration += 1;
   widgetUpdateCoordinator.reset();
 };
 

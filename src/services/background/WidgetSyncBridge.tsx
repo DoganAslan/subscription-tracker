@@ -14,6 +14,7 @@ export interface WidgetSyncBridgeProps {
   baseCurrency?: string;
   language?: string;
   userId?: string | null;
+  authReady?: boolean;
   scheduleUpdate?: WidgetScheduleUpdate;
   resetWidgetSync?: () => void;
   clearWidgetData?: ClearWidgetData;
@@ -70,6 +71,7 @@ export function WidgetSyncBridge({
   baseCurrency: injectedBaseCurrency,
   language: injectedLanguage,
   userId: injectedUserId,
+  authReady: injectedAuthReady,
   scheduleUpdate = updateWidgetData,
   resetWidgetSync: reset = resetWidgetSync,
   clearWidgetData = clearWidgetDataForLogout,
@@ -78,10 +80,12 @@ export function WidgetSyncBridge({
   const storedBaseCurrency = useCurrencyStore(state => state.baseCurrency);
   const { currentLanguage } = useTranslation();
   const authUserId = useAuthStore(state => state.user?.uid ?? null);
+  const authIsLoading = useAuthStore(state => state.isLoading);
   const subscriptions = injectedSubscriptions ?? cachedSubscriptions;
   const baseCurrency = injectedBaseCurrency ?? storedBaseCurrency;
   const language = injectedLanguage ?? currentLanguage;
   const userId = injectedUserId === undefined ? authUserId : injectedUserId;
+  const authReady = injectedAuthReady ?? (injectedUserId === undefined ? !authIsLoading : true);
   const contentKey = useMemo(
     () => subscriptions ? snapshotKey(subscriptions, baseCurrency, language) : null,
     [subscriptions, baseCurrency, language],
@@ -90,9 +94,15 @@ export function WidgetSyncBridge({
   const previousUserIdRef = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
+    if (!authReady) return;
     const previousUserId = previousUserIdRef.current;
     if (previousUserId === undefined) {
       previousUserIdRef.current = userId;
+      if (!userId) {
+        lastScheduledKeyRef.current = null;
+        reset();
+        void clearWidgetData(baseCurrency, language).catch(() => undefined);
+      }
       return;
     }
     if (previousUserId === userId) return;
@@ -103,14 +113,14 @@ export function WidgetSyncBridge({
     if (!userId) {
       void clearWidgetData(baseCurrency, language).catch(() => undefined);
     }
-  }, [baseCurrency, clearWidgetData, language, reset, userId]);
+  }, [authReady, baseCurrency, clearWidgetData, language, reset, userId]);
 
   useEffect(() => {
-    if (!userId || !subscriptions || !contentKey || contentKey === lastScheduledKeyRef.current) return;
+    if (!authReady || !userId || !subscriptions || !contentKey || contentKey === lastScheduledKeyRef.current) return;
 
     lastScheduledKeyRef.current = contentKey;
     void scheduleUpdate(subscriptions, baseCurrency, language).catch(() => undefined);
-  }, [baseCurrency, contentKey, language, scheduleUpdate, subscriptions, userId]);
+  }, [authReady, baseCurrency, contentKey, language, scheduleUpdate, subscriptions, userId]);
 
   return null;
 }

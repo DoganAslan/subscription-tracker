@@ -150,6 +150,46 @@ describe('createLatestWinsCoordinator', () => {
     expect(run).toHaveBeenCalledTimes(2);
   });
 
+  it('settles pending pre-reset callers with null while allowing the current generation to render', async () => {
+    const activeRun = createDeferred<string>();
+    const run = jest.fn((input: string) => input === 'A' ? activeRun.promise : Promise.resolve(`rendered ${input}`));
+    const coordinator = createLatestWinsCoordinator({ keyOf: (input: string) => input, run });
+
+    const active = coordinator.submit('A');
+    await flushCoordinator();
+    const pending = coordinator.submit('B');
+    coordinator.reset();
+
+    await expect(pending).resolves.toBeNull();
+    const currentGeneration = coordinator.submit('A');
+    activeRun.resolve('rendered old A');
+
+    await expect(active).resolves.toBe('rendered old A');
+    await expect(currentGeneration).resolves.toBe('rendered old A');
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not suppress a same-key request submitted after reset while the old key is active', async () => {
+    const oldRun = createDeferred<string>();
+    let runCount = 0;
+    const run = jest.fn((input: string) => {
+      runCount += 1;
+      return runCount === 1 ? oldRun.promise : Promise.resolve(`rendered new ${input}`);
+    });
+    const coordinator = createLatestWinsCoordinator({ keyOf: (input: string) => input, run });
+
+    const oldRequest = coordinator.submit('A');
+    await flushCoordinator();
+    coordinator.reset();
+    const newRequest = coordinator.submit('A');
+
+    oldRun.resolve('rendered old A');
+
+    await expect(oldRequest).resolves.toBe('rendered old A');
+    await expect(newRequest).resolves.toBe('rendered new A');
+    expect(run).toHaveBeenCalledTimes(2);
+  });
+
   it('settles callers replaced into a rejected final batch and recovers for a later request', async () => {
     const firstRun = createDeferred<string>();
     const rejectedFinalRun = createDeferred<string>();
