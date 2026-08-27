@@ -20,6 +20,8 @@ interface SubscriptionFeedProviderProps {
 }
 
 const SubscriptionFeedContext = createContext<SubscriptionFeedContextValue | null>(null);
+const synchronizeError = () => new Error('Unable to synchronize subscriptions');
+const refreshError = () => new Error('Unable to refresh subscriptions');
 
 export function SubscriptionFeedProvider({
   children,
@@ -30,13 +32,13 @@ export function SubscriptionFeedProvider({
   const activeUserId = userId === undefined ? authUserId : userId;
   const queryClient = useQueryClient();
   const previousUserIdRef = useRef<string | null>(null);
-  const activeUserIdRef = useRef<string | null>(activeUserId);
+  const lifecycleGenerationRef = useRef(0);
   const [status, setStatus] = useState<SubscriptionFeedStatus>(activeUserId ? 'loading' : 'idle');
   const [error, setError] = useState<Error | null>(null);
 
-  activeUserIdRef.current = activeUserId;
-
   useEffect(() => {
+    const lifecycleGeneration = lifecycleGenerationRef.current + 1;
+    lifecycleGenerationRef.current = lifecycleGeneration;
     const previousUserId = previousUserIdRef.current;
     if (previousUserId && previousUserId !== activeUserId) {
       queryClient.removeQueries({ queryKey: subscriptionKeys.list(previousUserId), exact: true });
@@ -46,31 +48,42 @@ export function SubscriptionFeedProvider({
     if (!activeUserId) {
       setStatus('idle');
       setError(null);
-      return;
+      return () => {
+        if (lifecycleGenerationRef.current === lifecycleGeneration) {
+          lifecycleGenerationRef.current += 1;
+        }
+      };
     }
 
-    let isCurrentListener = true;
     setStatus('loading');
     setError(null);
 
-    const unsubscribe = repository.subscribe(
-      activeUserId,
-      (subscriptions: Subscription[]) => {
-        if (!isCurrentListener) return;
-        queryClient.setQueryData(subscriptionKeys.list(activeUserId), subscriptions);
-        setStatus('success');
-        setError(null);
-      },
-      (listenerError: Error) => {
-        if (!isCurrentListener) return;
-        setStatus('error');
-        setError(listenerError);
-      },
-    );
+    let unsubscribe: (() => void) | undefined;
+    try {
+      unsubscribe = repository.subscribe(
+        activeUserId,
+        (subscriptions: Subscription[]) => {
+          if (lifecycleGenerationRef.current !== lifecycleGeneration) return;
+          queryClient.setQueryData(subscriptionKeys.list(activeUserId), subscriptions);
+          setStatus('success');
+          setError(null);
+        },
+        () => {
+          if (lifecycleGenerationRef.current !== lifecycleGeneration) return;
+          setStatus('error');
+          setError(synchronizeError());
+        },
+      );
+    } catch {
+      setStatus('error');
+      setError(synchronizeError());
+    }
 
     return () => {
-      isCurrentListener = false;
-      unsubscribe();
+      if (lifecycleGenerationRef.current === lifecycleGeneration) {
+        lifecycleGenerationRef.current += 1;
+      }
+      unsubscribe?.();
     };
   }, [activeUserId, queryClient, repository]);
 
@@ -80,19 +93,21 @@ export function SubscriptionFeedProvider({
 
   const refresh = useCallback(async () => {
     if (!activeUserId) return;
+    const lifecycleGeneration = lifecycleGenerationRef.current;
 
     setStatus('loading');
     setError(null);
 
     try {
       const subscriptions = await repository.fetch(activeUserId);
-      if (activeUserIdRef.current !== activeUserId) return;
+      if (lifecycleGenerationRef.current !== lifecycleGeneration) return;
       queryClient.setQueryData(subscriptionKeys.list(activeUserId), subscriptions);
       setStatus('success');
-    } catch (refreshError) {
-      if (activeUserIdRef.current !== activeUserId) return;
+      setError(null);
+    } catch {
+      if (lifecycleGenerationRef.current !== lifecycleGeneration) return;
       setStatus('error');
-      setError(refreshError instanceof Error ? refreshError : new Error('Unable to refresh subscriptions'));
+      setError(refreshError());
     }
   }, [activeUserId, queryClient, repository]);
 
