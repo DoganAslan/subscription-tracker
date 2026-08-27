@@ -48,7 +48,9 @@ const toCostedSubscription = (subscription: CompatibilitySubscription): CostedSu
     : Array.isArray(subscription.splitParticipants) ? subscription.splitParticipants : [];
 
   return {
-    amount: toFiniteAmount(subscription.amount),
+    amount: subscription.amount === undefined || subscription.amount === null
+      ? Number.NaN
+      : toFiniteAmount(subscription.amount),
     price: subscription.price,
     currency: subscription.currency || 'USD',
     billingCycle: toBillingCycle(subscription.billingCycle || subscription.cycle || subscription.period),

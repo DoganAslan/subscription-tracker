@@ -55,10 +55,12 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
   const next30Days = new Date(today);
   next30Days.setDate(today.getDate() + 30);
   const upcomingRenewals: Subscription[] = [];
+  let activeCount = 0;
 
   subscriptions.forEach(sub => {
     const state = normalizeSubscriptionState(sub);
     if (state.isPaused) return;
+    activeCount += 1;
 
     const costs = calculateSubscriptionCost(sub, {
       baseCurrency,
@@ -71,7 +73,7 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
     monthlyRecoverable += costs.monthlyRecovered;
 
     const trialEnd = parseSubscriptionDate(sub.trialEndDate);
-    if (state.isTrial && trialEnd && trialEnd.getTime() > today.getTime()) {
+    if (state.isTrial && trialEnd && trialEnd.getTime() >= today.getTime()) {
       monthlyTrialSavings += costs.monthlyNet;
     }
 
@@ -105,7 +107,7 @@ export const calculateMetrics = (subscriptions: Subscription[], baseCurrency: st
     yearlyTotal,
     monthlyRecoverable,
     monthlyNetTotal: Math.max(0, monthlyTotal - monthlyRecoverable - monthlyTrialSavings),
-    activeCount: subscriptions.length,
+    activeCount,
     mostExpensive,
     upcomingRenewals,
     categoryBreakdown,

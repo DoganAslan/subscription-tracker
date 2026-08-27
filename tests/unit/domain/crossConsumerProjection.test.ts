@@ -1,5 +1,6 @@
 import { describe, expect, it, jest } from '@jest/globals';
 import { calculateFinancialAnalysis } from '@/features/analytics/utils/financialAnalytics';
+import { calculateMetrics, getNextRenewalDate } from '@/features/dashboard/utils/calculations';
 import { buildWidgetData } from '@/services/background/widgetData';
 import { calculateMonthlyCosts } from '@/utils/calculations';
 import type { Subscription } from '@/services/firebase/types';
@@ -25,10 +26,111 @@ const subscription = (overrides: Partial<Subscription> = {}): Subscription => ({
   ...overrides,
 });
 
+const localDate = (year: number, month: number, day: number): Date => new Date(year, month - 1, day, 12);
+
+const renewalDate = (date: Date): Subscription['renewalDate'] => ({
+  toDate: () => new Date(date),
+  toMillis: () => date.getTime(),
+}) as Subscription['renewalDate'];
+
 describe('cross-consumer subscription projections', () => {
-  it('uses canonical biannual and biennial factors through the compatibility helper', () => {
-    expect(calculateMonthlyCosts({ amount: 1200, currency: 'TRY', billingCycle: 'biannually' }, 'TRY').gross).toBe(200);
-    expect(calculateMonthlyCosts({ amount: 1200, currency: 'TRY', billingCycle: 'biennially' }, 'TRY').gross).toBe(50);
+  it.each<[billingCycle: 'biannually' | 'biennially', expectedGross: number]>([
+    ['biannually', 200],
+    ['biennially', 50],
+  ])('uses the canonical %s factor through the compatibility helper', (billingCycle, expectedGross) => {
+    expect(calculateMonthlyCosts({ amount: 1200, currency: 'TRY', billingCycle }, 'TRY').gross).toBe(expectedGross);
+  });
+
+  it('uses legacy price when compatibility input has no amount', () => {
+    expect(calculateMonthlyCosts({ price: 1200, currency: 'TRY', billingCycle: 'yearly' }, 'TRY')).toEqual({
+      gross: 100,
+      net: 100,
+    });
+  });
+
+  it('does not count a legacy-paused subscription as dashboard-active', () => {
+    const legacyPaused = subscription({ isPaused: true });
+
+    expect(calculateMetrics([legacyPaused], 'TRY').activeCount).toBe(0);
+  });
+
+  it('credits a trial ending today consistently with inclusive recurrence semantics', () => {
+    jest.useFakeTimers().setSystemTime(localDate(2026, 8, 27));
+    const endingToday = subscription({
+      amount: 120,
+      billingCycle: 'monthly',
+      isTrial: true,
+      trialEndDate: renewalDate(localDate(2026, 8, 27)),
+      renewalDate: renewalDate(localDate(2026, 10, 15)),
+    });
+
+    try {
+      const dashboard = calculateMetrics([endingToday], 'TRY');
+      const analytics = calculateFinancialAnalysis([endingToday], 'TRY', null, localDate(2026, 8, 27));
+
+      expect(dashboard.monthlyNetTotal).toBe(0);
+      expect(analytics.currentMonthlyCost).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('characterizes legacy pause, free-trial, and assigned-card normalization in analytics', () => {
+    const legacyPaused = subscription({ isPaused: true });
+    const legacyFreeTrial = subscription({
+      id: 'legacy-free-trial',
+      isFreeTrial: true,
+      trialEndDate: renewalDate(localDate(2026, 9, 15)),
+      cardId: null,
+      assignedCardId: 'legacy-card',
+    });
+    const result = calculateFinancialAnalysis(
+      [legacyPaused, legacyFreeTrial],
+      'TRY',
+      null,
+      localDate(2026, 8, 27),
+    );
+
+    expect(result.activeCount).toBe(1);
+    expect(result.monthlyTrialCredit).toBe(100);
+    expect(result.unassignedPaymentCount).toBe(0);
+  });
+
+  it('characterizes split recovery in billing and monthly units', () => {
+    const splitYearly = subscription({
+      amount: 1200,
+      billingCycle: 'yearly',
+      renewalDate: renewalDate(localDate(2026, 8, 28)),
+      isSplit: true,
+      splitMembers: [{ id: 'friend', name: 'Friend', phone: '905555555555', shareAmount: 300, isPaid: false }],
+    });
+    const result = calculateFinancialAnalysis([splitYearly], 'TRY', null, localDate(2026, 8, 27));
+
+    expect(result.monthlyGross).toBe(100);
+    expect(result.monthlyRecoverable).toBe(25);
+    expect(result.monthlyCommitment).toBe(75);
+    expect(result.upcomingPayments[0]?.amount).toBe(900);
+  });
+
+  it('characterizes deterministic dashboard recurrence through the domain adapter', () => {
+    const next = getNextRenewalDate(
+      localDate(2026, 1, 31),
+      'monthly',
+      localDate(2026, 2, 1),
+    );
+
+    expect(next).toEqual(new Date(2026, 1, 28));
+  });
+
+  it('characterizes six-month cash flow occurrence boundaries', () => {
+    const monthly = subscription({
+      amount: 120,
+      billingCycle: 'monthly',
+      renewalDate: renewalDate(localDate(2026, 8, 31)),
+    });
+    const result = calculateFinancialAnalysis([monthly], 'TRY', null, localDate(2026, 8, 23));
+
+    expect(result.cashFlow.map(month => month.amount)).toEqual([120, 120, 120, 120, 120, 120]);
   });
 
   it('keeps analytics and widget monthly totals aligned for a yearly subscription', () => {
