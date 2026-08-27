@@ -14,6 +14,7 @@ console.log('--------------------------------------------------\n');
 
 let totalTests = 0;
 let passedTests = 0;
+let failedTests = 0;
 
 function runTest(testName, testFn) {
   totalTests++;
@@ -22,6 +23,7 @@ function runTest(testName, testFn) {
     passedTests++;
     console.log(`  ✅ [PASS] ${testName}`);
   } catch (error) {
+    failedTests++;
     console.error(`  ❌ [FAIL] ${testName}: ${error.message}`);
   }
 }
@@ -334,3 +336,7 @@ runTest('Paused subscriptions must not affect AI monthly commitment', () => {
 console.log('\n--------------------------------------------------');
 console.log(`📊 Test Sonucu: ${passedTests} / ${totalTests} test başarıyla tamamlandı! (${Math.round((passedTests / totalTests) * 100)}%)`);
 console.log('--------------------------------------------------');
+
+if (failedTests > 0) {
+  process.exitCode = 1;
+}

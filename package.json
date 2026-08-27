@@ -103,14 +103,17 @@
     "test:components": "jest tests/components --runInBand --passWithNoTests",
     "test:functions": "npm --prefix functions test",
     "typecheck": "tsc --noEmit",
-    "test:verify": "node scripts/verify-all.js && node --test tests/i18n-integrity.test.cjs tests/widget-data.test.cjs",
+    "test:legacy": "node scripts/verify-all.js",
+    "test:verify": "node --test tests/i18n-integrity.test.cjs tests/widget-data.test.cjs",
+    "test:all": "npm run test:unit && npm run test:verify && npm run test:legacy && npm run test:functions && npm run test:security",
     "test:security": "node scripts/verify-security.js && node scripts/verify-dependency-security.js",
     "test:rules": "firebase emulators:exec --only firestore \"node --test tests/firestore.rules.test.mjs\"",
-    "test": "npm run test:verify && npm run test:security && npm run test:rules",
+    "test": "npm run test:all && npm run test:rules",
     "check": "npm run typecheck && npm run lint && npm test",
     "audit:production": "npm audit --omit=dev",
     "audit:functions": "npm --prefix functions audit --omit=dev",
-    "audit:all": "npm audit && npm --prefix functions audit"
+    "audit:all": "npm audit && npm --prefix functions audit",
+    "verify:release": "npm run typecheck && npm --prefix functions run build && npm run lint && npm run test:all && npm run test:rules && npm run audit:production && npm run audit:functions && npx expo-doctor && npx expo export --platform android --output-dir .expo-export-check --clear"
   },
   "private": true
 }
