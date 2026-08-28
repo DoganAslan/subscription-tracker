@@ -5,6 +5,7 @@ import type { Subscription } from '@/services/firebase/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { clearWidgetData as clearWidgetDataForLogout, resetWidgetSync, updateWidgetData } from './widgetSync';
+import { serializeSubscriptionDate } from '@/domain/subscriptions/recurrence';
 
 type WidgetScheduleUpdate = (subscriptions: Subscription[], baseCurrency?: string, language?: string) => Promise<unknown>;
 type ClearWidgetData = (baseCurrency?: string, language?: string) => Promise<unknown>;
@@ -20,18 +21,6 @@ export interface WidgetSyncBridgeProps {
   clearWidgetData?: ClearWidgetData;
 }
 
-const dateKey = (value: unknown): string => {
-  if (value instanceof Date) return value.toISOString();
-  if (value && typeof value === 'object' && 'toDate' in value) {
-    const toDate = (value as { toDate?: unknown }).toDate;
-    if (typeof toDate === 'function') {
-      const date = toDate.call(value);
-      if (date instanceof Date) return date.toISOString();
-    }
-  }
-  return value == null ? '' : String(value);
-};
-
 const legacySplitMemberAmount = (member: unknown): unknown => (
   (member as { amount?: unknown }).amount
 );
@@ -46,12 +35,12 @@ const snapshotKey = (subscriptions: Subscription[], baseCurrency: string, langua
       amount: subscription.amount,
       currency: subscription.currency,
       billingCycle: subscription.billingCycle,
-      renewalDate: dateKey(subscription.renewalDate),
+      renewalDate: serializeSubscriptionDate(subscription.renewalDate),
       status: subscription.status ?? '',
       isPaused: subscription.isPaused === true,
       isTrial: subscription.isTrial === true,
       isFreeTrial: subscription.isFreeTrial === true,
-      trialEndDate: dateKey(subscription.trialEndDate),
+      trialEndDate: serializeSubscriptionDate(subscription.trialEndDate),
       isSplit: subscription.isSplit === true,
       splitMembers: (subscription.splitMembers ?? [])
         .map(member => ({
@@ -109,10 +98,6 @@ export function WidgetSyncBridge({
 
     previousUserIdRef.current = userId;
     lastScheduledKeyRef.current = null;
-    reset();
-    if (!userId) {
-      void clearWidgetData(baseCurrency, language).catch(() => undefined);
-    }
   }, [authReady, baseCurrency, clearWidgetData, language, reset, userId]);
 
   useEffect(() => {

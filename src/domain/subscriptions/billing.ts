@@ -17,6 +17,8 @@ export interface SubscriptionCostContext {
 
 export interface SubscriptionCostBreakdown {
   billingGross: number;
+  billingRecovered: number;
+  billingNet: number;
   monthlyGross: number;
   monthlyRecovered: number;
   monthlyNet: number;
@@ -81,6 +83,8 @@ export function calculateSubscriptionCost(
   if (subscription.status === 'paused' || subscription.isPaused === true) {
     return {
       billingGross: 0,
+      billingRecovered: 0,
+      billingNet: 0,
       monthlyGross: 0,
       monthlyRecovered: 0,
       monthlyNet: 0,
@@ -105,10 +109,13 @@ export function calculateSubscriptionCost(
     ),
   );
   const monthlyRecovered = Math.min(monthlyGross, recoveredBillingAmount * factor);
+  const billingNet = Math.max(0, billingGross - recoveredBillingAmount);
   const monthlyNet = Math.max(0, monthlyGross - monthlyRecovered);
 
   return {
     billingGross: roundMoney(billingGross),
+    billingRecovered: roundMoney(recoveredBillingAmount),
+    billingNet: roundMoney(billingNet),
     monthlyGross: roundMoney(monthlyGross),
     monthlyRecovered: roundMoney(monthlyRecovered),
     monthlyNet: roundMoney(monthlyNet),

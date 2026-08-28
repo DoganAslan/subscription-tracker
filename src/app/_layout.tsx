@@ -26,6 +26,7 @@ import * as Font from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
+import { SessionLifecycleCoordinator } from '@/features/auth/application/SessionLifecycleCoordinator';
 
 // Fire immediately upon JS Engine boot:
 initializeMonitoring();
@@ -138,6 +139,7 @@ function RootLayout() {
             <ThemeProvider>
               <QueryProvider>
                 <AuthProvider>
+                  <SessionLifecycleCoordinator />
                   <ProtectedRoute>
                     <>
                       {isLocked && Platform.OS !== 'web' && <BiometricOverlay onUnlockRetry={triggerAuth} />}

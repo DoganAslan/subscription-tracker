@@ -155,4 +155,21 @@ describe('widgetSync production scheduling', () => {
     expect(getMarketRatesWithDynamicCache).toHaveBeenCalledWith('USD');
     expect(AsyncStorage.setItem).toHaveBeenCalledTimes(1);
   });
+
+  it('retries an identical widget snapshot after a transient production update failure', async () => {
+    const transientFailure = new Error('temporary storage failure');
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    jest.mocked(AsyncStorage.setItem)
+      .mockRejectedValueOnce(transientFailure)
+      .mockResolvedValueOnce();
+
+    await expect(updateWidgetData([makeSubscription()], 'TRY', 'tr')).rejects.toBe(transientFailure);
+    await expect(updateWidgetData([makeSubscription()], 'TRY', 'tr')).resolves.toEqual(
+      expect.objectContaining({ activeCount: 1 }),
+    );
+
+    expect(AsyncStorage.setItem).toHaveBeenCalledTimes(2);
+    expect(getMarketRatesWithDynamicCache).toHaveBeenCalledTimes(2);
+    consoleError.mockRestore();
+  });
 });

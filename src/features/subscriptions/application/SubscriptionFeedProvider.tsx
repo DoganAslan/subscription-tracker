@@ -127,3 +127,7 @@ export function useSubscriptionFeedStatus(): SubscriptionFeedContextValue {
   }
   return context;
 }
+
+export function useOptionalSubscriptionFeedStatus(): SubscriptionFeedContextValue | null {
+  return useContext(SubscriptionFeedContext);
+}

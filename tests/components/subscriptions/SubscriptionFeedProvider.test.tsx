@@ -467,6 +467,106 @@ describe('subscription cache observer hooks', () => {
     unmountWithAct(view);
     queryClient.clear();
   });
+
+  it('reports provider cold loading through the compatibility query consumed by screens', () => {
+    act(() => {
+      useAuthStore.setState({ user: { uid: 'user-a' } as never });
+    });
+    const repository: SubscriptionRepository = {
+      subscribe: () => jest.fn(),
+      fetch: async () => [],
+    };
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    let latestQuery: ReturnType<typeof useSubscriptions> | undefined;
+    const view = renderWithAct(
+      <QueryClientProvider client={queryClient}>
+        <SubscriptionFeedProvider repository={repository} userId="user-a">
+          <SubscriptionQueryProbe live={false} onQuery={(query) => { latestQuery = query; }} />
+        </SubscriptionFeedProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(latestQuery?.isLoading).toBe(true);
+    expect(latestQuery?.isError).toBe(false);
+
+    unmountWithAct(view);
+    queryClient.clear();
+  });
+
+  it('reports listener errors through the compatibility query consumed by screens', () => {
+    act(() => {
+      useAuthStore.setState({ user: { uid: 'user-a' } as never });
+    });
+    let listener: Listener | undefined;
+    const repository: SubscriptionRepository = {
+      subscribe: (_userId, onData, onError) => {
+        listener = { onData, onError };
+        return jest.fn();
+      },
+      fetch: async () => [],
+    };
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    let latestQuery: ReturnType<typeof useSubscriptions> | undefined;
+    const view = renderWithAct(
+      <QueryClientProvider client={queryClient}>
+        <SubscriptionFeedProvider repository={repository} userId="user-a">
+          <SubscriptionQueryProbe live={false} onQuery={(query) => { latestQuery = query; }} />
+        </SubscriptionFeedProvider>
+      </QueryClientProvider>,
+    );
+
+    act(() => {
+      listener?.onError(new Error('Firebase permission-denied'));
+    });
+
+    expect(latestQuery?.isLoading).toBe(false);
+    expect(latestQuery?.isError).toBe(true);
+    expect(latestQuery?.error).toHaveProperty('message', 'Unable to synchronize subscriptions');
+
+    unmountWithAct(view);
+    queryClient.clear();
+  });
+
+  it('preserves explicit query refetch progress after the feed is ready', async () => {
+    act(() => {
+      useAuthStore.setState({ user: { uid: 'user-a' } as never });
+    });
+    const deferredFetch = createDeferred<Subscription[]>();
+    jest.mocked(SubscriptionService.getSubscriptions).mockImplementation(() => deferredFetch.promise);
+    const repository: SubscriptionRepository = {
+      subscribe: (_userId, onData) => {
+        onData([makeSubscription('streamed')]);
+        return jest.fn();
+      },
+      fetch: async () => [],
+    };
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    let latestQuery: ReturnType<typeof useSubscriptions> | undefined;
+    const view = renderWithAct(
+      <QueryClientProvider client={queryClient}>
+        <SubscriptionFeedProvider repository={repository} userId="user-a">
+          <SubscriptionQueryProbe live={false} onQuery={(query) => { latestQuery = query; }} />
+        </SubscriptionFeedProvider>
+      </QueryClientProvider>,
+    );
+
+    let refetchPromise: ReturnType<NonNullable<typeof latestQuery>['refetch']> | undefined;
+    await act(async () => {
+      refetchPromise = latestQuery?.refetch();
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(latestQuery?.isRefetching).toBe(true);
+
+    await act(async () => {
+      deferredFetch.resolve([makeSubscription('refreshed')]);
+      await refetchPromise;
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    expect(latestQuery?.isRefetching).toBe(false);
+
+    unmountWithAct(view);
+    queryClient.clear();
+  });
 });
 
 describe('subscriptionRepository error boundary', () => {

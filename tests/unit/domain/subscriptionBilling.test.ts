@@ -45,6 +45,8 @@ describe('calculateSubscriptionCost', () => {
     expect(MONTHLY_FACTOR_BY_CYCLE[billingCycle as CostedSubscription['billingCycle']]).toBe(monthlyGross / 1200);
     expect(result).toEqual({
       billingGross: 1200,
+      billingRecovered: 0,
+      billingNet: 1200,
       monthlyGross,
       monthlyRecovered: 0,
       monthlyNet: monthlyGross,
@@ -56,6 +58,8 @@ describe('calculateSubscriptionCost', () => {
 
     expect(calculateSubscriptionCost(paused, context)).toEqual({
       billingGross: 0,
+      billingRecovered: 0,
+      billingNet: 0,
       monthlyGross: 0,
       monthlyRecovered: 0,
       monthlyNet: 0,
@@ -83,6 +87,8 @@ describe('calculateSubscriptionCost', () => {
 
     expect(calculateSubscriptionCost(fractionalWeekly, context)).toEqual({
       billingGross: 1.01,
+      billingRecovered: 0,
+      billingNet: 1.01,
       monthlyGross: 4.36,
       monthlyRecovered: 0,
       monthlyNet: 4.36,
@@ -100,6 +106,8 @@ describe('calculateSubscriptionCost', () => {
 
     expect(calculateSubscriptionCost(fractionalSplitWeekly, context)).toEqual({
       billingGross: 2.01,
+      billingRecovered: 1.01,
+      billingNet: 1.01,
       monthlyGross: 8.71,
       monthlyRecovered: 4.36,
       monthlyNet: 4.36,
@@ -111,6 +119,8 @@ describe('calculateSubscriptionCost', () => {
 
     expect(calculateSubscriptionCost(subscription({ amount: 12.5, currency }), fallbackContext)).toEqual({
       billingGross: 12.5,
+      billingRecovered: 0,
+      billingNet: 12.5,
       monthlyGross: 12.5,
       monthlyRecovered: 0,
       monthlyNet: 12.5,

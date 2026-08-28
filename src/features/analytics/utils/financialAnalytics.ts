@@ -3,7 +3,7 @@ import { getAssignedCardId } from '@/domain/subscriptions/cardAssignment';
 import { normalizeSubscriptionState } from '@/domain/subscriptions/normalization';
 import { getNextRenewal, getRenewalsInRange, parseSubscriptionDate } from '@/domain/subscriptions/recurrence';
 import { Subscription } from '@/services/firebase/types';
-import { CURRENCY_RATES, convertCurrency, type ExchangeRates } from '@/utils/currency';
+import { CURRENCY_RATES, type ExchangeRates } from '@/utils/currency';
 import { getMidnight } from '@/utils/dateHelpers';
 
 export interface CategoryAnalysis {
@@ -55,23 +55,6 @@ export interface FinancialAnalysis {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-function getNetPaymentAmount(subscription: Subscription, baseCurrency: string): number {
-  const billingAmount = convertCurrency(
-    Number(subscription.amount) || 0,
-    subscription.currency || baseCurrency,
-    baseCurrency,
-  );
-  const recoveredAmount = subscription.isSplit && Array.isArray(subscription.splitMembers)
-    ? subscription.splitMembers.reduce((total, member) => total + (Number(member.shareAmount) || 0), 0)
-    : 0;
-  const recoveredBillingAmount = convertCurrency(
-    recoveredAmount,
-    subscription.currency || baseCurrency,
-    baseCurrency,
-  );
-  return Math.max(0, billingAmount - recoveredBillingAmount);
-}
 
 export function getSubscriptionMonthlyNetCost(
   subscription: Subscription,
@@ -176,7 +159,7 @@ export function calculateFinancialAnalysis(
 
     const firstPaymentDate = getNextRenewal(subscription, today);
     if (!firstPaymentDate) return;
-    const paymentAmount = getNetPaymentAmount(subscription, baseCurrency);
+    const paymentAmount = costs.billingNet;
     getRenewalsInRange(subscription, { start: today, end: in30Days }).forEach(upcomingDate => {
       upcomingPayments.push({
         subscription,

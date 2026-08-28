@@ -88,6 +88,18 @@ export function parseSubscriptionDate(value: unknown): Date | null {
   return parsed && isValidDate(parsed) ? toLocalMidnight(parsed) : null;
 }
 
+export function serializeSubscriptionDate(value: unknown): string {
+  if (value == null) return '';
+  const parsed = dateFromValue(value);
+  if (!parsed || !isValidDate(parsed)) return '__invalid_date__';
+
+  try {
+    return parsed.toISOString();
+  } catch {
+    return '__invalid_date__';
+  }
+}
+
 const isPaused = (subscription: RecurringSubscription): boolean => (
   subscription.status === 'paused' || subscription.isPaused === true
 );

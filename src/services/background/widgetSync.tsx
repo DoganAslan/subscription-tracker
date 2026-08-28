@@ -12,6 +12,7 @@ import { getSecureData } from '@/utils/secureStorage';
 import { Subscription } from '@/services/firebase/types';
 import { buildWidgetData } from './widgetData';
 import { createLatestWinsCoordinator } from './latestWinsCoordinator';
+import { serializeSubscriptionDate } from '@/domain/subscriptions/recurrence';
 
 export const BACKGROUND_WIDGET_SYNC_TASK = 'BACKGROUND_WIDGET_SYNC_TASK';
 
@@ -46,18 +47,6 @@ const getStoredLanguage = async (): Promise<string> => {
 /**
  * Updates AsyncStorage widget data and triggers a native Android widget re-render
  */
-const dateKey = (value: unknown): string => {
-  if (value instanceof Date) return value.toISOString();
-  if (value && typeof value === 'object' && 'toDate' in value) {
-    const toDate = (value as { toDate?: unknown }).toDate;
-    if (typeof toDate === 'function') {
-      const date = toDate.call(value);
-      if (date instanceof Date) return date.toISOString();
-    }
-  }
-  return value == null ? '' : String(value);
-};
-
 const legacySplitMemberAmount = (member: unknown): unknown => (
   (member as { amount?: unknown }).amount
 );
@@ -72,12 +61,12 @@ const widgetContentKey = ({ subscriptions, baseCurrency, language }: WidgetUpdat
       amount: subscription.amount,
       currency: subscription.currency,
       billingCycle: subscription.billingCycle,
-      renewalDate: dateKey(subscription.renewalDate),
+      renewalDate: serializeSubscriptionDate(subscription.renewalDate),
       status: subscription.status ?? '',
       isPaused: subscription.isPaused === true,
       isTrial: subscription.isTrial === true,
       isFreeTrial: subscription.isFreeTrial === true,
-      trialEndDate: dateKey(subscription.trialEndDate),
+      trialEndDate: serializeSubscriptionDate(subscription.trialEndDate),
       isSplit: subscription.isSplit === true,
       splitMembers: (subscription.splitMembers ?? [])
         .map(member => ({
@@ -136,7 +125,7 @@ const performWidgetDataUpdate = async (
     return widgetData;
   } catch (error) {
     console.error('[Widget Sync] Failed to update widget data:', error);
-    return null;
+    throw error;
   }
 };
 

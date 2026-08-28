@@ -21,6 +21,7 @@ import {
   removeCachedSubscription,
   updateCachedSubscription,
 } from '../application/subscriptionCacheUpdates';
+import { useOptionalSubscriptionFeedStatus } from '../application/SubscriptionFeedProvider';
 
 export { subscriptionKeys } from '../application/subscriptionKeys';
 
@@ -44,8 +45,9 @@ const safeToDate = (val: any): Date => {
 export function useSubscriptions() {
   const user = useAuthStore((state) => state.user);
   const userId = user?.uid;
+  const feed = useOptionalSubscriptionFeedStatus();
 
-  return useQuery({
+  const query = useQuery({
     queryKey: subscriptionKeys.list(userId ?? ''),
     queryFn: () => {
       if (!userId) throw new Error('User not authenticated');
@@ -54,6 +56,27 @@ export function useSubscriptions() {
     enabled: false,
     staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
+
+  if (!feed) return query;
+
+  const isLoading = (feed.status === 'loading' && query.data === undefined) || query.isLoading;
+  const isFetching = feed.status === 'loading' || query.isFetching;
+  const isError = feed.status === 'error' || query.isError;
+  const isSuccess = !isError && (feed.status === 'success' || query.isSuccess);
+
+  return {
+    ...query,
+    status: isError ? 'error' as const : isLoading ? 'pending' as const : isSuccess ? 'success' as const : query.status,
+    fetchStatus: isFetching ? 'fetching' as const : query.fetchStatus,
+    isPending: isLoading,
+    isLoading,
+    isInitialLoading: isLoading,
+    isFetching,
+    isRefetching: isFetching && !isLoading,
+    isError,
+    isSuccess,
+    error: feed.error ?? query.error,
+  };
 }
 
 /** @deprecated SubscriptionFeedProvider owns the live listener. */

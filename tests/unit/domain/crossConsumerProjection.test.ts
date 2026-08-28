@@ -8,8 +8,12 @@ import type { Subscription } from '@/services/firebase/types';
 const mockRates = { TRY: 1, USD: 0.03, EUR: 0.027 };
 
 jest.mock('@/utils/currency', () => ({
-  CURRENCY_RATES: mockRates,
-  convertCurrency: (amount: number) => amount,
+  CURRENCY_RATES: { TRY: 1, USD: 0.03, EUR: 0.027 },
+  convertCurrency: (amount: number, from: string, to: string) => {
+    const rates: Record<string, number> = { TRY: 1, USD: 0.03, EUR: 0.027 };
+    if (from === to) return amount;
+    return (amount / (rates[from] || 1)) * (rates[to] || 1);
+  },
 }));
 
 const subscription = (overrides: Partial<Subscription> = {}): Subscription => ({
@@ -147,5 +151,35 @@ describe('cross-consumer subscription projections', () => {
 
     expect(analytics.monthlyGross).toBe(100);
     expect(widget.monthlyTotal).toBe('₺100.00');
+  });
+
+  it('uses canonical legacy price-only billing for monthly, upcoming, and cash-flow projections', () => {
+    const legacyPriceOnly = {
+      ...subscription({
+        billingCycle: 'yearly',
+        renewalDate: renewalDate(localDate(2026, 8, 28)),
+      }),
+      amount: undefined,
+      price: 1200,
+    } as unknown as Subscription;
+    const result = calculateFinancialAnalysis([legacyPriceOnly], 'TRY', null, localDate(2026, 8, 27));
+
+    expect(result.monthlyCommitment).toBe(100);
+    expect(result.upcomingPayments.map(payment => payment.amount)).toEqual([1200]);
+    expect(result.cashFlow.map(month => month.amount)).toEqual([1200, 0, 0, 0, 0, 0]);
+  });
+
+  it('uses canonical missing-target-rate fallback for monthly, upcoming, and cash-flow projections', () => {
+    const missingRate = subscription({
+      amount: 30,
+      currency: 'USD',
+      billingCycle: 'monthly',
+      renewalDate: renewalDate(localDate(2026, 8, 28)),
+    });
+    const result = calculateFinancialAnalysis([missingRate], 'XYZ', null, localDate(2026, 8, 27));
+
+    expect(result.monthlyCommitment).toBe(30);
+    expect(result.upcomingPayments[0]?.amount).toBe(30);
+    expect(result.cashFlow.map(month => month.amount)).toEqual([30, 30, 30, 30, 30, 30]);
   });
 });

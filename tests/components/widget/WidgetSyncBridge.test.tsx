@@ -91,7 +91,7 @@ describe('WidgetSyncBridge', () => {
     expect(scheduleUpdate).toHaveBeenCalledTimes(4);
   });
 
-  it('resets across UID changes, persists a neutral widget on logout, and waits for the next signed-in snapshot', () => {
+  it('re-arms local scheduling across UID changes while the session lifecycle owns logout neutralization', () => {
     const scheduleUpdate = jest.fn(async () => null);
     const resetWidgetSync = jest.fn();
     const clearWidgetData = jest.fn(async () => null);
@@ -117,15 +117,15 @@ describe('WidgetSyncBridge', () => {
     act(() => {
       view.update(renderBridge(null, [makeSubscription(200)]));
     });
-    expect(resetWidgetSync).toHaveBeenCalledTimes(1);
-    expect(clearWidgetData).toHaveBeenCalledWith('TRY', 'tr');
+    expect(resetWidgetSync).not.toHaveBeenCalled();
+    expect(clearWidgetData).not.toHaveBeenCalled();
     expect(scheduleUpdate).toHaveBeenCalledTimes(1);
 
     act(() => {
       view.update(renderBridge('user-b'));
     });
-    expect(resetWidgetSync).toHaveBeenCalledTimes(2);
-    expect(clearWidgetData).toHaveBeenCalledTimes(1);
+    expect(resetWidgetSync).not.toHaveBeenCalled();
+    expect(clearWidgetData).not.toHaveBeenCalled();
     expect(scheduleUpdate).toHaveBeenCalledTimes(1);
 
     act(() => {
@@ -220,5 +220,46 @@ describe('WidgetSyncBridge', () => {
     act(() => {
       view.unmount();
     });
+  });
+
+  it.each([
+    ['a timestamp whose toDate throws', () => ({ toDate: () => { throw new Error('bad timestamp'); } })],
+    ['an invalid Date', () => new Date(Number.NaN)],
+  ])('safely keys %s without throwing from render', (_description, malformedDate) => {
+    const scheduleUpdate = jest.fn(async () => null);
+    const malformedSubscription = () => ({
+      ...makeSubscription(100),
+      renewalDate: malformedDate(),
+    }) as unknown as Subscription;
+    let view: TestRenderer.ReactTestRenderer | undefined;
+
+    expect(() => {
+      act(() => {
+        view = TestRenderer.create(
+          <WidgetSyncBridge
+            userId="user-a"
+            subscriptions={[malformedSubscription()]}
+            baseCurrency="TRY"
+            language="tr"
+            scheduleUpdate={scheduleUpdate}
+          />,
+        );
+      });
+    }).not.toThrow();
+
+    act(() => {
+      view?.update(
+        <WidgetSyncBridge
+          userId="user-a"
+          subscriptions={[malformedSubscription()]}
+          baseCurrency="TRY"
+          language="tr"
+          scheduleUpdate={scheduleUpdate}
+        />,
+      );
+    });
+
+    expect(scheduleUpdate).toHaveBeenCalledTimes(1);
+    act(() => view?.unmount());
   });
 });
