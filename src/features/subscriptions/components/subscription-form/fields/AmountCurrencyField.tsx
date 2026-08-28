@@ -33,11 +33,13 @@ export function AmountCurrencyField<CurrencyCode extends string>({
   const currency = useController<SubscriptionFormInput, 'currency', SubscriptionFormData>({ control, name: 'currency' });
   const [currencyPickerVisible, setCurrencyPickerVisible] = useState(false);
   const amountValue = amount.field.value;
-  const displayAmount = typeof amountValue === 'number' || typeof amountValue === 'string' ? String(amountValue) : '';
+  const displayAmount = typeof amountValue === 'number'
+    ? (amountValue === 0 ? '' : String(amountValue))
+    : (typeof amountValue === 'string' ? amountValue : '');
   const selectedCurrency = typeof currency.field.value === 'string' ? currency.field.value : 'USD';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}>
       <Text style={[styles.label, { color: colors.textSecondary }]}>{amountLabel}</Text>
       <View testID="amount-currency-row" style={styles.row}>
         <View testID="amount-input-container" style={styles.amountContainer}>
@@ -53,7 +55,7 @@ export function AmountCurrencyField<CurrencyCode extends string>({
             placeholderTextColor={colors.textSecondary}
             style={[
               styles.amountInput,
-              { backgroundColor: colors.surface, borderColor: amount.fieldState.error ? colors.danger : colors.border, color: colors.text },
+              { borderColor: amount.fieldState.error ? colors.danger : 'transparent', color: colors.text },
             ]}
           />
         </View>
@@ -63,7 +65,7 @@ export function AmountCurrencyField<CurrencyCode extends string>({
           accessibilityState={{ expanded: currencyPickerVisible }}
           activeOpacity={0.8}
           onPress={() => setCurrencyPickerVisible(true)}
-          style={[styles.currencyTrigger, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          style={[styles.currencyTrigger, { backgroundColor: colors.background, borderColor: colors.border }]}
         >
           <Text style={[styles.currencyText, { color: colors.text }]}>{selectedCurrency}</Text>
           <Text style={[styles.chevron, { color: colors.textSecondary }]}>▼</Text>
@@ -90,18 +92,26 @@ export function AmountCurrencyField<CurrencyCode extends string>({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    marginBottom: 16,
+    marginTop: 8,
+    marginBottom: 20,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 24,
   },
   label: {
     marginBottom: 6,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textAlign: 'center',
     textTransform: 'uppercase',
   },
   row: {
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 10,
   },
   amountContainer: {
@@ -110,12 +120,13 @@ const styles = StyleSheet.create({
   },
   amountInput: {
     width: '100%',
-    minHeight: 56,
-    paddingHorizontal: 16,
+    minHeight: 64,
+    paddingHorizontal: 8,
     borderWidth: 1,
-    borderRadius: 12,
-    fontSize: 28,
-    fontWeight: '700',
+    borderRadius: 16,
+    fontSize: 44,
+    fontWeight: '800',
+    textAlign: 'center',
   },
   currencyTrigger: {
     minHeight: 56,

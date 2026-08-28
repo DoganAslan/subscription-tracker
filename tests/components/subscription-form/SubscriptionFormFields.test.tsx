@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render, type RenderResult } from '@testing-library/react-native';
 import { FormProvider, useForm, useFormContext, useWatch } from 'react-hook-form';
-import { Platform, Text } from 'react-native';
+import { Platform, StyleSheet, Text } from 'react-native';
 import { describe, expect, it, jest } from '@jest/globals';
 import type {
   SubscriptionFormData,
@@ -10,6 +10,12 @@ import type {
 import { OptionPickerField } from '@/features/subscriptions/components/subscription-form/fields/OptionPickerField';
 import { AmountCurrencyField } from '@/features/subscriptions/components/subscription-form/fields/AmountCurrencyField';
 import { SubscriptionDateField } from '@/features/subscriptions/components/subscription-form/fields/SubscriptionDateField';
+
+const mockSafeAreaInsets = { top: 0, right: 10, bottom: 34, left: 12 };
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => mockSafeAreaInsets,
+}));
 
 jest.mock('@/context/ThemeContext', () => ({
   useTheme: () => ({
@@ -55,6 +61,7 @@ const defaultValues: SubscriptionFormInput = {
 
 function renderInForm(
   field: React.ReactElement,
+  initialValues: SubscriptionFormInput = defaultValues,
 ) {
   function FormStateProbe() {
     const { control } = useFormContext<SubscriptionFormInput, undefined, SubscriptionFormData>();
@@ -72,7 +79,7 @@ function renderInForm(
   }
 
   function FormHarness() {
-    const formMethods = useForm<SubscriptionFormInput, undefined, SubscriptionFormData>({ defaultValues });
+    const formMethods = useForm<SubscriptionFormInput, undefined, SubscriptionFormData>({ defaultValues: initialValues });
     return <FormProvider {...formMethods}>{field}<FormStateProbe /></FormProvider>;
   }
 
@@ -220,5 +227,46 @@ describe('subscription form fields', () => {
     expect(rowStyle).toEqual(expect.objectContaining({ width: '100%', flexDirection: 'row' }));
     expect(rowStyle.width).not.toEqual(expect.any(Number));
     expect(result.getByTestId('amount-input-container').props.style).toEqual(expect.objectContaining({ flex: 1, flexShrink: 1 }));
+  });
+
+  it('preserves the centered amount hero while rendering a zero default as an empty value', async () => {
+    const result = await renderInForm(
+      <AmountCurrencyField
+        amountLabel="Amount"
+        currencyLabel="Currency"
+        currencyModalTitle="Select currency"
+        closeLabel="Close"
+        amountPlaceholder="0.00"
+        currencyOptions={currencyOptions}
+      />,
+      { ...defaultValues, amount: 0 },
+    );
+
+    const amountInput = result.getByLabelText('Amount');
+    expect(amountInput.props.value).toBe('');
+    expect(StyleSheet.flatten(amountInput.props.style)).toEqual(expect.objectContaining({
+      fontSize: 44,
+      textAlign: 'center',
+    }));
+  });
+
+  it('keeps bottom-sheet controls outside nonzero device safe-area insets', async () => {
+    const result = await renderInForm(
+      <OptionPickerField
+        name="category"
+        label="Category"
+        modalTitle="Select category"
+        closeLabel="Close"
+        options={categoryOptions}
+      />,
+    );
+
+    await fireEvent.press(result.getByRole('button', { name: 'Category: Entertainment' }));
+
+    expect(StyleSheet.flatten(result.getByTestId('option-picker-content').props.style)).toEqual(expect.objectContaining({
+      paddingBottom: 50,
+      paddingLeft: 28,
+      paddingRight: 26,
+    }));
   });
 });

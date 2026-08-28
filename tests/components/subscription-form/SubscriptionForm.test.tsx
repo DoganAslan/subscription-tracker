@@ -206,7 +206,17 @@ describe('SubscriptionForm public facade', () => {
   it('shows new-form defaults through the existing public import', async () => {
     const newForm = await renderForm();
     expect(newForm.getByLabelText('Name').props.value).toBe('');
+    expect(newForm.getByLabelText('Amount').props.value).toBe('');
     expect(newForm.getByRole('button', { name: 'Currency: USD' })).toBeTruthy();
+  });
+
+  it('preserves category guidance in the category picker', async () => {
+    const result = await renderForm();
+
+    await fireEvent.press(result.getByRole('button', { name: 'Category: Select a category' }));
+
+    expect(result.getByText('Netflix, Disney+, Cable')).toBeTruthy();
+    expect(result.getByText('Notion, Claude, Github, Adobe')).toBeTruthy();
   });
 
   it('shows edit values through the existing public import', async () => {

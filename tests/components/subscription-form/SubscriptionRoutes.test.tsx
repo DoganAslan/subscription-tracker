@@ -21,13 +21,21 @@ type UpdateMutationMock = {
   isPending: boolean;
 };
 
+type DeleteMutationMock = {
+  mutate: jest.Mock<(id: string) => void>;
+  mutateAsync: jest.Mock<(id: string) => Promise<unknown>>;
+  isPending: boolean;
+};
+
 interface MockSubscriptionFormProps {
   initialData?: Subscription;
   onSubmit: (data: SubscriptionFormData) => void | Promise<void>;
+  onDelete?: () => void;
 }
 
 let mockAddMutation: AddMutationMock;
 let mockUpdateMutation: UpdateMutationMock;
+let mockDeleteMutation: DeleteMutationMock;
 let mockSubscription: Subscription;
 const mockReplace = jest.fn<(path: string) => void>();
 
@@ -90,12 +98,12 @@ jest.mock('@/features/subscriptions/hooks/useSubscriptions', () => ({
   useAddSubscription: () => mockAddMutation,
   useUpdateSubscription: () => mockUpdateMutation,
   useSubscriptions: () => ({ data: [mockSubscription], isLoading: false, isFetching: false }),
-  useDeleteSubscription: () => ({ mutate: jest.fn(), isPending: false }),
+  useDeleteSubscription: () => mockDeleteMutation,
   useTogglePauseSubscription: () => ({ mutate: jest.fn() }),
 }));
 
 jest.mock('@/features/subscriptions/components/SubscriptionForm', () => ({
-  SubscriptionForm: ({ initialData, onSubmit }: MockSubscriptionFormProps) => {
+  SubscriptionForm: ({ initialData, onSubmit, onDelete }: MockSubscriptionFormProps) => {
     const ReactModule = require('react') as typeof import('react');
     const { Text: NativeText, TouchableOpacity, View } = require('react-native') as typeof import('react-native');
     return ReactModule.createElement(
@@ -111,6 +119,17 @@ jest.mock('@/features/subscriptions/components/SubscriptionForm', () => ({
         },
         ReactModule.createElement(NativeText, null, 'Submit'),
       ),
+      onDelete
+        ? ReactModule.createElement(
+          TouchableOpacity,
+          {
+            accessibilityRole: 'button',
+            accessibilityLabel: 'Open delete confirmation',
+            onPress: onDelete,
+          },
+          ReactModule.createElement(NativeText, null, 'Delete'),
+        )
+        : null,
     );
   },
 }));
@@ -118,7 +137,22 @@ jest.mock('@/features/subscriptions/components/SubscriptionForm', () => ({
 jest.mock('@/features/subscriptions/components/PauseSubscriptionCard', () => ({ PauseSubscriptionCard: () => null }));
 jest.mock('@/features/subscriptions/components/PaymentHistoryWidget', () => ({ PaymentHistoryWidget: () => null }));
 jest.mock('@/features/subscriptions/components/SplitTrackerCard', () => ({ SplitTrackerCard: () => null }));
-jest.mock('@/features/subscriptions/components/DeleteConfirmationModal', () => ({ DeleteConfirmationModal: () => null }));
+jest.mock('@/features/subscriptions/components/DeleteConfirmationModal', () => ({
+  DeleteConfirmationModal: ({ visible, onConfirm }: { visible: boolean; onConfirm: () => void }) => {
+    if (!visible) return null;
+    const ReactModule = require('react') as typeof import('react');
+    const { Text: NativeText, TouchableOpacity } = require('react-native') as typeof import('react-native');
+    return ReactModule.createElement(
+      TouchableOpacity,
+      {
+        accessibilityRole: 'button',
+        accessibilityLabel: 'Confirm subscription deletion',
+        onPress: onConfirm,
+      },
+      ReactModule.createElement(NativeText, null, 'Confirm delete'),
+    );
+  },
+}));
 jest.mock('@/features/ai/components/AiNegotiatorModal', () => ({ AiNegotiatorModal: () => null }));
 jest.mock('@/components/common/AppLoader', () => ({ AppLoader: () => null }));
 jest.mock('@/services/notificationService', () => ({ requestNotificationPermissions: jest.fn() }));
@@ -158,6 +192,11 @@ describe('subscription add/edit routes', () => {
       isPending: false,
     };
     mockUpdateMutation = {
+      mutate: jest.fn(),
+      mutateAsync: jest.fn(),
+      isPending: false,
+    };
+    mockDeleteMutation = {
       mutate: jest.fn(),
       mutateAsync: jest.fn(),
       isPending: false,
@@ -234,6 +273,38 @@ describe('subscription add/edit routes', () => {
     fireEvent.press(result.getByRole('button', { name: 'Submit route form' }));
 
     await waitFor(() => expect(mockUpdateMutation.mutateAsync).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.getByText('Edit form ready')).toBeTruthy());
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(triggerHaptic).not.toHaveBeenCalled();
+  });
+
+  it('waits for delete mutation success before navigating exactly once', async () => {
+    const pending = createDeferred();
+    mockDeleteMutation.mutateAsync.mockReturnValue(pending.promise);
+    const result = await render(<EditSubscriptionScreen />);
+
+    fireEvent.press(result.getByRole('button', { name: 'Open delete confirmation' }));
+    fireEvent.press(await result.findByRole('button', { name: 'Confirm subscription deletion' }));
+
+    await waitFor(() => expect(mockDeleteMutation.mutateAsync).toHaveBeenCalledWith('subscription-1'));
+    expect(mockDeleteMutation.mutateAsync).toHaveBeenCalledTimes(1);
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    await act(async () => { pending.resolve(); });
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(tabs)/subscriptions'));
+    expect(mockReplace).toHaveBeenCalledTimes(1);
+    expect(triggerHaptic).not.toHaveBeenCalled();
+  });
+
+  it('keeps the edit route rendered and does not navigate after delete rejection', async () => {
+    mockDeleteMutation.mutateAsync.mockRejectedValue(new Error('delete failed'));
+    const result = await render(<EditSubscriptionScreen />);
+
+    fireEvent.press(result.getByRole('button', { name: 'Open delete confirmation' }));
+    fireEvent.press(await result.findByRole('button', { name: 'Confirm subscription deletion' }));
+
+    await waitFor(() => expect(mockDeleteMutation.mutateAsync).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(result.getByText('Edit form ready')).toBeTruthy());
     expect(mockReplace).not.toHaveBeenCalled();
     expect(triggerHaptic).not.toHaveBeenCalled();

@@ -25,7 +25,7 @@ export default function EditSubscriptionScreen() {
   const { data: subscriptions, isLoading: isLoadingSubs, isFetching } = useSubscriptions();
   const { mutateAsync: updateSubscription, isPending: isUpdating } = useUpdateSubscription();
   const { mutate: togglePauseSubscription } = useTogglePauseSubscription();
-  const { mutate: deleteSubscription, isPending: isDeleting } = useDeleteSubscription();
+  const { mutateAsync: deleteSubscription, isPending: isDeleting } = useDeleteSubscription();
 
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isNegotiatorModalVisible, setIsNegotiatorModalVisible] = useState(false);
@@ -65,11 +65,14 @@ export default function EditSubscriptionScreen() {
     }
   };
 
-  const handleDelete = () => {
-    triggerHaptic('error');
+  const handleDelete = async () => {
     setIsDeleteModalVisible(false);
-    deleteSubscription(id);
-    router.replace('/(tabs)/subscriptions');
+    try {
+      await deleteSubscription(id);
+      router.replace('/(tabs)/subscriptions');
+    } catch {
+      // Mutation feedback is owned by useDeleteSubscription; keep the edit route open for retry.
+    }
   };
 
   return (

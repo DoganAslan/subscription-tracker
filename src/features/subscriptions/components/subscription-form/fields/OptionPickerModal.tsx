@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/ThemeContext';
 
 export interface OptionPickerOption<Value extends string> {
@@ -30,13 +31,26 @@ export function OptionPickerModal<Value extends string>({
   formatOption,
 }: OptionPickerModalProps<Value>) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   if (!visible) return null;
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <View style={[styles.content, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View
+          testID="option-picker-content"
+          style={[
+            styles.content,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              paddingBottom: Math.max(24, insets.bottom + 16),
+              paddingLeft: Math.max(24, insets.left + 16),
+              paddingRight: Math.max(24, insets.right + 16),
+            },
+          ]}
+        >
           <View style={styles.header}>
             <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>{title}</Text>
             <TouchableOpacity accessibilityRole="button" accessibilityLabel={closeLabel} onPress={onClose}>
@@ -61,9 +75,9 @@ export function OptionPickerModal<Value extends string>({
                   ]}
                 >
                   <View style={styles.optionCopy}>
-                    <Text style={[styles.optionLabel, { color: colors.text }]}>
-                      {formatOption ? formatOption(option) : option.label}
-                    </Text>
+                    {formatOption ? formatOption(option) : (
+                      <Text style={[styles.optionLabel, { color: colors.text }]}>{option.label}</Text>
+                    )}
                     {option.hint ? <Text style={[styles.optionHint, { color: colors.textSecondary }]}>{option.hint}</Text> : null}
                   </View>
                   {selected ? <Text accessibilityLabel="Selected" style={[styles.check, { color: colors.primary }]}>✓</Text> : null}

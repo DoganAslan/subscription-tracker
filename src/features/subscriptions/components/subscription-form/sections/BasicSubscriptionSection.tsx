@@ -3,6 +3,7 @@ import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
 import { Ionicons } from '@expo/vector-icons';
 import { Input } from '@/components/ui/Input';
+import { CategoryBadge } from '@/components/ui/CategoryBadge';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { getBillingCycleLabel, getCategoryLabel } from '@/utils/categoryMeta';
@@ -11,7 +12,11 @@ import type {
   SubscriptionFormData,
   SubscriptionFormInput,
 } from '../../../schemas/subscription.schema';
-import { normalizeSubscriptionNameInput, SUBSCRIPTION_CATEGORY_OPTIONS } from '../constants';
+import {
+  getSubscriptionCategoryHint,
+  normalizeSubscriptionNameInput,
+  SUBSCRIPTION_CATEGORY_OPTIONS,
+} from '../constants';
 import { AmountCurrencyField } from '../fields/AmountCurrencyField';
 import { OptionPickerField } from '../fields/OptionPickerField';
 import { SubscriptionDateField } from '../fields/SubscriptionDateField';
@@ -67,6 +72,7 @@ export function BasicSubscriptionSection({
     () => SUBSCRIPTION_CATEGORY_OPTIONS.map((option) => ({
       ...option,
       label: getCategoryLabel(option.value, isTurkish),
+      hint: getSubscriptionCategoryHint(option.value, isTurkish),
     })),
     [isTurkish],
   );
@@ -146,6 +152,7 @@ export function BasicSubscriptionSection({
         placeholder={t.global.selectACategory}
         options={categoryOptions}
         formatSelected={(value) => getCategoryLabel(value, isTurkish)}
+        formatOption={(option) => <CategoryBadge category={option.value} size="md" />}
       />
 
       <OptionPickerField

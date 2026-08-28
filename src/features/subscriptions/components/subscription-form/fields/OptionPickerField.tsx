@@ -10,17 +10,17 @@ import { OptionPickerModal, type OptionPickerOption } from './OptionPickerModal'
 
 export type SubscriptionOptionFieldName = 'category' | 'currency' | 'billingCycle' | 'reminderOffset';
 
-type SubscriptionOptionValue = Extract<SubscriptionFormInput[SubscriptionOptionFieldName], string>;
+type SubscriptionOptionValue<Name extends SubscriptionOptionFieldName> = Extract<SubscriptionFormInput[Name], string>;
 
 interface OptionPickerFieldProps<Name extends SubscriptionOptionFieldName> {
   name: Name;
   label: string;
   modalTitle: string;
   closeLabel: string;
-  options: readonly OptionPickerOption<SubscriptionOptionValue>[];
+  options: readonly OptionPickerOption<SubscriptionOptionValue<Name>>[];
   placeholder?: string;
-  formatSelected?: (value: SubscriptionOptionValue) => string;
-  formatOption?: (option: OptionPickerOption<SubscriptionOptionValue>) => React.ReactNode;
+  formatSelected?: (value: SubscriptionOptionValue<Name>) => string;
+  formatOption?: (option: OptionPickerOption<SubscriptionOptionValue<Name>>) => React.ReactNode;
 }
 
 export function OptionPickerField<Name extends SubscriptionOptionFieldName>({
@@ -37,7 +37,9 @@ export function OptionPickerField<Name extends SubscriptionOptionFieldName>({
   const { control } = useFormContext<SubscriptionFormInput, undefined, SubscriptionFormData>();
   const { field, fieldState } = useController<SubscriptionFormInput, Name, SubscriptionFormData>({ control, name });
   const [visible, setVisible] = useState(false);
-  const selectedValue = typeof field.value === 'string' ? field.value : undefined;
+  const selectedValue = typeof field.value === 'string'
+    ? field.value as SubscriptionOptionValue<Name>
+    : undefined;
   const selectedOption = options.find((option) => option.value === selectedValue);
   const selectedLabel = selectedOption
     ? (formatSelected ? formatSelected(selectedOption.value) : selectedOption.label)
