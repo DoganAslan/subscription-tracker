@@ -7,15 +7,17 @@ import { buildDashboardViewModel } from '../utils/dashboardViewModel';
 export function useDashboardViewModel(
   subscriptions: readonly Subscription[] | undefined,
   query: string,
+  currentRates?: Readonly<ExchangeRates> | null,
 ) {
   const baseCurrency = useCurrencyStore(state => state.baseCurrency || 'USD');
 
   return useMemo(() => {
+    const rateSource = currentRates ?? CURRENCY_RATES;
     const rates: ExchangeRates = {
-      ...CURRENCY_RATES,
-      EUR: CURRENCY_RATES.EUR ?? 1,
-      USD: CURRENCY_RATES.USD ?? 1,
-      TRY: CURRENCY_RATES.TRY ?? 1,
+      ...rateSource,
+      EUR: rateSource.EUR ?? 1,
+      USD: rateSource.USD ?? 1,
+      TRY: rateSource.TRY ?? 1,
     };
 
     return buildDashboardViewModel({
@@ -25,5 +27,5 @@ export function useDashboardViewModel(
       rates,
       now: new Date(),
     });
-  }, [baseCurrency, query, subscriptions]);
+  }, [baseCurrency, currentRates, query, subscriptions]);
 }
