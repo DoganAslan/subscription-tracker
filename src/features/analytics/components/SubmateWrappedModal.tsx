@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, type ComponentProps } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Subscription } from '@/services/firebase/types';
@@ -14,6 +14,8 @@ interface Props {
   subscriptions: Subscription[];
   baseCurrency: string;
 }
+
+type IconName = ComponentProps<typeof Ionicons>['name'];
 
 export function SubmateWrappedModal({ visible, onClose, subscriptions, baseCurrency }: Props) {
   useTheme();
@@ -40,7 +42,7 @@ export function SubmateWrappedModal({ visible, onClose, subscriptions, baseCurre
     }
   };
 
-  const slides = [
+  const slides: { bgGradient: string; icon: IconName; title: string; bigValue: string; subText: string }[] = [
     {
       bgGradient: '#8B5CF6',
       icon: 'sparkles',
@@ -109,7 +111,7 @@ export function SubmateWrappedModal({ visible, onClose, subscriptions, baseCurre
           {/* Slide Content */}
           <View style={styles.slideBody}>
             <View style={styles.iconCircle}>
-              <Ionicons name={slide.icon as any} size={36} color={slide.bgGradient} />
+              <Ionicons name={slide.icon} size={36} color={slide.bgGradient} />
             </View>
 
             <Text style={styles.slideTitle}>{slide.title}</Text>

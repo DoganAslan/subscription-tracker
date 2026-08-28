@@ -59,10 +59,11 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function getSubscriptionMonthlyNetCost(
   subscription: Subscription,
   baseCurrency: string,
+  rates: Readonly<ExchangeRates> = CURRENCY_RATES as ExchangeRates,
 ): number {
   return calculateSubscriptionCost(subscription, {
     baseCurrency,
-    rates: CURRENCY_RATES as Readonly<ExchangeRates>,
+    rates,
   }).monthlyNet;
 }
 
@@ -95,6 +96,7 @@ export function calculateFinancialAnalysis(
   baseCurrency = 'TRY',
   monthlyBudget: number | null = null,
   now = new Date(),
+  rates: Readonly<ExchangeRates> = CURRENCY_RATES as ExchangeRates,
 ): FinancialAnalysis {
   const active = subscriptions.filter(subscription => !normalizeSubscriptionState(subscription).isPaused);
   const pausedCount = subscriptions.length - active.length;
@@ -120,7 +122,7 @@ export function calculateFinancialAnalysis(
   active.forEach(subscription => {
     const costs = calculateSubscriptionCost(subscription, {
       baseCurrency,
-      rates: CURRENCY_RATES as Readonly<ExchangeRates>,
+      rates,
     });
     const monthlyAmount = costs.monthlyGross;
     const monthlyRecovered = costs.monthlyRecovered;
