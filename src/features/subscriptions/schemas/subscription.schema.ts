@@ -7,8 +7,10 @@ export const SUBSCRIPTION_CATEGORIES = [
   'Shopping & E-commerce', 'News & Media', 'Food & Delivery', 'Other',
 ] as const;
 
+export const SUBSCRIPTION_NAME_MAX_LENGTH = 100;
+
 export const subscriptionSchema = z.object({
-  name: z.string().min(1, 'Name is required').transform((val) => sanitizeString(val, 60)),
+  name: z.string().min(1, 'Name is required').transform((val) => sanitizeString(val, SUBSCRIPTION_NAME_MAX_LENGTH)),
   category: z.string().min(1, 'Category is required').transform((val) => sanitizeString(val, 50)),
   amount: z.coerce.number().min(0.01, 'Amount must be greater than 0').transform((val) => sanitizeNumericAmount(val)),
   currency: z.string().length(3, 'Must be a 3-letter code').default('USD').transform((val) => sanitizeString(val, 3).toUpperCase()),
@@ -41,4 +43,5 @@ export const subscriptionSchema = z.object({
   })).optional().default([])
 });
 
-export type SubscriptionFormData = z.infer<typeof subscriptionSchema>;
+export type SubscriptionFormInput = z.input<typeof subscriptionSchema>;
+export type SubscriptionFormData = z.output<typeof subscriptionSchema>;
