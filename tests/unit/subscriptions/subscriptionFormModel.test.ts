@@ -11,6 +11,7 @@ import {
   SUBSCRIPTION_CATEGORY_OPTIONS,
 } from '@/features/subscriptions/components/subscription-form/constants';
 import { createSubscriptionFormDefaults } from '@/features/subscriptions/components/subscription-form/formDefaults';
+import { getBillingCycleLabel } from '@/utils/categoryMeta';
 
 const validInput: SubscriptionFormInput = {
   name: 'Netflix',
@@ -100,5 +101,14 @@ describe('subscription form model', () => {
 
   it('coerces string amounts to numeric form output', () => {
     expect(subscriptionSchema.parse(validInput).amount).toBe(19.99);
+  });
+
+  it('keeps every billing-cycle option localized', () => {
+    expect(['weekly', 'monthly', 'quarterly', 'biannually', 'yearly', 'biennially']
+      .map((cycle) => getBillingCycleLabel(cycle, true)))
+      .toEqual(['Haftalık', 'Aylık', '3 Aylık', '6 Aylık', 'Yıllık', '2 Yıllık']);
+    expect(['weekly', 'monthly', 'quarterly', 'biannually', 'yearly', 'biennially']
+      .map((cycle) => getBillingCycleLabel(cycle, false)))
+      .toEqual(['Weekly', 'Monthly', 'Quarterly', '6 Months', 'Yearly', '2 Years']);
   });
 });

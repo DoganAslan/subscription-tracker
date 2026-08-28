@@ -146,6 +146,7 @@ describe('subscription form fields', () => {
     );
 
     expect(result.getByText('Amount is required')).toBeTruthy();
+    expect(result.getByLabelText('Amount').props.inputAccessoryViewID).toBe('DONE_BAR');
     await fireEvent.changeText(result.getByLabelText('Amount'), '12,345');
     await fireEvent.press(result.getByRole('button', { name: 'Currency: USD' }));
     await fireEvent.press(result.getByRole('button', { name: 'EUR (€)' }));

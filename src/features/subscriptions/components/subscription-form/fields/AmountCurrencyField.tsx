@@ -5,6 +5,7 @@ import type {
   SubscriptionFormData,
   SubscriptionFormInput,
 } from '../../../schemas/subscription.schema';
+import { KEYBOARD_ACCESSORY_ID } from '@/components/ui/KeyboardAccessory';
 import { useTheme } from '@/context/ThemeContext';
 import { sanitizePriceInput } from '@/utils/sanitizers';
 import { OptionPickerModal, type OptionPickerOption } from './OptionPickerModal';
@@ -43,6 +44,8 @@ export function AmountCurrencyField<CurrencyCode extends string>({
           <TextInput
             accessibilityLabel={amountLabel}
             keyboardType="numeric"
+            returnKeyType="done"
+            inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
             onBlur={amount.field.onBlur}
             onChangeText={(text) => amount.field.onChange(sanitizePriceInput(text))}
             value={displayAmount}

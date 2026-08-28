@@ -86,6 +86,8 @@ export function getCategoryLabel(cat: string, isTurkish: boolean): string {
 
 export function getBillingCycleLabel(cycle: string, isTurkish: boolean): string {
   const c = String(cycle || '').toLowerCase().trim();
+  if (c.includes('biann') || c.includes('6 ay')) return isTurkish ? '6 Aylık' : '6 Months';
+  if (c.includes('bienn') || c.includes('2 yıl') || c.includes('2 year')) return isTurkish ? '2 Yıllık' : '2 Years';
   if (c.includes('month') || c.includes('ay')) return isTurkish ? 'Aylık' : 'Monthly';
   if (c.includes('year') || c.includes('yıl')) return isTurkish ? 'Yıllık' : 'Yearly';
   if (c.includes('week') || c.includes('hafta')) return isTurkish ? 'Haftalık' : 'Weekly';
