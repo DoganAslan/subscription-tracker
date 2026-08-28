@@ -156,38 +156,51 @@ describe('subscription form fields', () => {
 
   it('normalizes native and web date selections to the same local calendar day', async () => {
     const originalOS = Platform.OS;
-    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    const originalOSDescriptor = Object.getOwnPropertyDescriptor(Platform, 'OS');
+    let nativeRender: RenderResult | undefined;
+    let webRender: RenderResult | undefined;
 
-    const nativeRender = await renderInForm(
-      <SubscriptionDateField
-        name="renewalDate"
-        label="Renewal date"
-        doneLabel="Done"
-        formatDate={(date) => date.toLocaleDateString('en-CA')}
-      />,
-    );
+    try {
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+      nativeRender = await renderInForm(
+        <SubscriptionDateField
+          name="renewalDate"
+          label="Renewal date"
+          doneLabel="Done"
+          formatDate={(date) => date.toLocaleDateString('en-CA')}
+        />,
+      );
 
-    await fireEvent.press(nativeRender.getByRole('button', { name: 'Renewal date' }));
-    await fireEvent(nativeRender.getByTestId('renewalDate-native-picker'), 'onChange', {}, new Date(2027, 0, 5, 18, 30));
+      await fireEvent.press(nativeRender.getByRole('button', { name: 'Renewal date' }));
+      await fireEvent(nativeRender.getByTestId('renewalDate-native-picker'), 'onChange', {}, new Date(2027, 0, 5, 18, 30));
 
-    expect(formValues(nativeRender).renewalDate).toBe('2027-1-5-0');
+      expect(formValues(nativeRender).renewalDate).toBe('2027-1-5-0');
 
-    await nativeRender.unmount();
-    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
-    const webRender = await renderInForm(
-      <SubscriptionDateField
-        name="renewalDate"
-        label="Renewal date"
-        doneLabel="Done"
-        formatDate={(date) => date.toLocaleDateString('en-CA')}
-      />,
-    );
+      await nativeRender.unmount();
+      nativeRender = undefined;
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: 'web' });
+      webRender = await renderInForm(
+        <SubscriptionDateField
+          name="renewalDate"
+          label="Renewal date"
+          doneLabel="Done"
+          formatDate={(date) => date.toLocaleDateString('en-CA')}
+        />,
+      );
 
-    await fireEvent(webRender.getByTestId('renewalDate-web-input'), 'change', { target: { value: '2027-01-05' } });
+      await fireEvent(webRender.getByTestId('renewalDate-web-input'), 'change', { target: { value: '2027-01-05' } });
 
-    expect(formValues(webRender).renewalDate).toBe('2027-1-5-0');
+      expect(formValues(webRender).renewalDate).toBe('2027-1-5-0');
+    } finally {
+      await webRender?.unmount();
+      await nativeRender?.unmount();
 
-    Object.defineProperty(Platform, 'OS', { configurable: true, value: originalOS });
+      if (originalOSDescriptor) {
+        Object.defineProperty(Platform, 'OS', originalOSDescriptor);
+      } else {
+        Object.defineProperty(Platform, 'OS', { configurable: true, value: originalOS });
+      }
+    }
   });
 
   it('uses full-width, flexible field layouts without fixed horizontal widths', async () => {
