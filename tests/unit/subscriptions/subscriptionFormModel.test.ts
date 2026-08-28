@@ -6,7 +6,10 @@ import {
   subscriptionSchema,
   type SubscriptionFormInput,
 } from '@/features/subscriptions/schemas/subscription.schema';
-import { SUBSCRIPTION_CATEGORY_OPTIONS } from '@/features/subscriptions/components/subscription-form/constants';
+import {
+  normalizeSubscriptionNameInput,
+  SUBSCRIPTION_CATEGORY_OPTIONS,
+} from '@/features/subscriptions/components/subscription-form/constants';
 import { createSubscriptionFormDefaults } from '@/features/subscriptions/components/subscription-form/formDefaults';
 
 const validInput: SubscriptionFormInput = {
@@ -87,6 +90,12 @@ describe('subscription form model', () => {
     const longName = 'n'.repeat(SUBSCRIPTION_NAME_MAX_LENGTH + 1);
 
     expect(subscriptionSchema.parse({ ...validInput, name: longName }).name).toBe('n'.repeat(100));
+  });
+
+  it('normalizes manual name entry at the shared 100-character boundary', () => {
+    const longName = 'n'.repeat(SUBSCRIPTION_NAME_MAX_LENGTH + 1);
+
+    expect(normalizeSubscriptionNameInput(longName)).toBe('n'.repeat(100));
   });
 
   it('coerces string amounts to numeric form output', () => {

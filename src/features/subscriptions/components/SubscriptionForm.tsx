@@ -15,7 +15,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { useCards } from '@/features/cards/hooks/useCards';
-import { sanitizePriceInput, sanitizeTextInput } from '@/utils/sanitizers';
+import { sanitizePriceInput } from '@/utils/sanitizers';
+import { normalizeSubscriptionNameInput } from './subscription-form/constants';
 import { dispatchWhatsAppReminder } from '@/utils/whatsapp';
 import { Ionicons } from '@expo/vector-icons';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
@@ -366,7 +367,7 @@ export function SubscriptionForm({ initialData, onSubmit, isLoading, submitLabel
               label={t.subs.name} 
               placeholder={t.global.egNetflix} 
               onBlur={onBlur} 
-              onChangeText={(text) => onChange(sanitizeTextInput(text, 30))} 
+              onChangeText={(text) => onChange(normalizeSubscriptionNameInput(text))}
               value={value ?? ''} 
               error={errors.name?.message} 
             />
