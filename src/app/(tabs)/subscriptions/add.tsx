@@ -1,5 +1,4 @@
 import React from 'react';
-import { triggerHaptic } from '@/utils/haptics';
 import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
@@ -13,7 +12,7 @@ import { useTranslation } from '@/context/LanguageContext';
 
 export default function AddSubscriptionScreen() {
   const router = useRouter();
-  const { mutate: addSubscription, isPending } = useAddSubscription();
+  const { mutateAsync: addSubscription, isPending } = useAddSubscription();
   const { colors } = useTheme();
   const { t, currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
@@ -26,10 +25,13 @@ export default function AddSubscriptionScreen() {
     requestNotificationPermissions();
   }, []);
 
-  const handleSubmit = (data: SubscriptionFormData) => {
-    triggerHaptic('success');
-    addSubscription(data);
-    handleGoBack();
+  const handleSubmit = async (data: SubscriptionFormData) => {
+    try {
+      await addSubscription(data);
+      handleGoBack();
+    } catch {
+      // Mutation feedback is owned by useAddSubscription; keep the form open for retry.
+    }
   };
 
   return (

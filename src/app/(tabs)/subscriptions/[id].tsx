@@ -23,7 +23,7 @@ export default function EditSubscriptionScreen() {
   const router = useRouter();
 
   const { data: subscriptions, isLoading: isLoadingSubs, isFetching } = useSubscriptions();
-  const { mutate: updateSubscription, isPending: isUpdating } = useUpdateSubscription();
+  const { mutateAsync: updateSubscription, isPending: isUpdating } = useUpdateSubscription();
   const { mutate: togglePauseSubscription } = useTogglePauseSubscription();
   const { mutate: deleteSubscription, isPending: isDeleting } = useDeleteSubscription();
 
@@ -56,10 +56,13 @@ export default function EditSubscriptionScreen() {
     );
   }
 
-  const handleUpdate = (data: SubscriptionFormData) => {
-    triggerHaptic('success');
-    updateSubscription({ id, data });
-    handleGoBack();
+  const handleUpdate = async (data: SubscriptionFormData) => {
+    try {
+      await updateSubscription({ id, data });
+      handleGoBack();
+    } catch {
+      // Mutation feedback is owned by useUpdateSubscription; keep the form open for retry.
+    }
   };
 
   const handleDelete = () => {
