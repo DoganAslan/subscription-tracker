@@ -1,0 +1,12 @@
+import React from 'react'; import { render } from '@testing-library/react-native'; import { describe, expect, it, jest } from '@jest/globals'; import AccountRoute from '@/app/(tabs)/settings/account'; import AccountSettingsScreen from '@/features/settings/account/screens/AccountSettingsScreen';
+jest.setTimeout(15000);
+jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn() }) }));
+jest.mock('react-native-safe-area-context', () => ({ SafeAreaView: ({ children }: { children: React.ReactNode }) => { const ReactModule = require('react') as typeof import('react'); const { View } = require('react-native') as typeof import('react-native'); return ReactModule.createElement(View, null, children); } }));
+jest.mock('expo-linear-gradient', () => ({ LinearGradient: ({ children }: { children: React.ReactNode }) => { const ReactModule = require('react') as typeof import('react'); const { View } = require('react-native') as typeof import('react-native'); return ReactModule.createElement(View, null, children); } }));
+jest.mock('@expo/vector-icons', () => ({ Ionicons: () => null }));
+jest.mock('@/services/firebase/config', () => ({ auth: { currentUser: { email: 'google@test.com', displayName: 'Google User', providerData: [{ providerId: 'google.com' }] } } }));
+jest.mock('@/services/firebase/auth', () => ({ AuthService: { reauthenticate: jest.fn(), updateEmailAddress: jest.fn(), updateUserPassword: jest.fn(), sendPasswordResetEmail: jest.fn(), deleteAccount: jest.fn() } }));
+jest.mock('@/store/useAuthStore', () => ({ useAuthStore: (selector: (state: { user: { email: string; displayName: string } }) => unknown) => selector({ user: { email: 'google@test.com', displayName: 'Google User' } }) }));
+jest.mock('@/context/ThemeContext', () => ({ useTheme: () => ({ colors: { background: '#000', surface: '#111', border: '#333', primary: '#3B82F6', text: '#FFF', textSecondary: '#AAA' } }) }));
+jest.mock('@/context/LanguageContext', () => ({ useTranslation: () => ({ currentLanguage: 'en' }) }));
+describe('Account settings screen', () => { it('keeps the route facade', () => expect(AccountRoute).toBe(AccountSettingsScreen)); it('shows provider-aware Google guidance instead of password forms', async () => { const result = await render(<AccountSettingsScreen />); expect(result.getByText(/managed by Google/i)).toBeTruthy(); expect(result.queryByText('Change password')).toBeNull(); expect(result.queryByText('Forgot password')).toBeNull(); }); });

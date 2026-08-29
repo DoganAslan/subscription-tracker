@@ -1,0 +1,4 @@
+import { StyleSheet, TextInput } from 'react-native';
+import type { ThemeColors } from '@/theme/colors';
+export function AccountInput({ colors, value, placeholder, secure = false, email = false, onChange }: { colors: ThemeColors; value: string; placeholder: string; secure?: boolean; email?: boolean; onChange: (value: string) => void }) { return <TextInput style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]} value={value} placeholder={placeholder} placeholderTextColor={colors.textSecondary} secureTextEntry={secure} keyboardType={email ? 'email-address' : 'default'} autoCapitalize="none" onChangeText={onChange} />; }
+const styles = StyleSheet.create({ input: { minHeight: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 14 } });
