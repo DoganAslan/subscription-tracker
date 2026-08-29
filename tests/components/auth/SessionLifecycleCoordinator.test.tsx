@@ -9,6 +9,7 @@ jest.mock('@/services/background/widgetSync', () => ({
   resetWidgetSync: jest.fn(),
   clearWidgetData: jest.fn(async () => null),
 }));
+jest.mock('@/store/useProfileStore', () => ({ useProfileStore: { getState: () => ({ resetProfile: jest.fn() }) } }));
 
 describe('SessionLifecycleCoordinator', () => {
   afterEach(() => {

@@ -4,13 +4,9 @@ import { Card } from '@/services/firebase/types';
 import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/store/useAuthStore';
 import { triggerHaptic } from '@/utils/haptics';
+import { cardKeys } from '@/features/cards/application/cardKeys';
 
-// React Query Keys
-export const cardKeys = {
-  all: ['cards'] as const,
-  lists: () => [...cardKeys.all, 'list'] as const,
-  list: (userId: string) => [...cardKeys.lists(), userId] as const,
-};
+export { cardKeys } from '@/features/cards/application/cardKeys';
 
 export function useCards() {
   const user = useAuthStore(state => state.user);
@@ -99,6 +95,5 @@ export function useDeleteCard() {
     }
   });
 }
-
 
 

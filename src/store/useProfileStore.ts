@@ -16,6 +16,7 @@ interface ProfileState {
   setProfileImage: (uri: string | null) => Promise<void>;
   setDisplayName: (name: string) => Promise<void>;
   loadProfileFromCloud: (userId?: string) => Promise<void>;
+  resetProfile: () => void;
 }
 
 const avatarStorageKey = (userId: string): string => `${AVATAR_STORAGE_PREFIX}${userId}`;
@@ -54,6 +55,7 @@ export const useProfileStore = create<ProfileState>((set) => ({
   profileImage: null,
   displayName: null,
   isProfileLoading: true,
+  resetProfile: () => set({ profileImage: null, displayName: null, isProfileLoading: false }),
 
   setProfileImage: async (rawUri: string | null) => {
     const currentUser = auth.currentUser;
