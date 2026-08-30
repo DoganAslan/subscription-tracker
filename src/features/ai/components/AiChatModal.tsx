@@ -141,6 +141,7 @@ export function AiChatModal({ visible, onClose }: Props) {
         >
         {/* Header */}
         <View
+          testID="ai-chat-header"
           onLayout={({ nativeEvent }) => setHeaderHeight(nativeEvent.layout.height)}
           style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}
         >
@@ -227,7 +228,12 @@ export function AiChatModal({ visible, onClose }: Props) {
 
         {/* Quick Suggestion Pills */}
         <View style={styles.quickPillsRow}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ gap: 8, paddingHorizontal: 16 }}
+          >
             {quickPrompts.map((prompt, idx) => (
               <TouchableOpacity
                 key={idx}

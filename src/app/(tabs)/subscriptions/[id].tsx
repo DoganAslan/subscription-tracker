@@ -86,6 +86,7 @@ export default function EditSubscriptionScreen() {
     <SafeAreaView style={dynamicStyles.safeArea} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView {...keyboardLayout} style={dynamicStyles.keyboardView}>
         <View
+          testID="subscription-route-header"
           onLayout={({ nativeEvent }) => setHeaderHeight(nativeEvent.layout.height)}
           style={dynamicStyles.header}
         >

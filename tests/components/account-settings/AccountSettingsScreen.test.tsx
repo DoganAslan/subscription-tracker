@@ -1,12 +1,24 @@
 import React from 'react';
 import { Dimensions, Platform, StyleSheet } from 'react-native';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import { afterAll, beforeAll, describe, expect, it, jest } from '@jest/globals';
 import AccountRoute from '@/app/(tabs)/settings/account';
 import { ChangeEmailModal } from '@/features/settings/account/components/ChangeEmailModal';
 import { ChangePasswordModal } from '@/features/settings/account/components/ChangePasswordModal';
 import AccountSettingsScreen from '@/features/settings/account/screens/AccountSettingsScreen';
-import * as keyboardLayout from '@/components/layout/keyboardLayout';
+
+jest.mock('react-native/Libraries/Components/Keyboard/KeyboardAvoidingView', () => ({
+  __esModule: true,
+  default: ({ children, testID, ...props }: import('react-native').KeyboardAvoidingViewProps) => {
+    const ReactModule = require('react') as typeof import('react');
+    const NativeView = require('react-native/Libraries/Components/View/View').default;
+    return ReactModule.createElement(
+      NativeView,
+      { ...props, testID: testID ?? 'keyboard-avoiding-view' },
+      children,
+    );
+  },
+}));
 
 jest.setTimeout(15000);
 jest.mock('expo-router', () => ({ useRouter: () => ({ replace: jest.fn() }) }));
@@ -63,7 +75,6 @@ describe('Account settings screen', () => {
   });
 
   it('keeps account actions reachable above the iOS keyboard and safe bottom inset', async () => {
-    const keyboardLayoutSpy = jest.spyOn(keyboardLayout, 'getKeyboardLayout');
     const emailModal = await render(
       <ChangeEmailModal
         visible
@@ -75,7 +86,10 @@ describe('Account settings screen', () => {
       />,
     );
 
-    expect(keyboardLayoutSpy).toHaveBeenCalledWith('ios', 59, 52);
+    expect(emailModal.getByTestId('keyboard-avoiding-view').props).toEqual(expect.objectContaining({
+      behavior: 'padding',
+      keyboardVerticalOffset: 111,
+    }));
     expect(StyleSheet.flatten(emailModal.getByTestId('account-form-card').props.style)).toEqual(
       expect.objectContaining({
         maxHeight: Math.max(Dimensions.get('window').height - 59 - 34, 0),
@@ -86,6 +100,12 @@ describe('Account settings screen', () => {
       expect.objectContaining({ paddingBottom: 54 }),
     );
     expect(emailModal.getByText('Send link').parent?.props.accessibilityState).toEqual({ disabled: false });
+
+    await fireEvent(emailModal.getByTestId('account-form-header'), 'layout', {
+      nativeEvent: { layout: { x: 0, y: 0, width: 350, height: 66 } },
+    });
+
+    expect(emailModal.getByTestId('keyboard-avoiding-view').props.keyboardVerticalOffset).toBe(125);
 
     await emailModal.unmount();
 

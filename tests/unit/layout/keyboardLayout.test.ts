@@ -14,4 +14,11 @@ describe('getKeyboardLayout', () => {
       keyboardVerticalOffset: 0,
     });
   });
+
+  it('uses height without a synthetic offset on web', () => {
+    expect(getKeyboardLayout('web', 0, 52)).toEqual({
+      behavior: 'height',
+      keyboardVerticalOffset: 0,
+    });
+  });
 });

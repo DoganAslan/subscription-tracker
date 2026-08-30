@@ -50,6 +50,7 @@ export default function AddSubscriptionScreen() {
         
         {/* Navigation Header */}
         <View
+          testID="subscription-route-header"
           onLayout={({ nativeEvent }) => setHeaderHeight(nativeEvent.layout.height)}
           style={{ paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >

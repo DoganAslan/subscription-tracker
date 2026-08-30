@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Modal,
@@ -47,8 +47,9 @@ export function AccountFormModal({
 }: AccountFormModalProps) {
   const { height: windowHeight } = useWindowDimensions();
   const { top, bottom } = useSafeAreaInsets();
+  const [headerHeight, setHeaderHeight] = useState(ACCOUNT_FORM_HEADER_HEIGHT);
   const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'web' ? 'web' : 'android';
-  const keyboardLayout = getKeyboardLayout(platform, top, ACCOUNT_FORM_HEADER_HEIGHT);
+  const keyboardLayout = getKeyboardLayout(platform, top, headerHeight);
   const availableHeight = Math.max(windowHeight - top - bottom, 0);
 
   return (
@@ -66,7 +67,11 @@ export function AccountFormModal({
             },
           ]}
         >
-          <View style={styles.header}>
+          <View
+            testID="account-form-header"
+            onLayout={({ nativeEvent }) => setHeaderHeight(nativeEvent.layout.height)}
+            style={styles.header}
+          >
             <View style={styles.copy}>
               <Text style={[styles.title, { color: danger ? '#EF4444' : colors.text }]}>{title}</Text>
               <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{subtitle}</Text>

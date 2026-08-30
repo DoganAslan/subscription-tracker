@@ -109,7 +109,7 @@ export function SubscriptionForm({
 
   return (
     <FormProvider {...form}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {children}
         <BasicSubscriptionSection
           isEdit={isEdit}
