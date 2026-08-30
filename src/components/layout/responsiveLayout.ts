@@ -27,3 +27,8 @@ export const getTabBarGeometry = (
 
   return { availableWidth, outerMargin };
 };
+
+export const getTabBarIndicatorTarget = (
+  targetIndex: number,
+  tabBarState: { tabWidth: number },
+) => targetIndex * tabBarState.tabWidth;

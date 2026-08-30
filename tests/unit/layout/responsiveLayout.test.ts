@@ -1,4 +1,8 @@
-import { getResponsiveLayout, getTabBarGeometry } from '@/components/layout/responsiveLayout';
+import {
+  getResponsiveLayout,
+  getTabBarGeometry,
+  getTabBarIndicatorTarget,
+} from '@/components/layout/responsiveLayout';
 
 describe('getResponsiveLayout', () => {
   it('uses one column and compact gutters on a narrow iPhone', () => {
@@ -32,5 +36,17 @@ describe('getTabBarGeometry', () => {
 
   it('caps the floating bar on iPad', () => {
     expect(getTabBarGeometry(1366, 0, 0).availableWidth).toBe(1180);
+  });
+});
+
+describe('getTabBarIndicatorTarget', () => {
+  it('uses the current tab width after a resize', () => {
+    const tabBarState = { tabWidth: 73 };
+
+    expect(getTabBarIndicatorTarget(3, tabBarState)).toBe(219);
+
+    tabBarState.tabWidth = 200;
+
+    expect(getTabBarIndicatorTarget(3, tabBarState)).toBe(600);
   });
 });

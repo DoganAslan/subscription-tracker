@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@/context/LanguageContext';
 import { SubscriptionFeedProvider } from '@/features/subscriptions/application/SubscriptionFeedProvider';
 import { WidgetSyncBridge } from '@/services/background/WidgetSyncBridge';
-import { getTabBarGeometry } from '@/components/layout/responsiveLayout';
+import { getTabBarGeometry, getTabBarIndicatorTarget } from '@/components/layout/responsiveLayout';
 
 function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
   const { colors, isDark } = useTheme();
@@ -62,7 +62,7 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
 
   React.useEffect(() => {
     Animated.spring(slideAnim, {
-      toValue: activeIndex * tabWidth,
+      toValue: getTabBarIndicatorTarget(activeIndex, { tabWidth }),
       tension: 340,
       friction: 22,
       useNativeDriver: false,
@@ -89,7 +89,7 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
           triggerHaptic('selection');
         }
         Animated.spring(slideAnim, {
-          toValue: targetIndex * tabWidth,
+          toValue: getTabBarIndicatorTarget(targetIndex, tabBarStateRef.current),
           tension: 350,
           friction: 22,
           useNativeDriver: false,
@@ -103,7 +103,7 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
           triggerHaptic('selection');
         }
         Animated.spring(slideAnim, {
-          toValue: targetIndex * tabWidth,
+          toValue: getTabBarIndicatorTarget(targetIndex, tabBarStateRef.current),
           tension: 350,
           friction: 22,
           useNativeDriver: false,
