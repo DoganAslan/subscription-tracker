@@ -22,13 +22,13 @@ export default function SubscriptionListScreen() {
       style={[styles.container, { backgroundColor: colors.background, paddingTop: screenTopSpacing }]}
       edges={['top', 'left', 'right']}
     >
-      <ResponsiveContent testID="subscriptions-responsive-content" style={styles.responsiveContent}>
+      <ResponsiveContent>
         <View style={styles.headerRow}>
           <Header title={t.subscriptionsPage?.title || 'My Subscriptions'} />
         </View>
-
-        <SubscriptionList />
       </ResponsiveContent>
+
+      <SubscriptionList />
 
       {/* Floating Action Button */}
       <TouchableOpacity
@@ -47,9 +47,6 @@ export default function SubscriptionListScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  responsiveContent: {
     flex: 1,
   },
   headerRow: {

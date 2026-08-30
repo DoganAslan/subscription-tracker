@@ -11,6 +11,7 @@ import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { calculateMonthlyCosts } from '@/utils/calculations';
 import { triggerHaptic } from '@/utils/haptics';
+import { ResponsiveContent } from '@/components/layout/ResponsiveContent';
 
 export function SubscriptionList() {
   const { t, currentLanguage } = useTranslation();
@@ -73,21 +74,22 @@ export function SubscriptionList() {
   }
 
   return (
-    <FlatList
-      data={filteredSubscriptions}
-      keyExtractor={(item, index) => item.id || `sub-list-${index}`}
-      renderItem={({ item }) => <SubscriptionCard subscription={item} />}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 180 }}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl 
-          refreshing={isRefetching} 
-          onRefresh={refetch}
-          tintColor={colors.primary}
-        />
-      }
-      ListHeaderComponent={
-        <View style={{ gap: 16, marginBottom: 16 }}>
+    <ResponsiveContent testID="subscriptions-responsive-content" style={styles.responsiveContent}>
+      <FlatList
+        data={filteredSubscriptions}
+        keyExtractor={(item, index) => item.id || `sub-list-${index}`}
+        renderItem={({ item }) => <SubscriptionCard subscription={item} />}
+        contentContainerStyle={{ paddingBottom: 180 }}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={colors.primary}
+          />
+        }
+        ListHeaderComponent={
+          <View style={{ gap: 16, marginBottom: 16 }}>
           {/* STATS HEADER CARD */}
           <View style={[styles.summaryBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.summaryCopy}>
@@ -164,28 +166,32 @@ export function SubscriptionList() {
 
           {/* Shared Vault Family Card */}
           <SharedVaultCard subscriptions={subscriptions || []} />
-        </View>
-      }
-      ListEmptyComponent={
-        <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Ionicons name="receipt-outline" size={44} color={colors.textSecondary} style={{ marginBottom: 10 }} />
-          <Text style={[styles.emptyTitle, { color: colors.text }]}>
-            {searchQuery.trim().length > 0 ? 'No Subscriptions Found' : 'No Subscriptions'}
-          </Text>
-          <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            {searchQuery.trim().length > 0
-              ? `No items match "${searchQuery}"`
-              : activeFilter === 'splits' 
-                ? 'No split subscriptions found.'
-                : 'Add your first subscription using the button below!'}
-          </Text>
-        </View>
-      }
-    />
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Ionicons name="receipt-outline" size={44} color={colors.textSecondary} style={{ marginBottom: 10 }} />
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              {searchQuery.trim().length > 0 ? 'No Subscriptions Found' : 'No Subscriptions'}
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              {searchQuery.trim().length > 0
+                ? `No items match "${searchQuery}"`
+                : activeFilter === 'splits'
+                  ? 'No split subscriptions found.'
+                  : 'Add your first subscription using the button below!'}
+            </Text>
+          </View>
+        }
+      />
+    </ResponsiveContent>
   );
 }
 
 const styles = StyleSheet.create({
+  responsiveContent: {
+    flex: 1,
+  },
   summaryBanner: {
     borderRadius: 20,
     padding: 18,
