@@ -13,3 +13,17 @@ export const getResponsiveLayout = (width: number): ResponsiveLayout => ({
   columns: width >= 768 ? 2 : 1,
   contentMaxWidth: 1180,
 });
+
+export const getTabBarGeometry = (
+  windowWidth: number,
+  leftInset: number,
+  rightInset: number,
+) => {
+  const outerMargin = 12;
+  const availableWidth = Math.min(
+    1180,
+    Math.max(0, windowWidth - leftInset - rightInset - outerMargin * 2),
+  );
+
+  return { availableWidth, outerMargin };
+};

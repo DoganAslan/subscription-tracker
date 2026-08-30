@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet, Animated, PanResponder, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Animated, PanResponder, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { triggerHaptic } from '@/utils/haptics';
@@ -8,13 +8,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from '@/context/LanguageContext';
 import { SubscriptionFeedProvider } from '@/features/subscriptions/application/SubscriptionFeedProvider';
 import { WidgetSyncBridge } from '@/services/background/WidgetSyncBridge';
+import { getTabBarGeometry } from '@/components/layout/responsiveLayout';
 
 function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
   const { colors, isDark } = useTheme();
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
+  const { availableWidth, outerMargin } = getTabBarGeometry(windowWidth, insets.left, insets.right);
   const bottomMargin = Math.max(insets.bottom + 6, 16);
-  const leftMargin = Math.max(insets.left + 8, 16);
-  const rightMargin = Math.max(insets.right + 8, 16);
+  const safeAreaWidth = Math.max(0, windowWidth - insets.left - insets.right);
+  const tabBarLeft = insets.left + Math.max(outerMargin, (safeAreaWidth - availableWidth) / 2);
   // This is intentionally explicit: custom tab bars receive every mounted route,
   // even when Expo Router hides its href from the default tab bar.
   const primaryRouteNames = ['index', 'subscriptions', 'analytics', 'calendar', 'settings'];
@@ -25,13 +28,37 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
   const totalTabs = visibleRoutes.length;
   const activeIndex = Math.max(0, visibleRoutes.findIndex((route: any) => route.key === activeRouteKey));
 
-  const [containerWidth, setContainerWidth] = useState(Dimensions.get('window').width - leftMargin - rightMargin);
+  const [containerWidth, setContainerWidth] = useState(availableWidth);
   const tabWidth = containerWidth / Math.max(1, totalTabs);
 
   const slideAnim = useRef(new Animated.Value(activeIndex * tabWidth)).current;
   const lastHoveredIndex = useRef(activeIndex);
   const containerRef = useRef<View>(null);
-  const [containerPageX, setContainerPageX] = useState(leftMargin);
+  const [containerPageX, setContainerPageX] = useState(tabBarLeft);
+  const tabBarStateRef = useRef({
+    activeIndex,
+    containerPageX,
+    navigation,
+    state,
+    tabWidth,
+    totalTabs,
+    visibleRoutes,
+  });
+
+  tabBarStateRef.current = {
+    activeIndex,
+    containerPageX,
+    navigation,
+    state,
+    tabWidth,
+    totalTabs,
+    visibleRoutes,
+  };
+
+  React.useEffect(() => {
+    setContainerWidth(availableWidth);
+    setContainerPageX(tabBarLeft);
+  }, [availableWidth, tabBarLeft]);
 
   React.useEffect(() => {
     Animated.spring(slideAnim, {
@@ -44,9 +71,10 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
   }, [activeIndex, tabWidth]);
 
   const getTargetIndexFromPageX = (pageX: number) => {
-    const relativeX = pageX - containerPageX;
-    const idx = Math.min(Math.max(0, Math.floor(relativeX / tabWidth)), totalTabs - 1);
-    return isNaN(idx) ? activeIndex : idx;
+    const current = tabBarStateRef.current;
+    const relativeX = pageX - current.containerPageX;
+    const idx = Math.min(Math.max(0, Math.floor(relativeX / current.tabWidth)), current.totalTabs - 1);
+    return isNaN(idx) ? current.activeIndex : idx;
   };
 
   const panResponder = useRef(
@@ -84,19 +112,20 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
       onPanResponderRelease: (evt) => {
         const pageX = evt.nativeEvent.pageX || (evt.nativeEvent as any).clientX || 0;
         const finalIndex = getTargetIndexFromPageX(pageX);
-        const route = visibleRoutes[finalIndex];
-        const routeIndex = state.routes.findIndex((item: any) => item.key === route?.key);
-        const isFocused = state.index === routeIndex;
+        const current = tabBarStateRef.current;
+        const route = current.visibleRoutes[finalIndex];
+        const routeIndex = current.state.routes.findIndex((item: any) => item.key === route?.key);
+        const isFocused = current.state.index === routeIndex;
 
         if (route) {
-          const event = navigation.emit({
+          const event = current.navigation.emit({
             type: 'tabPress',
             target: route.key,
             canPreventDefault: true,
           });
 
           if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
+            current.navigation.navigate(route.name);
           }
         }
       },
@@ -110,8 +139,8 @@ function LiquidGlassTabBar({ state, descriptors, navigation }: any) {
         styles.liquidTabBarContainer,
         {
           bottom: bottomMargin,
-          left: leftMargin,
-          right: rightMargin,
+          left: tabBarLeft,
+          width: availableWidth,
           backgroundColor: isDark ? 'rgba(15, 23, 42, 0.92)' : 'rgba(255, 255, 255, 0.92)',
           borderColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(0, 0, 0, 0.08)',
           shadowColor: isDark ? '#000000' : '#3B82F6',
@@ -276,9 +305,6 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   liquidTabBarContainer: {
     position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
     height: 58,
     borderRadius: 28,
     borderWidth: 1,
