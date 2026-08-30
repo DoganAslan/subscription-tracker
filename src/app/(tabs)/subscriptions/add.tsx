@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getKeyboardLayout } from '@/components/layout/keyboardLayout';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
 import { useAddSubscription } from '@/features/subscriptions/hooks/useSubscriptions';
 import { useRouter } from 'expo-router';
@@ -10,12 +11,18 @@ import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from '@/context/LanguageContext';
 
+const DEFAULT_HEADER_HEIGHT = 52;
+
 export default function AddSubscriptionScreen() {
   const router = useRouter();
   const { mutateAsync: addSubscription, isPending } = useAddSubscription();
   const { colors } = useTheme();
   const { t, currentLanguage } = useTranslation();
+  const { top, bottom } = useSafeAreaInsets();
+  const [headerHeight, setHeaderHeight] = React.useState(DEFAULT_HEADER_HEIGHT);
   const isTurkish = currentLanguage === 'tr';
+  const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'web' ? 'web' : 'android';
+  const keyboardLayout = getKeyboardLayout(platform, top, headerHeight);
 
   const handleGoBack = () => {
     router.replace('/(tabs)/subscriptions');
@@ -35,11 +42,17 @@ export default function AddSubscriptionScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={['top', 'left', 'right']}
+    >
+      <KeyboardAvoidingView {...keyboardLayout} style={{ flex: 1 }}>
         
         {/* Navigation Header */}
-        <View style={{ paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <View
+          onLayout={({ nativeEvent }) => setHeaderHeight(nativeEvent.layout.height)}
+          style={{ paddingHorizontal: 16, paddingVertical: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+        >
           <TouchableOpacity onPress={handleGoBack} style={{ padding: 4 }}>
              <Ionicons name="close" size={28} color={colors.text} />
           </TouchableOpacity>
@@ -54,7 +67,7 @@ export default function AddSubscriptionScreen() {
           <View style={{ width: 28 }} />
         </View>
 
-        <View style={{ flex: 1 }}>
+        <View testID="subscription-form-safe-content" style={{ flex: 1, paddingBottom: bottom }}>
           <SubscriptionForm 
             onSubmit={handleSubmit} 
             isLoading={isPending} 

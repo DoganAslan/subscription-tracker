@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +21,9 @@ import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { chatWithSubmateAi, ChatMessage } from '@/services/ai/gemini';
 import { triggerHaptic } from '@/utils/haptics';
 import { SafeMarkdownText } from '@/components/common/SafeMarkdownText';
+import { getKeyboardLayout } from '@/components/layout/keyboardLayout';
+
+const DEFAULT_HEADER_HEIGHT = 52;
 
 interface Props {
   visible: boolean;
@@ -27,7 +31,8 @@ interface Props {
 }
 
 export function AiChatModal({ visible, onClose }: Props) {
-  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const { top, bottom } = useSafeAreaInsets();
   const { colors } = useTheme();
   const { currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
@@ -36,6 +41,7 @@ export function AiChatModal({ visible, onClose }: Props) {
 
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [headerHeight, setHeaderHeight] = useState(DEFAULT_HEADER_HEIGHT);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome-1',
@@ -48,6 +54,9 @@ export function AiChatModal({ visible, onClose }: Props) {
   ]);
 
   const scrollViewRef = useRef<ScrollView>(null);
+  const platform = Platform.OS === 'ios' ? 'ios' : Platform.OS === 'web' ? 'web' : 'android';
+  const keyboardLayout = getKeyboardLayout(platform, top, headerHeight);
+  const availableHeight = Math.max(windowHeight - top - bottom, 0);
 
   const quickPrompts = isTurkish
     ? [
@@ -123,12 +132,18 @@ export function AiChatModal({ visible, onClose }: Props) {
         edges={['top', 'left', 'right']}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-          style={[styles.container, { backgroundColor: colors.background }]}
+          testID="ai-chat-keyboard-view"
+          {...keyboardLayout}
+          style={[
+            styles.container,
+            { backgroundColor: colors.background, maxHeight: availableHeight },
+          ]}
         >
         {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <View
+          onLayout={({ nativeEvent }) => setHeaderHeight(nativeEvent.layout.height)}
+          style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}
+        >
           <View style={styles.headerTitleRow}>
             <View style={styles.aiBadgeIcon}>
               <Ionicons name="sparkles" size={18} color="#8B5CF6" />
@@ -150,10 +165,12 @@ export function AiChatModal({ visible, onClose }: Props) {
 
         {/* Chat history */}
         <ScrollView
+          testID="ai-chat-scroll"
           ref={scrollViewRef}
           style={styles.chatScroll}
           contentContainerStyle={styles.chatContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.conversation}>
           {messages.map(msg => {
@@ -225,12 +242,13 @@ export function AiChatModal({ visible, onClose }: Props) {
 
         {/* Input Bar */}
         <View
+          testID="ai-chat-input-bar"
           style={[
             styles.inputBarContainer,
             {
               backgroundColor: colors.surface,
               borderTopColor: colors.border,
-              paddingBottom: Math.max(insets.bottom + 6, 12),
+              paddingBottom: Math.max(bottom + 6, 12),
             },
           ]}
         >

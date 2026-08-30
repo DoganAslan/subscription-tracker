@@ -94,6 +94,18 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'subscription-1' }),
 }));
 
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children, style }: {
+    children: React.ReactNode;
+    style?: import('react-native').StyleProp<import('react-native').ViewStyle>;
+  }) => {
+    const ReactModule = require('react') as typeof import('react');
+    const { View } = require('react-native') as typeof import('react-native');
+    return ReactModule.createElement(View, { style }, children);
+  },
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 jest.mock('@/features/subscriptions/hooks/useSubscriptions', () => ({
   useAddSubscription: () => mockAddMutation,
   useUpdateSubscription: () => mockUpdateMutation,
