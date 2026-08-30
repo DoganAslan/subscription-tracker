@@ -7,6 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { Ionicons } from '@expo/vector-icons';
 import { triggerHaptic } from '@/utils/haptics';
+import { ResponsiveContent } from '@/components/layout/ResponsiveContent';
 
 export default function SubscriptionListScreen() {
   const router = useRouter();
@@ -21,11 +22,13 @@ export default function SubscriptionListScreen() {
       style={[styles.container, { backgroundColor: colors.background, paddingTop: screenTopSpacing }]}
       edges={['top', 'left', 'right']}
     >
-      <View style={styles.headerRow}>
-        <Header title={t.subscriptionsPage?.title || 'My Subscriptions'} />
-      </View>
+      <ResponsiveContent testID="subscriptions-responsive-content" style={styles.responsiveContent}>
+        <View style={styles.headerRow}>
+          <Header title={t.subscriptionsPage?.title || 'My Subscriptions'} />
+        </View>
 
-      <SubscriptionList />
+        <SubscriptionList />
+      </ResponsiveContent>
 
       {/* Floating Action Button */}
       <TouchableOpacity
@@ -46,8 +49,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  responsiveContent: {
+    flex: 1,
+  },
   headerRow: {
-    paddingHorizontal: 16,
     marginBottom: 8,
   },
   fabButton: {

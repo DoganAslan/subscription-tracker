@@ -180,6 +180,12 @@ describe('Dashboard screen boundary', () => {
     expect(DashboardRoute).toBe(DashboardScreen);
   });
 
+  it('renders the main content inside the shared responsive shell', async () => {
+    const result = await render(<DashboardScreen />);
+
+    expect(result.getByTestId('dashboard-responsive-content')).toBeTruthy();
+  });
+
   it('filters subscription output from the search field', async () => {
     const result = await render(<DashboardScreen />);
 

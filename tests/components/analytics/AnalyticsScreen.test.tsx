@@ -79,6 +79,12 @@ describe('Analytics screen boundary', () => {
     expect(AnalyticsRoute).toBe(AnalyticsScreen);
   });
 
+  it('renders the main content inside the shared responsive shell', async () => {
+    const result = await render(<AnalyticsScreen />);
+
+    expect(result.getByTestId('analytics-responsive-content')).toBeTruthy();
+  });
+
   it('keeps the empty state action reachable', async () => {
     const result = await render(<AnalyticsScreen />);
     fireEvent.press(result.getByText('Add subscription'));

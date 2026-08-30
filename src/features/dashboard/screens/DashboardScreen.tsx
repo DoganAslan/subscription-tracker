@@ -39,6 +39,7 @@ import { DashboardQuickActions } from '@/features/dashboard/components/Dashboard
 import { DashboardAlerts } from '@/features/dashboard/components/DashboardAlerts';
 import { SpendingOverview } from '@/features/dashboard/components/SpendingOverview';
 import { DashboardOverlays } from '@/features/dashboard/components/DashboardOverlays';
+import { ResponsiveContent } from '@/components/layout/ResponsiveContent';
 
 const PROFILE_NAME_KEY = '@profile_name';
 
@@ -161,24 +162,24 @@ export default function DashboardScreen() {
       style={[styles.safeArea, { backgroundColor: colors.background, paddingTop: screenTopSpacing }]}
       edges={['top', 'left', 'right']}
     >
-      <FlatList
-        data={listData}
-        keyExtractor={(item, index) => item.id || `sub-${index}`}
-        renderItem={({ item }) => (
-          <SubscriptionCard subscription={item} compact={true} />
-        )}
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingBottom: 120,
-          gap: 10,
-        }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
-        }
-        ListHeaderComponent={
-          <View style={{ gap: 20, marginBottom: 16 }}>
+      <ResponsiveContent testID="dashboard-responsive-content" style={styles.responsiveContent}>
+        <FlatList
+          data={listData}
+          keyExtractor={(item, index) => item.id || `sub-${index}`}
+          renderItem={({ item }) => (
+            <SubscriptionCard subscription={item} compact={true} />
+          )}
+          style={{ flex: 1 }}
+          contentContainerStyle={{
+            paddingBottom: 120,
+            gap: 10,
+          }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} />
+          }
+          ListHeaderComponent={
+            <View style={{ gap: 20, marginBottom: 16 }}>
             <DashboardHeader
               colors={colors}
               greeting={getGreeting()}
@@ -253,11 +254,11 @@ export default function DashboardScreen() {
                 <Text style={styles.seeAllText}>{isTurkish ? 'Tümünü Gör' : 'See all'}</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        }
-        ListEmptyComponent={
-          isSearching ? (
-            <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            </View>
+          }
+          ListEmptyComponent={
+            isSearching ? (
+              <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="search-outline" size={44} color={colors.textSecondary} style={{ marginBottom: 10 }} />
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
                 {isTurkish ? 'Sonuç Bulunamadı' : 'No Results Found'}
@@ -272,9 +273,9 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.emptyButtonText}>{isTurkish ? 'Aramayı Temizle' : 'Clear Search'}</Text>
               </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              </View>
+            ) : (
+              <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="receipt-outline" size={48} color={colors.textSecondary} style={{ marginBottom: 12 }} />
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
                 {isTurkish ? 'Henüz Abonelik Yok' : 'No Subscriptions Found'}
@@ -289,10 +290,11 @@ export default function DashboardScreen() {
               >
                 <Text style={styles.emptyButtonText}>{isTurkish ? '+ Abonelik Ekle' : '+ Add Subscription'}</Text>
               </TouchableOpacity>
-            </View>
-          )
-        }
-      />
+              </View>
+            )
+          }
+        />
+      </ResponsiveContent>
 
       <DashboardOverlays
         colors={colors}
@@ -320,6 +322,9 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   safeArea: {
+    flex: 1,
+  },
+  responsiveContent: {
     flex: 1,
   },
   topHeader: {

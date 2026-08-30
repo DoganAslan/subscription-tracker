@@ -31,6 +31,7 @@ jest.mock('@/utils/haptics', () => ({ triggerHaptic: jest.fn() }));
 describe('Settings screen boundary', () => {
   beforeEach(() => { mockPush.mockReset(); mockReplace.mockReset(); mockSetBiometrics.mockReset(); mockSignOut.mockClear(); });
   it('keeps the Expo route as the feature-screen facade', () => expect(SettingsRoute).toBe(SettingsScreen));
+  it('renders the main content inside the shared responsive shell', async () => { const result = await render(<SettingsScreen />); expect(result.getByTestId('settings-responsive-content')).toBeTruthy(); });
   it.each([
     ['Account & password', '/(tabs)/settings/account'],
     ['About SubMate', '/(tabs)/settings/about'],

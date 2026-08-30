@@ -73,6 +73,12 @@ describe('Calendar screen boundary', () => {
     expect(CalendarRoute).toBe(CalendarScreen);
   });
 
+  it('renders the main content inside the shared responsive shell', async () => {
+    const result = await render(<CalendarScreen initialDate={new Date(2026, 7, 15, 12)} />);
+
+    expect(result.getByTestId('calendar-responsive-content')).toBeTruthy();
+  });
+
   it('moves between months and exposes the selected day payment', async () => {
     const result = await render(<CalendarScreen initialDate={new Date(2026, 7, 15, 12)} />);
 

@@ -14,6 +14,7 @@ import { CalendarHeader } from '@/features/calendar/components/CalendarHeader';
 import { MonthNavigator } from '@/features/calendar/components/MonthNavigator';
 import { CalendarGrid } from '@/features/calendar/components/CalendarGrid';
 import { PaymentDayList } from '@/features/calendar/components/PaymentDayList';
+import { ResponsiveContent } from '@/components/layout/ResponsiveContent';
 
 const WEEK_DAYS = {
   en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
@@ -81,39 +82,40 @@ export default function CalendarScreen({ initialDate }: CalendarScreenProps = {}
     >
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <CalendarHeader colors={colors} isTurkish={isTurkish} activeCount={activeCount} />
-        <MonthNavigator
-          colors={colors}
-          isTurkish={isTurkish}
-          title={`${localizedMonthName} ${currentYear}`}
-          currencySymbol={currencySymbol}
-          monthlyTotal={monthlyTotal}
-          onPrevious={handlePrevMonth}
-          onNext={handleNextMonth}
-          onToday={() => setSelectedDate(new Date())}
-        />
-        <CalendarGrid
-          colors={colors}
-          weekDays={weekDays}
-          days={calendarDays}
-          selectedDay={selectedDate.getDate()}
-          paymentCountByDay={paymentDaysMap}
-          onSelectDay={handleDaySelect}
-        />
-        <PaymentDayList
-          colors={colors}
-          isTurkish={isTurkish}
-          selectedDay={selectedDate.getDate()}
-          monthName={localizedMonthName}
-          payments={dailyPayments}
-          baseCurrency={baseCurrency}
-          currencySymbol={currencySymbol}
-          categoryNames={categoryNames}
-          onOpenSubscription={handleOpenSubscription}
-        />
+        <ResponsiveContent testID="calendar-responsive-content" style={styles.scrollContent}>
+          <CalendarHeader colors={colors} isTurkish={isTurkish} activeCount={activeCount} />
+          <MonthNavigator
+            colors={colors}
+            isTurkish={isTurkish}
+            title={`${localizedMonthName} ${currentYear}`}
+            currencySymbol={currencySymbol}
+            monthlyTotal={monthlyTotal}
+            onPrevious={handlePrevMonth}
+            onNext={handleNextMonth}
+            onToday={() => setSelectedDate(new Date())}
+          />
+          <CalendarGrid
+            colors={colors}
+            weekDays={weekDays}
+            days={calendarDays}
+            selectedDay={selectedDate.getDate()}
+            paymentCountByDay={paymentDaysMap}
+            onSelectDay={handleDaySelect}
+          />
+          <PaymentDayList
+            colors={colors}
+            isTurkish={isTurkish}
+            selectedDay={selectedDate.getDate()}
+            monthName={localizedMonthName}
+            payments={dailyPayments}
+            baseCurrency={baseCurrency}
+            currencySymbol={currencySymbol}
+            categoryNames={categoryNames}
+            onOpenSubscription={handleOpenSubscription}
+          />
+        </ResponsiveContent>
       </ScrollView>
     </SafeAreaView>
   );
@@ -125,7 +127,6 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   scrollContent: {
     paddingBottom: 140,
