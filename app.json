@@ -3,14 +3,14 @@
     "name": "SubMate",
     "slug": "submate",
     "version": "1.5.1",
-    "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "submate",
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.doganaslan.submate",
       "buildNumber": "6",
-      "icon": "./assets/images/logo.png"
+      "icon": "./assets/images/logo.png",
+      "supportsTablet": true
     },
     "android": {
       "package": "com.doganaslan.submate",
