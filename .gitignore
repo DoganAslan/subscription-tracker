@@ -49,5 +49,6 @@ example
 android/.gradle
 android/build
 .gradle-user-home/
+.worktrees/
 
 .env
