@@ -1,9 +1,9 @@
 export const privacyPolicies: Record<string, string> = {
   tr: `# SubMate Gizlilik Politikası
 
-**Son güncelleme: 18 Ağustos 2026**
+**Son güncelleme: 6 Eylül 2026**
 
-Bu Gizlilik Politikası, Doğan Aslan tarafından sunulan SubMate mobil ve web uygulamasında kişisel verilerin nasıl işlendiğini açıklar. Metin; 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK), uygulanabildiği ölçüde Genel Veri Koruma Tüzüğü (GDPR) ve uygulama mağazalarının şeffaflık kuralları dikkate alınarak hazırlanmıştır.
+Bu Gizlilik Politikası, Doğan Aslan tarafından sunulan SubMate mobil uygulamasında kişisel verilerin nasıl işlendiğini açıklar. Metin; 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK), uygulanabildiği ölçüde Genel Veri Koruma Tüzüğü (GDPR) ve uygulama mağazalarının şeffaflık kuralları dikkate alınarak hazırlanmıştır.
 
 SubMate'i kullanmadan önce bu metni okuyun. Uygulamanın isteğe bağlı bir özelliğini kullanmanız, yalnızca o özelliğin çalışması için açıklanan veri işlemlerini başlatır.
 
@@ -23,7 +23,7 @@ SubMate, sunduğu işlevlere göre aşağıdaki veri kategorilerini işleyebilir
 - **Ödeme yöntemi etiketleri:** Kullanıcının verdiği kart adı, kart türü, yalnızca son dört hane, son kullanma ayı/yılı, para birimi ve isteğe bağlı harcama limiti. SubMate tam kart numarası, CVV/CVC, banka parolası veya gerçek banka işlem geçmişi istemez ve işlemez.
 - **Paylaşım bilgileri:** Masraf bölüşme özelliği kullanılırsa eklenen kişinin adı, telefon numarası, pay tutarı ve ödeme durumu. Başka bir kişiye ait bilgileri yalnızca gerekli yetkiniz veya uygun hukuki dayanağınız varsa eklemelisiniz.
 - **Tercihler ve cihazda tutulan veriler:** Dil, tema, biyometrik kilit tercihi, bildirim ayarları, bütçe hedefleri, ödeme geçmişi, araç takımı verileri, döviz kuru önbelleği ve uygulamanın çalışması için gerekli diğer yerel ayarlar.
-- **Bildirim verileri:** Bildirim izni, planlanmış yerel hatırlatmalar ve cihaz/uygulama bildirim belirteci. Hatırlatmalar ödeme veya yenileme bilgilerini cihazınızda gösterebilir.
+- **Bildirim verileri:** Bildirim izni ve planlanmış yerel hatırlatmalar. Hatırlatmalar ödeme veya yenileme bilgilerini cihazınızda gösterebilir.
 - **Yapay zekâ verileri:** Yapay zekâ sohbetini kullandığınızda yazdığınız mesaj, önceki sohbet bağlamı ve kişiselleştirilmiş yanıt için gerekli abonelik özeti Google Gemini Developer API'ye gönderilir. Fatura taramayı seçtiğinizde yalnızca seçtiğiniz görsel analiz için Gemini'ye gönderilir. Sohbet ve fatura görsellerine gereksiz kişisel, gizli, sağlık, kimlik veya tam ödeme kartı bilgisi eklemeyin.
 - **Teknik istek ve hata verileri:** Firebase, Google, Expo, Sentry veya döviz kuru hizmetlerine yapılan bağlantılar sırasında IP adresi, cihaz/uygulama tanımlayıcıları, işletim sistemi, uygulama sürümü, istek zamanı ve güvenlik/işletim günlükleri hizmet sağlayıcılar tarafından işlenebilir. Sentry etkinse varsayılan kişisel veri gönderimi kapalı tutulur ve hata kırıntılarındaki serbest biçimli veriler kaldırılır.
 
@@ -56,7 +56,7 @@ Veriler yalnızca özelliğin çalışması için gerekli olduğu ölçüde şu 
 
 - **Google Firebase:** Kimlik doğrulama, hesap yönetimi ve bulut veri saklama.
 - **Google Gemini Developer API:** Kullanıcının başlattığı yapay zekâ sohbeti ve fatura analizi.
-- **Expo ve cihaz işletim sistemi sağlayıcıları:** Bildirim belirteci oluşturma, yerel bildirimler, izinler ve platform hizmetleri.
+- **Expo ve cihaz işletim sistemi sağlayıcıları:** Yerel bildirimler, izinler ve platform hizmetleri.
 - **Sentry:** Etkinleştirilmişse, kişisel veri içermemesi hedeflenen hata kayıtları ve sınırlı performans teşhisi.
 - **ExchangeRate-API (open.er-api.com):** Güncel döviz kurlarını almak için seçilen baz para birimi ve bağlantının doğal sonucu olan teknik istek bilgileri.
 - **Google ile giriş:** Kullanıcı bu yöntemi seçerse Google hesap kimlik doğrulaması.
@@ -117,9 +117,9 @@ Bu politika veya kişisel verileriniz hakkında:
 
   en: `# SubMate Privacy Policy
 
-**Last updated: 18 August 2026**
+**Last updated: 6 September 2026**
 
-This Privacy Policy explains how personal data is handled in the SubMate mobile and web application provided by Doğan Aslan. It is intended to provide clear information in line with the Turkish Personal Data Protection Law No. 6698 (KVKK), the GDPR where applicable, and app-store transparency requirements.
+This Privacy Policy explains how personal data is handled in the SubMate mobile application provided by Doğan Aslan. It is intended to provide clear information in line with the Turkish Personal Data Protection Law No. 6698 (KVKK), the GDPR where applicable, and app-store transparency requirements.
 
 Please read this policy before using SubMate. Using an optional feature initiates only the processing described as necessary for that feature.
 
@@ -139,7 +139,7 @@ Depending on the features you use, SubMate may process:
 - **Payment-method labels:** A name you assign to a card, card type, last four digits only, expiry month/year, currency, and an optional spending limit. SubMate does not request or process full card numbers, CVV/CVC codes, banking passwords, or actual bank transaction history.
 - **Cost-sharing data:** If you use splitting features, the other person's name, phone number, share amount, and payment status. You must only add another person's information when you have permission or another valid legal basis to do so.
 - **Preferences and on-device data:** Language, theme, biometric-lock preference, notification settings, budget goals, payment history, widget data, exchange-rate cache, and other local settings needed to operate the app.
-- **Notification data:** Notification permission, scheduled local reminders, and a device/app notification token. Reminders may display payment or renewal details on your device.
+- **Notification data:** Notification permission and scheduled local reminders. Reminders may display payment or renewal details on your device.
 - **AI data:** When you use AI chat, your message, relevant conversation context, and the subscription summary needed to personalize the answer are sent to the Google Gemini Developer API. When you choose receipt scanning, only the image you select is sent to Gemini for analysis. Do not include unnecessary personal, confidential, health, identity, or complete payment-card information in AI prompts or receipt images.
 - **Technical request and error data:** When connecting to Firebase, Google, Expo, Sentry, or exchange-rate services, providers may process IP address, device/app identifiers, operating system, app version, request time, and security or operational logs. If Sentry is enabled, default PII collection is disabled and free-form breadcrumb data is removed.
 
@@ -172,7 +172,7 @@ Data may be disclosed only as needed to operate a selected feature:
 
 - **Google Firebase:** Authentication, account management, and cloud data storage.
 - **Google Gemini Developer API:** User-initiated AI chat and receipt analysis.
-- **Expo and operating-system providers:** Notification-token generation, local notifications, permissions, and platform services.
+- **Expo and operating-system providers:** Local notifications, permissions, and platform services.
 - **Sentry:** If enabled, error records and limited performance diagnostics designed not to include personal data.
 - **ExchangeRate-API (open.er-api.com):** The selected base currency and technical request information naturally generated by the connection.
 - **Google Sign-In:** Google account authentication when you choose this sign-in method.
@@ -235,9 +235,9 @@ For questions about this policy or your personal data:
 export const termsPolicies: Record<string, string> = {
   tr: `# SubMate Kullanım Koşulları
 
-**Yürürlük tarihi: 18 Ağustos 2026**
+**Yürürlük tarihi: 6 Eylül 2026**
 
-Bu Kullanım Koşulları, Doğan Aslan tarafından sunulan SubMate mobil ve web uygulamasını kullanımınızı düzenler. Hesap oluşturarak veya SubMate'i kullanarak bu Koşulları ve Gizlilik Politikasını okuduğunuzu ve kabul ettiğinizi belirtirsiniz. Kabul etmiyorsanız uygulamayı kullanmayın.
+Bu Kullanım Koşulları, Doğan Aslan tarafından sunulan SubMate mobil uygulamasını kullanımınızı düzenler. Hesap oluşturarak veya SubMate'i kullanarak bu Koşulları ve Gizlilik Politikasını okuduğunuzu ve kabul ettiğinizi belirtirsiniz. Kabul etmiyorsanız uygulamayı kullanmayın.
 
 ## 1. Hizmetin kapsamı
 
@@ -356,9 +356,9 @@ Bu Koşullar hakkındaki sorularınız için:
 
   en: `# SubMate Terms of Use
 
-**Effective date: 18 August 2026**
+**Effective date: 6 September 2026**
 
-These Terms of Use govern your use of the SubMate mobile and web application provided by Doğan Aslan. By creating an account or using SubMate, you acknowledge that you have read and accepted these Terms and the Privacy Policy. If you do not agree, do not use the app.
+These Terms of Use govern your use of the SubMate mobile application provided by Doğan Aslan. By creating an account or using SubMate, you acknowledge that you have read and accepted these Terms and the Privacy Policy. If you do not agree, do not use the app.
 
 ## 1. Scope of the service
 
