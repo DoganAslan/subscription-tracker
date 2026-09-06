@@ -5,6 +5,7 @@ import { Subscription } from '../firebase/types';
 import { app, functions } from '../firebase/config';
 import { convertCurrency } from '@/utils/currency';
 import { sanitizeAiPrompt } from '@/utils/securitySanitizer';
+import { AI_MAX_OUTPUT_TOKENS, requireCompleteAiText } from './responseGuard';
 
 const billingCycleSchema = z.enum([
   'weekly',
@@ -243,7 +244,7 @@ async function callFirebaseAiLogic(request: ChatRequest): Promise<string> {
         portfolioContext,
       ].join('\n'),
       generationConfig: {
-        maxOutputTokens: 1_000,
+        maxOutputTokens: AI_MAX_OUTPUT_TOKENS,
         thinkingConfig: { thinkingLevel: 'low' },
       },
     },
@@ -263,8 +264,10 @@ async function callFirebaseAiLogic(request: ChatRequest): Promise<string> {
   ].filter(Boolean).join('\n\n');
 
   const result = await model.generateContent(prompt);
-  const text = result.response.text().trim();
-  if (!text) throw new Error('AI returned an empty response.');
+  const text = requireCompleteAiText(
+    result.response.text(),
+    result.response.candidates?.[0]?.finishReason,
+  );
   return text.slice(0, 6_000);
 }
 

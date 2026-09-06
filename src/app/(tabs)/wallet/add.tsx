@@ -50,11 +50,11 @@ export default function AddCardScreen() {
         </View>
 
         <View style={{ flex: 1 }}>
-          <CardForm 
+          <CardForm
             key={formKey}
-            onSubmit={handleSubmit} 
-            isLoading={isPending} 
-            submitLabel={t.global?.saveChanges || 'Save Card'} 
+            onSubmit={handleSubmit}
+            isLoading={isPending}
+            submitLabel={t.global?.addCard || (t.global?.addVirtualCard ?? 'Add Card')}
           />
         </View>
       </KeyboardAvoidingView>
@@ -85,4 +85,3 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
-

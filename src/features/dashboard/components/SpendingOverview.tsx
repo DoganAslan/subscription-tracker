@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { ThemeColors } from '@/theme/colors';
 import type { DashboardCategoryBreakdown } from '../types';
+import { getCategoryLabel } from '@/utils/categoryMeta';
 
 type SpendingOverviewProps = {
   colors: ThemeColors;
@@ -63,7 +64,7 @@ export function SpendingOverview({
           {categories.map((category, index) => (
             <View key={category.category} style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }]} />
-              <Text style={[styles.legendLabel, { color: colors.textSecondary }]} numberOfLines={1}>{category.category}</Text>
+              <Text style={[styles.legendLabel, { color: colors.textSecondary }]} numberOfLines={2}>{getCategoryLabel(category.category, isTurkish)}</Text>
               <Text style={[styles.legendValue, { color: colors.text }]}>{category.percentage.toFixed(0)}%</Text>
             </View>
           ))}
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
   progressTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 4, backgroundColor: '#2563EB' },
   progressText: { fontSize: 12, fontWeight: '700', color: '#2563EB', marginTop: 4 },
-  legend: { width: 130, gap: 6 },
+  legend: { width: 145, gap: 8 },
   legendItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   legendDot: { width: 8, height: 8, borderRadius: 4, marginRight: 6 },
   legendLabel: { fontSize: 11, fontWeight: '500', flex: 1 },

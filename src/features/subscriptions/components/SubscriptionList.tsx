@@ -93,7 +93,7 @@ export function SubscriptionList() {
           {/* STATS HEADER CARD */}
           <View style={[styles.summaryBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.summaryCopy}>
-              <Text numberOfLines={1} style={[styles.summaryLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Toplam aylık harcama' : 'Total monthly spend'}</Text>
+              <Text numberOfLines={2} style={[styles.summaryLabel, { color: colors.textSecondary }]}>{isTurkish ? 'Toplam aylık harcama' : 'Total monthly spend'}</Text>
               <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.summaryAmount, { color: colors.text }]}>
                 {currencySymbol}{totalSpend.toFixed(2)}
               </Text>
@@ -172,14 +172,16 @@ export function SubscriptionList() {
           <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Ionicons name="receipt-outline" size={44} color={colors.textSecondary} style={{ marginBottom: 10 }} />
             <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {searchQuery.trim().length > 0 ? 'No Subscriptions Found' : 'No Subscriptions'}
+              {searchQuery.trim().length > 0
+                ? (isTurkish ? 'Abonelik bulunamadı' : 'No subscriptions found')
+                : (isTurkish ? 'Henüz abonelik yok' : 'No subscriptions')}
             </Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
               {searchQuery.trim().length > 0
-                ? `No items match "${searchQuery}"`
+                ? (isTurkish ? `“${searchQuery}” aramasıyla eşleşen abonelik yok.` : `No subscriptions match “${searchQuery}”.`)
                 : activeFilter === 'splits'
-                  ? 'No split subscriptions found.'
-                  : 'Add your first subscription using the button below!'}
+                  ? (isTurkish ? 'Paylaşılan abonelik bulunamadı.' : 'No shared subscriptions found.')
+                  : (isTurkish ? 'İlk aboneliğini aşağıdaki düğmeyle ekleyebilirsin.' : 'Add your first subscription using the button below.')}
             </Text>
           </View>
         }

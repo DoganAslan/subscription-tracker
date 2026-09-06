@@ -12,7 +12,20 @@
           "package_name": "com.doganaslan.submate"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "670611888099-b46qk7pome6porje0d27v6cmhveujq6r.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.doganaslan.submate",
+            "certificate_hash": "c14bbee91232e775a121c68f1420eb0720101678"
+          }
+        },
+        {
+          "client_id": "670611888099-lujo3psu2uan5fa8csdnc2o5blq5tque.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCvzeEMPTniMkea5cbVfPDRqFMVWqCgO8Q"
@@ -20,11 +33,15 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "670611888099-lujo3psu2uan5fa8csdnc2o5blq5tque.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
   ],
   "configuration_version": "1"
 }
-

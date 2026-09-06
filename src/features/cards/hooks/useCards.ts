@@ -5,6 +5,7 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/store/useAuthStore';
 import { triggerHaptic } from '@/utils/haptics';
 import { cardKeys } from '@/features/cards/application/cardKeys';
+import { useTranslation } from '@/context/LanguageContext';
 
 export { cardKeys } from '@/features/cards/application/cardKeys';
 
@@ -22,6 +23,8 @@ export function useCards() {
 export function useAddCard() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
+  const { currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
 
   return useMutation({
     mutationFn: async (data: Omit<Card, 'id' | 'createdAt' | 'updatedAt' | 'userId'>) => {
@@ -34,11 +37,11 @@ export function useAddCard() {
       if (user) {
         queryClient.invalidateQueries({ queryKey: cardKeys.list(user.uid) });
       }
-      Toast.show({ type: 'success', text1: 'Card Saved', position: 'top' });
+      Toast.show({ type: 'success', text1: isTurkish ? 'Kart kaydedildi' : 'Card saved', position: 'top' });
     },
     onError: (error) => {
       triggerHaptic('error');
-      Toast.show({ type: 'error', text1: 'Failed to add card', position: 'top' });
+      Toast.show({ type: 'error', text1: isTurkish ? 'Kart eklenemedi' : 'Could not add card', position: 'top' });
       console.error(error);
     }
   });
@@ -47,6 +50,8 @@ export function useAddCard() {
 export function useUpdateCard() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
+  const { currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Card> }) => {
@@ -59,11 +64,11 @@ export function useUpdateCard() {
       if (user) {
         queryClient.invalidateQueries({ queryKey: cardKeys.list(user.uid) });
       }
-      Toast.show({ type: 'success', text1: 'Card Updated', position: 'top' });
+      Toast.show({ type: 'success', text1: isTurkish ? 'Kart güncellendi' : 'Card updated', position: 'top' });
     },
     onError: (error) => {
       triggerHaptic('error');
-      Toast.show({ type: 'error', text1: 'Failed to update card', position: 'top' });
+      Toast.show({ type: 'error', text1: isTurkish ? 'Kart güncellenemedi' : 'Could not update card', position: 'top' });
       console.error(error);
     }
   });
@@ -72,6 +77,8 @@ export function useUpdateCard() {
 export function useDeleteCard() {
   const queryClient = useQueryClient();
   const user = useAuthStore(state => state.user);
+  const { currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -86,14 +93,13 @@ export function useDeleteCard() {
         // Since deleteCard also unlinks subscriptions, invalidate them too
         queryClient.invalidateQueries({ queryKey: ['subscriptions', 'list', user.uid] });
       }
-      Toast.show({ type: 'success', text1: 'Card Removed', position: 'top' });
+      Toast.show({ type: 'success', text1: isTurkish ? 'Kart kaldırıldı' : 'Card removed', position: 'top' });
     },
     onError: (error) => {
       triggerHaptic('error');
-      Toast.show({ type: 'error', text1: 'Failed to delete card', position: 'top' });
+      Toast.show({ type: 'error', text1: isTurkish ? 'Kart silinemedi' : 'Could not delete card', position: 'top' });
       console.error(error);
     }
   });
 }
-
 

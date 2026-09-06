@@ -10,6 +10,7 @@ import { Subscription } from '@/services/firebase/types';
 import { useRouter } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
 import { CategoryBadge } from '@/components/ui/CategoryBadge';
+import { getBillingCycleLabel, getCategoryLabel as getLocalizedCategoryLabel } from '@/utils/categoryMeta';
 
 interface Props {
   breakdown: { category: string; amount: number; percentage: number }[];
@@ -133,7 +134,7 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
                       {activeHoverItem ? (
                         <>
                           <Text style={[dynamicStyles.donutHoverCategory, { color: colors.primary }]} numberOfLines={1}>
-                            {(t.categories as any)?.[activeHoverItem.category] || activeHoverItem.category}
+                            {(t.categories as any)?.[activeHoverItem.category] || getLocalizedCategoryLabel(activeHoverItem.category, isTurkish)}
                           </Text>
                           <Text style={[dynamicStyles.donutHoverAmount, { color: colors.text }]}>
                             {activeHoverItem.amount.toFixed(0)} {baseCurrency}
@@ -219,7 +220,9 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
                   {isExpanded && (
                     <Animated.View entering={FadeInDown.duration(300)} style={dynamicStyles.subAppsContainer}>
                       <Text style={[dynamicStyles.expandedHeaderTitle, { color: colors.textSecondary }]}>
-                        {currentLanguage === 'tr' ? `${item.category} kategorisindeki ${categorySubs.length} abonelik:` : `${categorySubs.length} Apps in ${item.category}:`}
+                        {currentLanguage === 'tr'
+                          ? `${getLocalizedCategoryLabel(item.category, true)} kategorisindeki ${categorySubs.length} abonelik:`
+                          : `${categorySubs.length} subscriptions in ${getLocalizedCategoryLabel(item.category, false)}:`}
                       </Text>
 
                       {categorySubs.length === 0 ? (
@@ -243,7 +246,7 @@ export const CategoryBreakdownCard = React.memo(function CategoryBreakdownCard({
                                 <View>
                                   <Text style={[dynamicStyles.appNameText, { color: colors.text }]}>{sub.name}</Text>
                                   <Text style={[dynamicStyles.appCycleText, { color: colors.textSecondary }]}>
-                                    {sub.billingCycle || 'monthly'}
+                                    {getBillingCycleLabel(sub.billingCycle || 'monthly', isTurkish)}
                                   </Text>
                                 </View>
                               </View>

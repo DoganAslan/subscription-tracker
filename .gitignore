@@ -52,3 +52,14 @@ android/build
 .worktrees/
 
 .env
+
+# Android builds & packages
+*.apk
+*.aab
+*.idsig
+
+# Build & verification caches
+.eas-session/
+.expo-*-check/
+.gradle-user/
+.npm-cache/

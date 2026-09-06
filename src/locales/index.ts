@@ -98,6 +98,9 @@ export const LANGUAGES: Record<string, TranslationType> = {
       expiryMonth: 'Expiry Month (MM)',
       expiryYear: 'Expiry Year (YYYY)',
       cardColor: 'CARD COLOR',
+      monthlyLimit: 'Monthly card limit',
+      monthlyLimitPlaceholder: 'e.g. 5000',
+      subscriptionAdded: 'Subscription added',
       deleteCard: 'Delete Card',
       deleteCardConfirm: 'Are you sure you want to permanently delete {{name}}?',
       deleteCardTitle: 'Delete Card',
@@ -202,6 +205,9 @@ export const LANGUAGES: Record<string, TranslationType> = {
       expiryMonth: 'Son Kullanma Ayı (AA)',
       expiryYear: 'Son Kullanma Yılı (YYYY)',
       cardColor: 'KART RENGİ',
+      monthlyLimit: 'Aylık kart limiti',
+      monthlyLimitPlaceholder: 'Örn. 5000',
+      subscriptionAdded: 'Abonelik eklendi',
       deleteCard: 'Kartı Sil',
       deleteCardConfirm: '{{name}} kartını cüzdandan kalıcı olarak silmek istediğinize emin misiniz?',
       deleteCardTitle: 'Kartı Sil',
@@ -222,4 +228,3 @@ export const LANGUAGES: Record<string, TranslationType> = {
     }
   }
 };
-

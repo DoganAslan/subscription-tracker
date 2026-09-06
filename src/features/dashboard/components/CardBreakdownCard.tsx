@@ -8,6 +8,7 @@ import { convertCurrency, SUPPORTED_CURRENCIES } from '@/utils/currency';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { useRouter } from 'expo-router';
 import { triggerHaptic } from '@/utils/haptics';
+import { getBillingCycleLabel, getCategoryLabel } from '@/utils/categoryMeta';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -20,7 +21,8 @@ interface CardBreakdownCardProps {
 
 export const CardBreakdownCard: React.FC<CardBreakdownCardProps> = ({ cards, subscriptions }) => {
   const { colors, isDark } = useTheme();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
+  const isTurkish = currentLanguage === 'tr';
   const router = useRouter();
   const baseCurrency = useCurrencyStore(state => state.baseCurrency);
   const currencySymbol = SUPPORTED_CURRENCIES.find(c => c.code === baseCurrency)?.symbol || baseCurrency;
@@ -87,7 +89,7 @@ export const CardBreakdownCard: React.FC<CardBreakdownCardProps> = ({ cards, sub
               {t.analytics?.cardBreakdown || 'Card Spending Breakdown'}
             </Text>
             <Text numberOfLines={1} style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Monthly spending per payment card
+              {isTurkish ? 'Ödeme kartlarına göre aylık harcama' : 'Monthly spending per payment card'}
             </Text>
           </View>
         </View>
@@ -159,7 +161,7 @@ export const CardBreakdownCard: React.FC<CardBreakdownCardProps> = ({ cards, sub
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Text style={[styles.subCountText, { color: colors.textSecondary }]}>
-                      {item.subs.length} sub{item.subs.length === 1 ? '' : 's'} ({percentage.toFixed(0)}%)
+                      {isTurkish ? `${item.subs.length} abonelik` : `${item.subs.length} subscription${item.subs.length === 1 ? '' : 's'}`} ({percentage.toFixed(0)}%)
                     </Text>
                     <Ionicons 
                       name={isExpanded ? "chevron-up" : "chevron-down"} 
@@ -175,7 +177,7 @@ export const CardBreakdownCard: React.FC<CardBreakdownCardProps> = ({ cards, sub
                 <View style={[styles.accordionContent, { borderTopColor: colors.border }]}>
                   {item.subs.length === 0 ? (
                     <Text style={[styles.noSubsText, { color: colors.textSecondary }]}>
-                      No active subscriptions linked to this card yet.
+                      {isTurkish ? 'Bu karta bağlı aktif abonelik yok.' : 'No active subscriptions linked to this card yet.'}
                     </Text>
                   ) : (
                     item.subs.map((sub) => (
@@ -195,7 +197,7 @@ export const CardBreakdownCard: React.FC<CardBreakdownCardProps> = ({ cards, sub
                           <View>
                             <Text style={[styles.subName, { color: colors.text }]}>{sub.name}</Text>
                             <Text style={[styles.subCycle, { color: colors.textSecondary }]}>
-                              {sub.billingCycle} • {sub.category || 'General'}
+                              {getBillingCycleLabel(sub.billingCycle, isTurkish)} • {getCategoryLabel(sub.category || '', isTurkish)}
                             </Text>
                           </View>
                         </View>
@@ -204,7 +206,7 @@ export const CardBreakdownCard: React.FC<CardBreakdownCardProps> = ({ cards, sub
                           <Text style={[styles.subPrice, { color: colors.text }]}>
                             {sub.currency || 'TRY'} {sub.amount.toFixed(2)}
                           </Text>
-                          <Text style={[styles.subLinkHint, { color: colors.primary }]}>Details ›</Text>
+                          <Text style={[styles.subLinkHint, { color: colors.primary }]}>{isTurkish ? 'Detaylar ›' : 'Details ›'}</Text>
                         </View>
                       </TouchableOpacity>
                     ))

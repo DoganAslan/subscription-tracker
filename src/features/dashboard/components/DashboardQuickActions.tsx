@@ -22,7 +22,7 @@ export function DashboardQuickActions({ actions, colors, isTurkish, onPress }: D
   return (
     <View>
       <Text style={[styles.title, { color: colors.textSecondary }]}>
-        {isTurkish ? 'Hızlı İşlemler' : 'Quick Actions'}
+        {isTurkish ? 'HIZLI İŞLEMLER' : 'QUICK ACTIONS'}
       </Text>
       <View style={styles.grid}>
         {visibleActions.map(action => (
@@ -34,7 +34,7 @@ export function DashboardQuickActions({ actions, colors, isTurkish, onPress }: D
             <View style={[styles.icon, { backgroundColor: action.badgeColorBg }]}>
               <Ionicons name={action.icon as IconName} size={20} color={action.color} />
             </View>
-            <Text numberOfLines={1} style={[styles.label, { color: colors.text }]}>
+            <Text numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={[styles.label, { color: colors.text }]}>
               {isTurkish ? action.titleTr : action.titleEn}
             </Text>
           </SpringButton>
@@ -45,9 +45,9 @@ export function DashboardQuickActions({ actions, colors, isTurkish, onPress }: D
 }
 
 const styles = StyleSheet.create({
-  title: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 14, marginBottom: 8 },
+  title: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5, marginTop: 14, marginBottom: 8 },
   grid: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   button: { flex: 1, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, gap: 6, overflow: 'hidden' },
   icon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  label: { fontSize: 12, fontWeight: '700', flexShrink: 1, textAlign: 'center' },
+  label: { fontSize: 12, fontWeight: '700', flexShrink: 1, textAlign: 'center', minHeight: 30, textAlignVertical: 'center' },
 });

@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { SubscriptionCard } from '@/features/subscriptions/components/SubscriptionCard';
@@ -41,13 +40,11 @@ import { SpendingOverview } from '@/features/dashboard/components/SpendingOvervi
 import { DashboardOverlays } from '@/features/dashboard/components/DashboardOverlays';
 import { ResponsiveContent } from '@/components/layout/ResponsiveContent';
 
-const PROFILE_NAME_KEY = '@profile_name';
 
 export default function DashboardScreen() {
   const [liveRates, setLiveRates] = useState<ExchangeRates | null>(null);
   const [showBalance, setShowBalance] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [userName, setUserName] = useState<string>('');
   const [heroColors, setHeroColors] = useState<[string, string, string]>(['#2563EB', '#1D4ED8', '#1E40AF']);
   const [isHeroThemeModalVisible, setHeroThemeModalVisible] = useState(false);
   const [quickActions, setQuickActions] = useState<QuickActionItem[]>(ALL_QUICK_ACTIONS);
@@ -62,7 +59,8 @@ export default function DashboardScreen() {
   const { baseCurrency } = useCurrencyStore();
   const monthlyBudget = useBudgetStore(state => state.monthlyBudget);
   const user = useAuthStore(state => state.user);
-  const { profileImage } = useProfileStore();
+  const { profileImage, displayName } = useProfileStore();
+  const userName = displayName?.trim() || user?.displayName?.trim() || '';
   const router = useRouter();
   const { colors } = useTheme();
 
@@ -74,10 +72,6 @@ export default function DashboardScreen() {
     getSavedHeroGradient().then(setHeroColors);
     getSavedQuickActions().then(setQuickActions);
 
-    AsyncStorage.getItem(PROFILE_NAME_KEY).then(savedName => {
-      if (savedName) setUserName(savedName);
-      else setUserName(user?.displayName || '');
-    });
   }, [user]);
 
   const refreshNotificationBadge = useCallback(() => {
@@ -171,7 +165,7 @@ export default function DashboardScreen() {
           )}
           style={{ flex: 1 }}
           contentContainerStyle={{
-            paddingBottom: 120,
+            paddingBottom: 160,
             gap: 10,
           }}
           showsVerticalScrollIndicator={false}

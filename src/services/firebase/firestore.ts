@@ -3,6 +3,16 @@ import { db } from './config';
 import { getSubscriptionsCollection, getSubscriptionDoc, getCardsCollection, getCardDoc } from './collections';
 import { Subscription, Card } from './types';
 
+const omitUndefinedFields = <T extends Record<string, unknown>>(payload: T): T => {
+  Object.keys(payload).forEach(key => {
+    if (payload[key] === undefined) {
+      delete payload[key];
+    }
+  });
+
+  return payload;
+};
+
 export const UserService = {
   // Fetch user profile document from Firestore
   getUserProfile: async (userId: string) => {
@@ -91,12 +101,9 @@ export const SubscriptionService = {
       updatedAt: serverTimestamp(),
     };
     
-    // Catch any other potential undefined values and convert to null
-    Object.keys(payload).forEach(key => {
-      if ((payload as any)[key] === undefined) {
-        (payload as any)[key] = null;
-      }
-    });
+    // Omit absent optional values. Converting them to null can violate the
+    // Firestore schema (for example, usageLogDates must be a list if present).
+    omitUndefinedFields(payload);
 
     const docRef = await addDoc(getSubscriptionsCollection(), payload);
     return docRef.id;
@@ -111,12 +118,7 @@ export const SubscriptionService = {
       updatedAt: serverTimestamp(),
     };
 
-    // Catch any other potential undefined values and convert to null
-    Object.keys(payload).forEach(key => {
-      if ((payload as any)[key] === undefined) {
-        (payload as any)[key] = null;
-      }
-    });
+    omitUndefinedFields(payload);
 
     await updateDoc(docRef, payload);
   },

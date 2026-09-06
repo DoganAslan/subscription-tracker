@@ -155,7 +155,7 @@ jest.mock('@/store/useCurrencyStore', () => ({
 jest.mock('@/store/useAuthStore', () => ({
   useAuthStore: (selector: (state: { user: typeof mockUser }) => unknown) => selector({ user: mockUser }),
 }));
-jest.mock('@/store/useProfileStore', () => ({ useProfileStore: () => ({ profileImage: null }) }));
+jest.mock('@/store/useProfileStore', () => ({ useProfileStore: () => ({ profileImage: null, displayName: 'Cloud Name' }) }));
 jest.mock('@/utils/haptics', () => ({ triggerHaptic: jest.fn() }));
 jest.mock('@/services/notificationService', () => ({
   getUnreadNotificationCount: () => new Promise<never>(() => undefined),
@@ -178,6 +178,11 @@ describe('Dashboard screen boundary', () => {
 
   it('keeps the Expo route as the feature-screen facade', () => {
     expect(DashboardRoute).toBe(DashboardScreen);
+  });
+
+  it('uses the shared profile name even when legacy storage never resolves', async () => {
+    const result = await render(<DashboardScreen />);
+    expect(result.getByText(/, Cloud 👋/)).toBeTruthy();
   });
 
   it('renders the main content inside the shared responsive shell', async () => {

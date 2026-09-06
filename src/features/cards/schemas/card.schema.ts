@@ -8,10 +8,9 @@ export const cardSchema = z.object({
   expiryYear: z.number().min(new Date().getFullYear(), 'Year cannot be in the past').max(new Date().getFullYear() + 20, 'Invalid year'),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color code'),
   currency: z.enum(['TRY', 'USD', 'EUR', 'GBP']).default('TRY'),
+  monthlyLimit: z.number().nonnegative('Limit cannot be negative').max(1_000_000_000, 'Limit is too high').optional(),
   isPinned: z.boolean().default(false).optional(),
 });
 
 export type CardFormData = z.infer<typeof cardSchema>;
-
-
 

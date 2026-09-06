@@ -87,7 +87,7 @@ export function SubscriptionDateField({ name, label, doneLabel, formatDate, fall
       {Platform.OS === 'web'
         ? React.createElement('input', {
           ref: webInputRef,
-          testID: `${name}-web-input`,
+          'data-testid': `${name}-web-input`,
           type: 'date',
           value: localCalendarInputValue(selectedDate),
           onChange: (event: React.ChangeEvent<HTMLInputElement>) => {

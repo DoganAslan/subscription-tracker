@@ -65,4 +65,4 @@ export default function WalletScreen() {
   </SafeAreaView>;
 }
 
-const styles = StyleSheet.create({ container: { flex: 1 }, center: { flex: 1, justifyContent: 'center', alignItems: 'center' }, list: { paddingHorizontal: 20, paddingBottom: 140 } });
+const styles = StyleSheet.create({ container: { flex: 1 }, center: { flex: 1, justifyContent: 'center', alignItems: 'center' }, list: { paddingHorizontal: 20, paddingBottom: 180 } });

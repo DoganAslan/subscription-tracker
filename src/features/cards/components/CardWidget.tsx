@@ -133,7 +133,9 @@ export function CardWidget({ card, subscriptions, style, showPinToggle, onToggle
             <View style={styles.linkedBadge}>
               <Ionicons name="link-outline" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
               <Text style={styles.linkedBadgeText}>
-                {linkedSubs.length} Linked Sub{linkedSubs.length === 1 ? '' : 's'}
+                {isTurkish
+                  ? `${linkedSubs.length} bağlı abonelik`
+                  : `${linkedSubs.length} linked subscription${linkedSubs.length === 1 ? '' : 's'}`}
               </Text>
             </View>
           )}
@@ -144,10 +146,10 @@ export function CardWidget({ card, subscriptions, style, showPinToggle, onToggle
           <View style={{ marginTop: 8, marginBottom: 4 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
               <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 10, fontWeight: '700' }}>
-                Limit: {health.totalMonthlySpent.toFixed(0)} / {card.monthlyLimit} {card.currency || 'TRY'} ({health.usedPercentage}%)
+                {isTurkish ? 'Limit' : 'Limit'}: {health.totalMonthlySpent.toFixed(0)} / {card.monthlyLimit} {card.currency || 'TRY'} ({health.usedPercentage}%)
               </Text>
               {health.isNearLimit && (
-                <Text style={{ color: '#FDE047', fontSize: 10, fontWeight: '800' }}>⚠️ %80+ Yük</Text>
+                <Text style={{ color: '#FDE047', fontSize: 10, fontWeight: '800' }}>{isTurkish ? '⚠️ Limit uyarısı' : '⚠️ Near limit'}</Text>
               )}
             </View>
             <View style={{ width: '100%', height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.2)', overflow: 'hidden' }}>

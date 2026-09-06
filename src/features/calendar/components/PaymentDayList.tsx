@@ -3,6 +3,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { ThemeColors } from '@/theme/colors';
 import type { CalendarPayment } from '../types';
+import { getBillingCycleLabel, getCategoryLabel } from '@/utils/categoryMeta';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -77,7 +78,7 @@ export function PaymentDayList({
                   <View style={styles.copy}>
                     <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{subscription.name}</Text>
                     <Text style={[styles.category, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {categoryNames[subscription.category] || subscription.category} • {subscription.billingCycle}
+                      {categoryNames[subscription.category] || getCategoryLabel(subscription.category, isTurkish)} • {getBillingCycleLabel(subscription.billingCycle, isTurkish)}
                     </Text>
                   </View>
                 </View>

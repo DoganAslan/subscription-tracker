@@ -196,7 +196,11 @@ describe('subscription form fields', () => {
         />,
       );
 
-      await fireEvent(webRender.getByTestId('renewalDate-web-input'), 'change', { target: { value: '2027-01-05' } });
+      const webDateInput = webRender.root?.queryAll((instance) => instance.type === 'input')[0];
+      if (!webDateInput) throw new Error('Web date input was not rendered');
+      expect(webDateInput.props.testID).toBeUndefined();
+      expect(webDateInput.props['data-testid']).toBe('renewalDate-web-input');
+      await fireEvent(webDateInput, 'change', { target: { value: '2027-01-05' } });
 
       expect(formValues(webRender).renewalDate).toBe('2027-1-5-0');
     } finally {

@@ -66,9 +66,9 @@
             {
               "name": "SummaryWidget",
               "label": "SubMate Özet",
-              "minWidth": "250dp",
+              "minWidth": "110dp",
               "minHeight": "110dp",
-              "targetCellWidth": 4,
+              "targetCellWidth": 2,
               "targetCellHeight": 2,
               "description": "Aylık toplam ve sıradaki ödeme",
               "previewImage": "./assets/images/logo.png",

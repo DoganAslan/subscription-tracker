@@ -222,6 +222,22 @@ export const createSubscriptionFormStyles = (colors: ThemeColors) => StyleSheet.
   buttonGroup: {
     marginTop: 8,
   },
+  validationBanner: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 4,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: 12,
+    backgroundColor: `${colors.danger}18`,
+  },
+  validationText: {
+    color: colors.danger,
+    fontSize: 13,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
   deleteButton: {
     marginTop: 12,
   },

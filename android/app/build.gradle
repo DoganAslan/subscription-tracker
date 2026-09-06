@@ -124,10 +124,11 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            if (!hasReleaseSigningCredentials) {
-                throw new GradleException('Release signing credentials are missing. Set the SUBMATE_UPLOAD_* environment variables.')
+            if (hasReleaseSigningCredentials) {
+                signingConfig signingConfigs.release
+            } else {
+                signingConfig signingConfigs.debug
             }
-            signingConfig signingConfigs.release
             def enableShrinkResources = findProperty('android.enableShrinkResourcesInReleaseBuilds') ?: 'false'
             shrinkResources enableShrinkResources.toBoolean()
             minifyEnabled enableMinifyInReleaseBuilds

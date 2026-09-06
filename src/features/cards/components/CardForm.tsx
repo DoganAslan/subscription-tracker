@@ -1,4 +1,3 @@
-import i18n, { t } from '@/locales/i18n';
 import { useState } from 'react';
 import { View, ScrollView, Text, TouchableOpacity, StyleSheet, Modal, FlatList } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
@@ -13,8 +12,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { CardWidget } from './CardWidget';
 import { Timestamp } from 'firebase/firestore';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-
 import { useTranslation } from '@/context/LanguageContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,11 +20,6 @@ const CARD_TYPES = [
   { label: 'Mastercard', value: 'mastercard' },
   { label: 'Troy', value: 'troy' },
   { label: 'American Express (Amex)', value: 'amex' },
-  { label: 'UnionPay', value: 'unionpay' },
-  { label: 'JCB', value: 'jcb' },
-  { label: 'Discover', value: 'discover' },
-  { label: 'Diners Club', value: 'diners' },
-  { label: 'Maestro', value: 'maestro' },
   { label: 'Other', value: 'other' },
 ] as const;
 
@@ -39,16 +31,16 @@ const CURRENCIES = [
 ] as const;
 
 const PREMIUM_COLORS = [
-  { hex: '#0F172A', label: 'Slate Black' },
-  { hex: '#1E3A8A', label: 'Royal Blue' },
-  { hex: '#047857', label: 'Emerald' },
-  { hex: '#BE123C', label: 'Crimson' },
-  { hex: '#4338CA', label: 'Indigo' },
-  { hex: '#B45309', label: 'Gold' },
-  { hex: '#0F766E', label: 'Teal' },
-  { hex: '#5B21B6', label: 'Purple' },
-  { hex: '#831843', label: 'Rose' },
-  { hex: '#064E3B', label: 'Forest' },
+  { hex: '#0F172A', en: 'Slate Black', tr: 'Gece siyahı' },
+  { hex: '#1E3A8A', en: 'Royal Blue', tr: 'Kraliyet mavisi' },
+  { hex: '#047857', en: 'Emerald', tr: 'Zümrüt' },
+  { hex: '#BE123C', en: 'Crimson', tr: 'Kızıl' },
+  { hex: '#4338CA', en: 'Indigo', tr: 'Çivit mavisi' },
+  { hex: '#B45309', en: 'Gold', tr: 'Altın' },
+  { hex: '#0F766E', en: 'Teal', tr: 'Turkuaz' },
+  { hex: '#5B21B6', en: 'Purple', tr: 'Mor' },
+  { hex: '#831843', en: 'Rose', tr: 'Gül kurusu' },
+  { hex: '#064E3B', en: 'Forest', tr: 'Orman yeşili' },
 ];
 
 interface Props {
@@ -63,7 +55,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
   const [isTypeModalVisible, setIsTypeModalVisible] = useState(false);
   const [isCurrencyModalVisible, setIsCurrencyModalVisible] = useState(false);
   const { colors, isDark } = useTheme();
-  const { t } = useTranslation();
+  const { t, currentLanguage } = useTranslation();
   const insets = useSafeAreaInsets();
   
   const isEdit = !!initialData;
@@ -79,6 +71,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
       expiryYear: initialData?.expiryYear || currentYear + 3,
       color: initialData?.color || PREMIUM_COLORS[0].hex,
       currency: initialData?.currency || 'TRY',
+      monthlyLimit: initialData?.monthlyLimit,
     }
   });
 
@@ -90,6 +83,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
   const watchedYear = watch('expiryYear');
   const watchedColor = watch('color');
   const watchedCurrency = watch('currency');
+  const watchedMonthlyLimit = watch('monthlyLimit');
 
   return (
     <>
@@ -106,7 +100,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
             expiryYear: watchedYear || 2099,
             color: watchedColor || PREMIUM_COLORS[0].hex,
             currency: watchedCurrency || 'TRY',
-            monthlyLimit: 0,
+            monthlyLimit: watchedMonthlyLimit,
             isPinned: false,
             createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
@@ -173,6 +167,27 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
               />
             </View>
           </View>
+
+          <Controller
+            control={control}
+            name="monthlyLimit"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <Input
+                accessibilityLabel={(t.global as any)?.monthlyLimit || (currentLanguage === 'tr' ? 'Aylık kart limiti' : 'Monthly card limit')}
+                label={(t.global as any)?.monthlyLimit || (currentLanguage === 'tr' ? 'Aylık kart limiti' : 'Monthly card limit')}
+                placeholder={(t.global as any)?.monthlyLimitPlaceholder || (currentLanguage === 'tr' ? 'Örn. 5000' : 'e.g. 5000')}
+                keyboardType="decimal-pad"
+                onBlur={onBlur}
+                onChangeText={(text) => {
+                  const normalized = text.trim().replace(',', '.');
+                  onChange(normalized === '' ? undefined : Number(normalized));
+                }}
+                value={value == null ? '' : String(value)}
+                error={errors.monthlyLimit?.message}
+                inputAccessoryViewID={KEYBOARD_ACCESSORY_ID}
+              />
+            )}
+          />
 
           <View style={styles.row}>
             <View style={{ flex: 1 }}>
@@ -266,7 +281,7 @@ export function CardForm({ initialData, onSubmit, isLoading, submitLabel, onDele
                           )}
                         </View>
                         <Text style={[styles.colorCircleLabel, { color: isSelected ? colors.primary : colors.textSecondary }]} numberOfLines={1}>
-                          {c.label}
+                          {currentLanguage === 'tr' ? c.tr : c.en}
                         </Text>
                       </TouchableOpacity>
                     );

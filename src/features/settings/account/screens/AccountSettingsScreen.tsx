@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { auth } from '@/services/firebase/config';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useProfileStore } from '@/store/useProfileStore';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from '@/context/LanguageContext';
 import { SettingsSection } from '@/features/settings/components/SettingsSection';
@@ -25,10 +26,11 @@ export default function AccountSettingsScreen() {
   const { currentLanguage } = useTranslation();
   const isTurkish = currentLanguage === 'tr';
   const user = useAuthStore(state => state.user);
+  const profileName = useProfileStore(state => state.displayName);
   const capabilities = useAccountCapabilities();
   const actions = useAccountSecurityActions(isTurkish);
   const email = user?.email || auth.currentUser?.email || '';
-  const displayName = user?.displayName || auth.currentUser?.displayName || (isTurkish ? 'SubMate kullanıcısı' : 'SubMate user');
+  const displayName = profileName?.trim() || user?.displayName || auth.currentUser?.displayName || (isTurkish ? 'SubMate kullanıcısı' : 'SubMate user');
   const showResult = (result: AccountActionResult, onSuccess?: () => void) => { Alert.alert(result.ok ? (isTurkish ? 'Tamamlandı' : 'Completed') : (isTurkish ? 'İşlem tamamlanamadı' : 'Could not complete action'), result.message); if (result.ok) onSuccess?.(); return result; };
 
   return <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'bottom', 'left', 'right']}>

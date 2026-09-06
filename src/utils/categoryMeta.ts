@@ -29,6 +29,11 @@ export function getCategoryLabel(cat: string, isTurkish: boolean): string {
     return isTurkish ? 'Eğlence & TV' : 'Entertainment';
   }
 
+  // Bulut ve yardımcı hizmetleri üretkenlik araçlarından ayrı tut.
+  if (c.includes('utilities') || c.includes('utility') || c.includes('cloud') || c.includes('bulut')) {
+    return isTurkish ? 'Bulut & Hizmetler' : 'Utilities & Cloud';
+  }
+
   // 3. Üretkenlik, Yazılım & Bulut
   if (
     c.includes('product') ||
@@ -118,6 +123,10 @@ export function getCategoryMeta(cat: string, isTurkish: boolean = false): Catego
     c.includes('hbo')
   ) {
     return { name: label, icon: 'film', color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.14)' };
+  }
+
+  if (c.includes('utilities') || c.includes('utility') || c.includes('cloud') || c.includes('bulut')) {
+    return { name: label, icon: 'cloud-outline', color: '#06B6D4', bg: 'rgba(6, 182, 212, 0.14)' };
   }
 
   // 3. Üretkenlik, Yazılım & Bulut

@@ -37,6 +37,9 @@ jest.mock('@/services/firebase/auth', () => ({ AuthService: { reauthenticate: je
 jest.mock('@/store/useAuthStore', () => ({ useAuthStore: (selector: (state: { user: { email: string; displayName: string } }) => unknown) => selector({ user: { email: 'google@test.com', displayName: 'Google User' } }) }));
 jest.mock('@/context/ThemeContext', () => ({ useTheme: () => ({ colors: { background: '#000', surface: '#111', border: '#333', primary: '#3B82F6', text: '#FFF', textSecondary: '#AAA' } }) }));
 jest.mock('@/context/LanguageContext', () => ({ useTranslation: () => ({ currentLanguage: 'en' }) }));
+jest.mock('@/store/useProfileStore', () => ({
+  useProfileStore: (selector: (state: { displayName: string }) => unknown) => selector({ displayName: 'Cloud Profile' }),
+}));
 
 const colors = {
   background: '#000',
@@ -66,6 +69,11 @@ describe('Account settings screen', () => {
   });
 
   it('keeps the route facade', () => expect(AccountRoute).toBe(AccountSettingsScreen));
+
+  it('uses the same cloud profile name as settings and the dashboard', async () => {
+    const result = await render(<AccountSettingsScreen />);
+    expect(result.getByText('Cloud Profile')).toBeTruthy();
+  });
 
   it('shows provider-aware Google guidance instead of password forms', async () => {
     const result = await render(<AccountSettingsScreen />);

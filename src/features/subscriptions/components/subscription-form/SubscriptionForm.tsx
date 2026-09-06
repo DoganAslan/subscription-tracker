@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { FormProvider, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { KeyboardAccessory } from '@/components/ui/KeyboardAccessory';
@@ -44,6 +44,7 @@ export function SubscriptionForm({
   const budgetGuard = useBudgetGuard({ ...dependencies, submit: onSubmit });
   const receiptScanner = useReceiptScanner();
   const isEdit = Boolean(initialData);
+  const [validationMessage, setValidationMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (externalAmount === undefined) return;
@@ -99,12 +100,20 @@ export function SubscriptionForm({
   }, [applyReceiptPatch, currentLanguage, receiptScanner]);
 
   const submitForm = form.handleSubmit(async (data) => {
+    setValidationMessage(null);
     triggerHaptic('heavy');
     try {
       await budgetGuard.submit(data);
     } catch {
       // The caller owns error presentation; keeping the form mounted preserves retryable input.
     }
+  }, () => {
+    triggerHaptic('error');
+    setValidationMessage(
+      currentLanguage === 'tr'
+        ? 'Lütfen zorunlu alanları doldur.'
+        : 'Please complete the required fields.',
+    );
   });
 
   return (
@@ -118,6 +127,11 @@ export function SubscriptionForm({
           onScanReceipt={scanReceipt}
         />
         <AdvancedSubscriptionSection initiallyOpen={isEdit} />
+        {validationMessage ? (
+          <View accessibilityRole="alert" style={styles.validationBanner}>
+            <Text style={styles.validationText}>{validationMessage}</Text>
+          </View>
+        ) : null}
         <SubscriptionFormActions
           isEdit={isEdit}
           isLoading={isLoading}

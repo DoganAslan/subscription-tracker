@@ -1,7 +1,7 @@
 'use no memo';
 
 import React from 'react';
-import { FlexWidget, TextWidget } from 'react-native-android-widget';
+import { FlexWidget, ImageWidget, TextWidget } from 'react-native-android-widget';
 
 export interface SummaryWidgetProps {
   monthlyTotal: string;
@@ -29,51 +29,57 @@ export function SummaryWidget({
     <FlexWidget
       style={{
         flexDirection: 'column',
-        backgroundColor: '#111C33',
-        padding: 14,
-        borderRadius: 22,
+        backgroundColor: '#0B1427',
+        padding: 12,
+        borderRadius: 18,
         borderWidth: 1,
-        borderRightWidth: 2,
-        borderColor: '#29405F',
+        borderColor: '#5F8FD1',
         height: 'match_parent',
         width: 'match_parent',
-        marginHorizontal: 8,
-        marginVertical: 4,
         justifyContent: 'space-between',
         overflow: 'hidden',
       }}
       clickAction="OPEN_APP"
     >
-      <FlexWidget
-        style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
-        clickAction="OPEN_APP"
-      >
-        <TextWidget
-          text={`✦ ${labels.appName}`}
-          style={{
-            fontSize: 11,
-            color: '#A78BFA',
-            fontWeight: 'bold',
-            letterSpacing: 0.7,
-            marginRight: 8,
-          }}
-        />
+      <FlexWidget style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <FlexWidget style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <ImageWidget
+            image={require('../../assets/images/logo.png')}
+            imageWidth={22}
+            imageHeight={22}
+            radius={7}
+            style={{ marginRight: 6 }}
+          />
+          <TextWidget
+            text={labels.appName}
+            style={{
+              fontSize: 11,
+              color: '#B9A6FF',
+              fontWeight: 'bold',
+              letterSpacing: 0.8,
+            }}
+          />
+        </FlexWidget>
         <TextWidget
           text={`${activeCount} ${labels.activeSubscriptions}`}
           style={{
-            fontSize: 10,
-            color: '#7DD3FC',
+            fontSize: 9,
+            color: '#9EC9FF',
             fontWeight: 'bold',
+            backgroundColor: '#101F40',
+            borderRadius: 8,
+            paddingHorizontal: 6,
+            paddingVertical: 3,
           }}
         />
       </FlexWidget>
 
-      <FlexWidget style={{ flexDirection: 'column', marginTop: 7 }} clickAction="OPEN_APP">
+      <FlexWidget style={{ flexDirection: 'column', marginTop: 5 }}>
         <TextWidget
           text={labels.monthlyTotal}
           style={{
-            fontSize: 10,
-            color: '#94A3B8',
+            fontSize: 9,
+            color: '#A5B4CF',
             fontWeight: 'bold',
             letterSpacing: 0.4,
           }}
@@ -81,10 +87,13 @@ export function SummaryWidget({
         <TextWidget
           text={monthlyTotal || '₺0.00'}
           style={{
-            fontSize: 27,
+            fontSize: 24,
             color: '#F8FAFC',
             fontWeight: 'bold',
             marginTop: 2,
+            textShadowColor: '#4F46E5',
+            textShadowRadius: 5,
+            textShadowOffset: { width: 0, height: 1 },
           }}
         />
       </FlexWidget>
@@ -92,38 +101,28 @@ export function SummaryWidget({
       <FlexWidget
         style={{
           flexDirection: 'column',
-          backgroundColor: '#172554',
-          borderRadius: 13,
-          marginTop: 9,
-          padding: 9,
+          marginTop: 7,
           borderTopWidth: 1,
-          borderColor: '#355484',
+          borderColor: '#243C67',
+          paddingTop: 7,
         }}
-        clickAction="OPEN_APP"
       >
         <TextWidget
-          text={labels.nextPayment}
+          text={`${labels.nextPayment} · ${nextPaymentName}`}
+          maxLines={1}
+          truncate="END"
           style={{
-            fontSize: 9,
-            color: '#93C5FD',
+            fontSize: 10,
+            color: '#D9E6FF',
             fontWeight: 'bold',
-            letterSpacing: 0.3,
-          }}
-        />
-        <TextWidget
-          text={nextPaymentName}
-          style={{
-            fontSize: 12,
-            color: '#FFFFFF',
-            marginTop: 2,
-            fontWeight: 'bold',
+            adjustsFontSizeToFit: true,
           }}
         />
         <TextWidget
           text={`${nextPaymentDate} • ${nextPaymentMeta}`}
           style={{
-            fontSize: 10,
-            color: '#BFDBFE',
+            fontSize: 9,
+            color: '#91A9D2',
             marginTop: 2,
           }}
         />

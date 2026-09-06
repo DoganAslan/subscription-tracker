@@ -32,7 +32,7 @@ export function DashboardHeader({
           </View>
         )}
         <Text numberOfLines={1} style={[styles.greeting, { color: colors.text }]}>
-          {greeting}, {userName.split(' ')[0]} 👋
+          {greeting}{userName.trim() ? `, ${userName.trim().split(/\s+/)[0]}` : ''} 👋
         </Text>
       </TouchableOpacity>
 

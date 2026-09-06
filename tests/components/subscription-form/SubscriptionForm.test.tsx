@@ -210,6 +210,14 @@ describe('SubscriptionForm public facade', () => {
     expect(newForm.getByRole('button', { name: 'Currency: USD' })).toBeTruthy();
   });
 
+  it('shows a visible validation message when required fields are missing', async () => {
+    const result = await renderForm();
+
+    await pressSubmit(result);
+
+    await waitFor(() => expect(result.getByText('Please complete the required fields.')).toBeTruthy());
+  });
+
   it('preserves category guidance in the category picker', async () => {
     const result = await renderForm();
 

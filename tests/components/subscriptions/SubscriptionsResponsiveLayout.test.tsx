@@ -16,6 +16,7 @@ type SubscriptionQueryState = {
 const mockPush = jest.fn<void, [string]>();
 const mockRefetch = jest.fn();
 let mockSubscriptionState: SubscriptionQueryState;
+let mockLanguage = 'en';
 
 jest.mock('react-native', () => {
   const reactNative = jest.requireActual('react-native');
@@ -67,7 +68,7 @@ jest.mock('@/context/ThemeContext', () => ({
 }));
 jest.mock('@/context/LanguageContext', () => ({
   useTranslation: () => ({
-    currentLanguage: 'en',
+    currentLanguage: mockLanguage,
     t: {
       common: { error: 'Error' },
       home: { failedToLoad: 'Failed to load subscriptions' },
@@ -107,6 +108,16 @@ describe('Subscriptions responsive layout', () => {
       isRefetching: false,
       refetch: mockRefetch,
     };
+    mockLanguage = 'en';
+  });
+
+  it('localizes every empty-list message in Turkish', async () => {
+    mockLanguage = 'tr';
+    const result = await render(<SubscriptionListScreen />);
+
+    expect(result.getByText('Henüz abonelik yok')).toBeTruthy();
+    expect(result.getByText('İlk aboneliğini aşağıdaki düğmeyle ekleyebilirsin.')).toBeTruthy();
+    expect(result.queryByText('No Subscriptions')).toBeNull();
   });
 
   it('uses one shared gutter around the loaded subscription list', async () => {
