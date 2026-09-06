@@ -19,6 +19,7 @@ import { auth, db } from './config';
 import { CardService, SubscriptionService } from './firestore';
 import i18n from '@/locales/i18n';
 import { getUserFacingError } from '@/utils/userFacingError';
+import { clearMonitoringContext } from '@/services/monitoring/sentry';
 
 // Handle returning user from Firebase OAuth Redirect on Web
 if (Platform.OS === 'web') {
@@ -133,6 +134,7 @@ export const AuthService = {
 
   // Log Out
   logOut: async () => {
+    clearMonitoringContext();
     await signOut(auth);
   },
 
@@ -153,6 +155,7 @@ export const AuthService = {
         // 4. Delete auth account
         const { deleteUser } = await import('firebase/auth');
         await deleteUser(user);
+        clearMonitoringContext();
 
         // 5. Remove account-linked caches and preferences from this device.
         await AsyncStorage.clear().catch(error => {

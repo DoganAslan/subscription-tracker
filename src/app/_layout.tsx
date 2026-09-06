@@ -18,7 +18,7 @@ import { getMarketRatesWithDynamicCache } from '@/utils/currency';
 import { neutralizeProductionLogs } from '@/utils/security';
 import { useSecurityStore } from '@/store/useSecurityStore';
 import { initializeMonitoring } from '@/services/monitoring/sentry';
-import * as Sentry from '@sentry/react-native';
+import { useDiagnosticsStore } from '@/store/useDiagnosticsStore';
 import '../../global.css';
 import '../locales/i18n';
 
@@ -28,8 +28,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { SessionLifecycleCoordinator } from '@/features/auth/application/SessionLifecycleCoordinator';
 
-// Fire immediately upon JS Engine boot:
-initializeMonitoring();
 neutralizeProductionLogs();
 // Suppress third-party web-only SVG touch warnings
 LogBox.ignoreLogs([
@@ -48,10 +46,18 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const isBiometricsEnabled = useSecurityStore(state => state.isBiometricsEnabled);
+  const isDiagnosticsEnabled = useDiagnosticsStore(state => state.isDiagnosticsEnabled);
+  const hasDiagnosticsHydrated = useDiagnosticsStore(state => state.hasHydrated);
   const appState = useRef(AppState.currentState);
   const [currentAppState, setCurrentAppState] = useState(AppState.currentState);
 
   const hasRequestedToken = useRef(false);
+
+  useEffect(() => {
+    if (hasDiagnosticsHydrated) {
+      initializeMonitoring(isDiagnosticsEnabled);
+    }
+  }, [hasDiagnosticsHydrated, isDiagnosticsEnabled]);
 
   useEffect(() => {
     // Preload Ionicons font for Web & Native
@@ -169,7 +175,7 @@ function RootLayout() {
   );
 }
 
-export default Sentry.wrap(RootLayout);
+export default RootLayout;
 
 const styles = StyleSheet.create({
   privacyShield: {

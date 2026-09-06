@@ -1,8 +1,7 @@
 import { Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { signOut } from 'firebase/auth';
 import { useRouter } from 'expo-router';
-import { auth } from '@/services/firebase/config';
+import { AuthService } from '@/services/firebase/auth';
 import type { Subscription } from '@/services/firebase/types';
 import { useAuthStore } from '@/store/useAuthStore';
 import { authenticateUser, getBiometricAvailability } from '@/utils/biometrics';
@@ -26,6 +25,6 @@ export function useSettingsActions({ isTurkish, subscriptions, baseCurrency, bio
   const backup = () => { triggerHaptic('impactLight'); void exportVaultBackup(); };
   const restore = () => { triggerHaptic('impactLight'); void importVaultBackup(() => router.replace('/(tabs)')); };
   const exportCsv = () => { triggerHaptic('impactLight'); void exportCsvReport(subscriptions.map(subscription => ({ name: subscription.name, category: subscription.category, amount: subscription.amount, currency: subscription.currency, billingCycle: subscription.billingCycle, status: subscription.status ?? 'active', notes: subscription.notes })), baseCurrency); };
-  const logOut = async () => { try { triggerHaptic('warning'); await signOut(auth); useAuthStore.getState().setUser(null); router.replace('/(auth)'); } catch (error) { console.error('Sign out error:', error); Alert.alert(isTurkish ? 'Hata' : 'Error', isTurkish ? 'Güvenli çıkış tamamlanamadı.' : 'Failed to sign out safely.'); } };
+  const logOut = async () => { try { triggerHaptic('warning'); await AuthService.logOut(); useAuthStore.getState().setUser(null); router.replace('/(auth)'); } catch (error) { console.error('Sign out error:', error); Alert.alert(isTurkish ? 'Hata' : 'Error', isTurkish ? 'Güvenli çıkış tamamlanamadı.' : 'Failed to sign out safely.'); } };
   return { pickAvatar, toggleBiometrics, backup, restore, exportCsv, logOut };
 }

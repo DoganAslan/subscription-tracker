@@ -16,6 +16,8 @@ import { DataVaultCard } from '@/features/settings/components/DataVaultCard';
 import { SettingsPickerModal, type PickerOption } from '@/features/settings/components/SettingsPickerModal';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
 import { useSecurityStore } from '@/store/useSecurityStore';
+import { useDiagnosticsStore } from '@/store/useDiagnosticsStore';
+import { disableMonitoring } from '@/services/monitoring/sentry';
 import { triggerHaptic } from '@/utils/haptics';
 import { ResponsiveContent } from '@/components/layout/ResponsiveContent';
 
@@ -34,6 +36,8 @@ export default function SettingsScreen() {
   const isTurkish = currentLanguage === 'tr';
   const { baseCurrency, setBaseCurrency } = useCurrencyStore();
   const { isBiometricsEnabled, setBiometricsEnabled } = useSecurityStore();
+  const isDiagnosticsEnabled = useDiagnosticsStore(state => state.isDiagnosticsEnabled);
+  const setDiagnosticsEnabled = useDiagnosticsStore(state => state.setDiagnosticsEnabled);
   const { data: subscriptions = [] } = useSubscriptions();
   const profile = useSettingsProfile(isTurkish);
   const actions = useSettingsActions({ isTurkish, subscriptions, baseCurrency, biometricsEnabled: isBiometricsEnabled, setBiometricsEnabled, setProfileImage: profile.setProfileImage });
@@ -52,6 +56,24 @@ export default function SettingsScreen() {
     { value: 'dark', label: isTurkish ? 'Koyu tema' : 'Dark theme' },
     { value: 'system', label: isTurkish ? 'Sistem ayarı' : 'System setting' },
   ];
+  const toggleDiagnostics = () => {
+    if (isDiagnosticsEnabled) {
+      setDiagnosticsEnabled(false);
+      disableMonitoring();
+      return;
+    }
+
+    Alert.alert(
+      isTurkish ? 'İsteğe bağlı tanılama' : 'Optional diagnostics',
+      isTurkish
+        ? 'Yalnızca teknik hata raporları paylaşılır. Finansal verilerin, hesap bilgilerin ve yazdıkların rapora eklenmez. Dilediğin zaman kapatabilirsin.'
+        : 'Only technical error reports are shared. Financial data, account details, and what you write are not included. You can turn this off at any time.',
+      [
+        { text: isTurkish ? 'Şimdi değil' : 'Not now', style: 'cancel' },
+        { text: isTurkish ? 'Etkinleştir' : 'Enable', onPress: () => { triggerHaptic('selection'); setDiagnosticsEnabled(true); } },
+      ],
+    );
+  };
 
   return <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background, paddingTop: Platform.OS === 'web' ? 16 : 8 }]} edges={['top', 'left', 'right']}>
     <ScrollView showsVerticalScrollIndicator={false}>
@@ -64,6 +86,7 @@ export default function SettingsScreen() {
           <SettingsRow colors={colors} icon="color-palette-outline" iconColor="#8B5CF6" label={isTurkish ? 'Görünüm teması' : 'Appearance theme'} value={themeLabel} onPress={() => openPicker('theme')} />
         </SettingsSection>
         <SettingsSection colors={colors} title={isTurkish ? 'GÜVENLİK' : 'SECURITY'}><SettingsRow colors={colors} icon="finger-print-outline" iconColor="#F59E0B" label={isTurkish ? 'Biyometrik kilit' : 'Biometric lock'} value={isBiometricsEnabled ? (isTurkish ? 'Açık' : 'Enabled') : (isTurkish ? 'Kapalı' : 'Disabled')} onPress={() => void actions.toggleBiometrics()} /></SettingsSection>
+        <SettingsSection colors={colors} title={isTurkish ? 'GİZLİLİK' : 'PRIVACY'}><SettingsRow colors={colors} icon="bug-outline" iconColor="#8B5CF6" label={isTurkish ? 'İsteğe bağlı tanılama' : 'Optional diagnostics'} description={isTurkish ? 'Anonim teknik hata raporları; finansal veri içermez.' : 'Anonymous technical error reports; no financial data.'} value={isDiagnosticsEnabled ? (isTurkish ? 'Açık' : 'Enabled') : (isTurkish ? 'Kapalı' : 'Disabled')} onPress={toggleDiagnostics} /></SettingsSection>
         <DataVaultCard colors={colors} isTurkish={isTurkish} onBackup={actions.backup} onRestore={actions.restore} onExportCsv={actions.exportCsv} />
         <SettingsSection colors={colors} title={isTurkish ? 'HESAP VE BİLGİ' : 'ACCOUNT & INFO'}>
           <SettingsRow colors={colors} icon="person-outline" iconColor="#6366F1" label={isTurkish ? 'Hesap ve şifre' : 'Account & password'} onPress={() => go('/(tabs)/settings/account')} showDivider />

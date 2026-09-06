@@ -23,7 +23,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught application error:', error, errorInfo);
+    if (__DEV__) {
+      console.error('Uncaught application error:', error, errorInfo);
+    }
     captureAppError(error, 'react_error_boundary');
   }
 
@@ -56,5 +58,4 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
-
 
