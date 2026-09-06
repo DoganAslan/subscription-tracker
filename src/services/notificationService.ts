@@ -220,6 +220,14 @@ export const cancelContractDoomReminder = async (subId: string): Promise<void> =
   }
 };
 
+/** Cancels only this subscription's deterministic local reminders. */
+export const cancelSubscriptionReminders = async (subscriptionId: string): Promise<void> => {
+  await Promise.all([
+    cancelSubReminder(subscriptionId),
+    cancelContractDoomReminder(subscriptionId),
+  ]);
+};
+
 export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Date): Promise<boolean> => {
   if (Platform.OS === 'web' || subscription?.status === 'paused') return false;
 
