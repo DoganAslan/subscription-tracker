@@ -12,7 +12,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useCallback, useEffect, useState, useRef } from 'react';
 import { authenticateUser } from '@/utils/biometrics';
 import { BiometricOverlay } from '@/components/BiometricOverlay';
-import { registerForPushNotificationsAsync, registerNotificationHistoryListeners } from '@/services/notificationService';
+import { registerNotificationHistoryListeners } from '@/services/notificationService';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { getMarketRatesWithDynamicCache } from '@/utils/currency';
 import { neutralizeProductionLogs } from '@/utils/security';
@@ -51,8 +51,6 @@ function RootLayout() {
   const appState = useRef(AppState.currentState);
   const [currentAppState, setCurrentAppState] = useState(AppState.currentState);
 
-  const hasRequestedToken = useRef(false);
-
   useEffect(() => {
     if (hasDiagnosticsHydrated) {
       initializeMonitoring(isDiagnosticsEnabled);
@@ -66,14 +64,10 @@ function RootLayout() {
     // Fire and forget: syncs rates silently in the background
     getMarketRatesWithDynamicCache();
     
-    let removeNotificationHistoryListeners: () => void = () => {};
-    if (Platform.OS !== 'web') {
-      removeNotificationHistoryListeners = registerNotificationHistoryListeners();
-      if (!hasRequestedToken.current) {
-        hasRequestedToken.current = true;
-        registerForPushNotificationsAsync().catch(console.warn);
-      }
-    }
+        let removeNotificationHistoryListeners: () => void = () => {};
+        if (Platform.OS !== 'web') {
+          removeNotificationHistoryListeners = registerNotificationHistoryListeners();
+        }
     
     setIsReady(true);
     SplashScreen.hideAsync().catch(() => {});

@@ -1,5 +1,4 @@
 import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getNextRenewalDate } from '@/features/dashboard/utils/calculations';
@@ -27,8 +26,15 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const getNotifId = (subId: string): string => `sub_remind_${subId}`;
-const getContractDoomNotifId = (subId: string): string => `sub_contract_doom_${subId}`;
+const REMINDER_CHANNEL_ID = 'submate-reminders';
+
+export const getSubscriptionReminderIds = (subscriptionId: string) => ({
+  payment: `submate:payment:${subscriptionId}`,
+  contract: `submate:contract:${subscriptionId}`,
+});
+
+export const isNotificationPermissionGranted = (status: Notifications.NotificationPermissionsStatus): boolean =>
+  status.granted || status.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL;
 
 const notificationToHistoryItem = (
   notification: Notifications.Notification,
@@ -124,7 +130,7 @@ export const registerNotificationHistoryListeners = () => {
 
 export const setupNotificationChannel = async () => {
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('default', {
+    await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
       name: 'Ödeme Hatırlatıcıları',
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
@@ -136,53 +142,44 @@ export const setupNotificationChannel = async () => {
   }
 };
 
-export const requestNotificationPermissions = async (): Promise<boolean> => {
+export const getNotificationPermissionState = async (): Promise<Notifications.NotificationPermissionsStatus | null> => {
+  if (Platform.OS === 'web') return null;
+  try {
+    return await Notifications.getPermissionsAsync();
+  } catch {
+    return null;
+  }
+};
+
+export const requestReminderPermission = async (): Promise<boolean> => {
   if (Platform.OS === 'web') return false;
 
   try {
     await setupNotificationChannel();
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
+    const existing = await Notifications.getPermissionsAsync();
+    if (isNotificationPermissionGranted(existing)) return true;
 
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync({
+    const requested = await Notifications.requestPermissionsAsync({
         ios: {
           allowAlert: true,
           allowBadge: true,
           allowSound: true,
         },
       });
-      finalStatus = status;
-    }
-
-    return finalStatus === 'granted';
+    return isNotificationPermissionGranted(requested);
   } catch (error) {
     console.error('Error requesting notification permissions:', error);
     return false;
   }
 };
 
-export const registerForPushNotificationsAsync = async (): Promise<string | undefined> => {
-  if (Platform.OS === 'web') return undefined;
-
-  const hasPermission = await requestNotificationPermissions();
-  if (!hasPermission) return undefined;
-
-  if (Device.isDevice) {
-    try {
-      const pushToken = (await Notifications.getExpoPushTokenAsync()).data;
-      return pushToken;
-    } catch (error) {
-      console.log('Expo push token notice (local notifications active):', error);
-    }
-  }
-  return undefined;
-};
+// Backward-compatible name for UI actions. It remains local-only and does not fetch a push token.
+export const requestNotificationPermissions = requestReminderPermission;
 
 export const testNotification = async () => {
   if (Platform.OS === 'web') return;
-  const hasPermission = await requestNotificationPermissions();
+  const hasPermission = await requestReminderPermission();
   if (!hasPermission) {
     console.log('No permission for test notification');
     return;
@@ -197,7 +194,7 @@ export const testNotification = async () => {
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: 2,
-      channelId: 'default',
+      channelId: REMINDER_CHANNEL_ID,
     },
   });
 };
@@ -206,7 +203,7 @@ export const cancelSubReminder = async (subId: string): Promise<void> => {
   if (Platform.OS === 'web') return;
 
   try {
-    const notifId = getNotifId(subId);
+    const notifId = getSubscriptionReminderIds(subId).payment;
     await Notifications.cancelScheduledNotificationAsync(notifId);
   } catch (error) {
     // Silently handle if it wasn't scheduled
@@ -217,7 +214,7 @@ export const cancelContractDoomReminder = async (subId: string): Promise<void> =
   if (Platform.OS === 'web') return;
 
   try {
-    await Notifications.cancelScheduledNotificationAsync(getContractDoomNotifId(subId));
+    await Notifications.cancelScheduledNotificationAsync(getSubscriptionReminderIds(subId).contract);
   } catch {
     // The notification may not have been scheduled yet.
   }
@@ -226,7 +223,7 @@ export const cancelContractDoomReminder = async (subId: string): Promise<void> =
 export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Date): Promise<boolean> => {
   if (Platform.OS === 'web' || subscription?.status === 'paused') return false;
 
-  const hasPermission = await requestNotificationPermissions();
+  const hasPermission = await requestReminderPermission();
   if (!hasPermission) return false;
 
   if (!subscription || !subscription.id) return false;
@@ -267,7 +264,7 @@ export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Da
     }
   }
 
-  const notifIdentifier = getNotifId(subscription.id);
+  const notifIdentifier = getSubscriptionReminderIds(subscription.id).payment;
 
   // Calculate exact days remaining for dynamic text
   const todayMidnight = new Date();
@@ -314,7 +311,7 @@ export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Da
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: triggerDate,
-        channelId: 'default',
+        channelId: REMINDER_CHANNEL_ID,
       },
     });
     return true;
@@ -334,7 +331,7 @@ export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Da
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: secondsToTrigger,
-          channelId: 'default',
+          channelId: REMINDER_CHANNEL_ID,
         },
       });
       return true;
@@ -348,7 +345,7 @@ export const scheduleSubReminder = async (subscription: any, nextRenewalDate: Da
 export const scheduleContractDoomReminder = async (subscription: any): Promise<boolean> => {
   if (Platform.OS === 'web' || !subscription || !subscription.contractEndDate) return false;
 
-  const hasPermission = await requestNotificationPermissions();
+  const hasPermission = await requestReminderPermission();
   if (!hasPermission) return false;
 
   const contractDate = new Date(
@@ -374,7 +371,7 @@ export const scheduleContractDoomReminder = async (subscription: any): Promise<b
     }
   }
 
-  const doomIdentifier = getContractDoomNotifId(subscription.id);
+  const doomIdentifier = getSubscriptionReminderIds(subscription.id).contract;
 
   try {
     await cancelContractDoomReminder(subscription.id);
@@ -394,7 +391,7 @@ export const scheduleContractDoomReminder = async (subscription: any): Promise<b
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.DATE,
           date: triggerDate,
-          channelId: 'default',
+          channelId: REMINDER_CHANNEL_ID,
         },
       });
       return true;
@@ -411,7 +408,7 @@ export const scheduleContractDoomReminder = async (subscription: any): Promise<b
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: secondsToTrigger,
-          channelId: 'default',
+          channelId: REMINDER_CHANNEL_ID,
         },
       });
       return true;
